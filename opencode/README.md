@@ -37,7 +37,7 @@ opencode/
 model	anthropic/claude-sonnet-4-6      # トップレベルの model キー
 small_model	anthropic/claude-haiku-4-5   # トップレベルの small_model キー
 spec	anthropic/claude-opus-4-6          # agent.spec.model
-executor	opencode/kimi-k2.5             # agent.executor.model
+execute	opencode/kimi-k2.5             # agent.execute.model
 ```
 
 `model` と `small_model` はトップレベルキーとして処理され、それ以外はすべて `.agent.<name>.model` として処理される。
@@ -75,6 +75,17 @@ executor	opencode/kimi-k2.5             # agent.executor.model
 ### 依存関係
 
 両スクリプトとも `jq` が必要。
+
+---
+
+## 補足: websearch ツールの前提条件
+
+`internet_search` エージェントが使用する `websearch` / `webfetch` ツールは、以下のいずれかの条件が満たされている場合のみ有効になります。
+
+- OpenCode provider を使用している（`opencode/` プレフィックスのモデルを使用中）
+- 環境変数 `OPENCODE_ENABLE_EXA=1` が設定されている
+
+この前提が満たされていない環境では、`fast` / `spec` / `idea` から `internet_search` への委譲が失敗します。
 
 ```bash
 # Ubuntu/Debian

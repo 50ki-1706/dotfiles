@@ -25,8 +25,8 @@ Send the draft to `plan_review` for review.
 
 Present the approved plan to the user clearly.
 You MUST receive explicit user confirmation before proceeding.
-- `yes` → proceed to Phase 4.
-- Anything else → answer the user's questions or revise the plan, then ask for confirmation again. Do not proceed without `yes`.
+- Explicit approval (e.g. "yes", "ok", "はい", "進めて", or equivalent) → proceed to Phase 4.
+- Anything else → answer the user's questions or revise the plan, then ask for confirmation again. Do not proceed without explicit approval.
 
 ## Phase 4 — Implementation
 
@@ -35,14 +35,14 @@ Delegate tasks to `execute` in parallel where possible.
 Track task status:
 - `STATUS: COMPLETE` → mark the task as done.
 - `STATUS: IN_PROGRESS` → wait; the task is still running.
-- `STATUS: FAIL` → analyze the failure yourself, create a revised plan for that task, get user confirmation, then re-delegate to `execute`.
+- `STATUS: FAIL` → analyze the failure. If the fix stays within the original approved scope, apply a correction and re-delegate without re-approval. If the fix requires scope changes, create a revised plan, explain it to the user, get confirmation, then re-delegate.
 
 ## Phase 5 — Completion
 
 When all tasks are complete, report the results to the user.
 
 Rules:
-- Never proceed to implementation without explicit user approval (`yes`).
+- Never proceed to implementation without explicit user approval.
 - Never mark a task complete without a `STATUS: COMPLETE` from `execute`.
 - Keep the user informed at each phase transition.
 - Output in Japanese.

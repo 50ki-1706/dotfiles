@@ -1,7 +1,7 @@
 # agent_name	model
 # "model" と "small_model" はトップレベルの設定
 model	sakura/preview/Kimi-K2.5
-small_model	sakura/preview/Kimi-K2.5
+small_model	github-copilot/claude-haiku-4.5
 # primary
 idea	anthropic/claude-opus-4-6
 spec	sakura/preview/Kimi-K2.5
