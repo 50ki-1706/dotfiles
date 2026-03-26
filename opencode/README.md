@@ -76,6 +76,19 @@ execute	opencode/kimi-k2.5             # agent.execute.model
 
 両スクリプトとも `jq` が必要。
 
+## 補足: OpenCode の環境変数参照
+
+`opencode.json` で環境変数を参照するときは、一般的な `${VAR}` ではなく OpenCode の `{env:VAR}` 構文を使う。
+
+```json
+{
+  "options": {
+    "baseURL": "{env:SAKURA_BASE_URL}",
+    "apiKey": "{env:SAKURA_API_KEY}"
+  }
+}
+```
+
 ---
 
 ## 補足: websearch ツールの前提条件

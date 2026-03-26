@@ -8,8 +8,8 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Sakura AI Engine",
       "options": {
-        "baseURL": "${SAKURA_BASE_URL}",
-        "apiKey": "${SAKURA_API_KEY}"
+        "baseURL": "{env:SAKURA_BASE_URL}",
+        "apiKey": "{env:SAKURA_API_KEY}"
       },
       "models": {
         "preview/Kimi-K2.5": {
