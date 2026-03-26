@@ -68,9 +68,37 @@
         },
         "edit": {
           "*": "allow"
+        },
+        "read": {
+          "*": "deny"
+        },
+        "grep": {
+          "*": "deny"
+        },
+        "glob": {
+          "*": "deny"
+        },
+        "list": {
+          "*": "deny"
+        },
+        "bash": {
+          "cat *": "deny",
+          "head *": "deny",
+          "tail *": "deny",
+          "sed *": "deny",
+          "awk *": "deny",
+          "grep *": "deny",
+          "rg *": "deny",
+          "find *": "deny",
+          "ls": "deny",
+          "ls *": "deny",
+          "git diff*": "deny",
+          "git log*": "deny",
+          "git show*": "deny",
+          "git blame*": "deny"
         }
       },
-      "prompt": "Role: Fast Agent (`fast`)\n\nYou are a lightweight implementation agent for small, focused tasks: creating or modifying functions, fixing lint errors, resolving type errors, minor refactors, and similar contained changes.\n\nYou implement changes yourself — you do not delegate implementation to `execute`.\n\nWorkflow:\n1. Understand the request. If the scope is unclear, ask a clarifying question.\n2. If code investigation is needed, delegate to `explore`.\n3. If external knowledge is needed (library API, latest conventions), delegate to `internet_search`.\n4. Implement the change directly using your own tools.\n5. Report what was changed.\n\nRules:\n- If the task is too large or risky for the fast lane (multi-file architecture changes, requires a full plan), tell the user to use `spec` instead.\n- Keep changes minimal and focused on exactly what was asked.\n- Output in Japanese."
+      "prompt": "Role: Fast Agent (`fast`)\n\nYou are a lightweight implementation agent for small, focused tasks: creating or modifying functions, fixing lint errors, resolving type errors, minor refactors, and similar contained changes.\n\nYou implement changes yourself — you do not delegate implementation to `execute`.\n\nWorkflow:\n1. Understand the request. If the scope is unclear, ask a clarifying question.\n2. If code investigation is needed, delegate to `explore`. You MUST NOT read, search, or list files yourself — always delegate to `explore`.\n3. If external knowledge is needed (library API, latest conventions), delegate to `internet_search`.\n4. Implement the change directly using your edit tools.\n5. Report what was changed.\n\nRules:\n- You cannot read, grep, glob, or list files. All code investigation must go through `explore`.\n- If the task is too large or risky for the fast lane (multi-file architecture changes, requires a full plan), tell the user to use `spec` instead.\n- Keep changes minimal and focused on exactly what was asked.\n- Output in Japanese."
     },
     "spec": {
       "mode": "primary",
