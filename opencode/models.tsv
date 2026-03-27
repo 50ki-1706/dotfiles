@@ -1,16 +1,16 @@
 # agent_name	model
 # "model" と "small_model" はトップレベルの設定
 model	sakura/preview/Kimi-K2.5
-small_model	github-copilot/claude-haiku-4.5
+small_model	openai/gpt-5.4-mini
 # primary
 idea	anthropic/claude-opus-4-6
 spec	sakura/preview/Kimi-K2.5
 fast	sakura/preview/Kimi-K2.5
 review	openai/gpt-5.4
 # sub
-explore	google/gemini-3.1-flash-lite-preview
+explore	github-copilot/grok-code-fast-1
 deep_explore	openai/gpt-5.3-codex
 execute	openai/gpt-5.3-codex-spark
-internet_search	google/gemini-3.1-flash-lite-preview
+internet_search	openai/gpt-5.4-mini
 
 plan_review	openai/gpt-5.4
