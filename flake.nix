@@ -1,10 +1,20 @@
 {
   description = "Koki's environments";
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
 
   outputs =
-    { self, nixpkgs }:
+    {
+      self,
+      nixpkgs,
+      home-manager,
+    }:
     let
       forAllSystems = nixpkgs.lib.genAttrs [
         "aarch64-darwin" # Apple Silicon Mac
@@ -17,8 +27,9 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            config.allowUnfree = true;[p]
+            config.allowUnfree = true;
           };
+          # SSH 鍵の生成のみ担当。~/.ssh/config は home-manager が管理する。
           sshBootstrap = pkgs.writeShellApplication {
             name = "ssh-bootstrap";
             runtimeInputs = [
@@ -27,7 +38,7 @@
             ];
             text = ''
               set -euo pipefail
-p
+
               email=""
               key_path="$HOME/.ssh/id_ed25519"
 
@@ -63,19 +74,6 @@ p
               fi
 
               if [ "$(uname -s)" = "Darwin" ]; then
-                touch "$HOME/.ssh/config"
-                if ! grep -q "^Host github.com$" "$HOME/.ssh/config"; then
-                  {
-                    printf '%s\n' "Host github.com"
-                    printf '%s\n' "  HostName github.com"
-                    printf '%s\n' "  User git"
-                    printf '%s\n' "  IdentityFile $key_path"
-                    printf '%s\n' "  IdentitiesOnly yes"
-                    printf '%s\n' "  AddKeysToAgent yes"
-                    printf '%s\n' "  UseKeychain yes"
-                  } >> "$HOME/.ssh/config"
-                fi
-                chmod 600 "$HOME/.ssh/config"
                 /usr/bin/ssh-add --apple-use-keychain "$key_path" >/dev/null 2>&1 || true
               fi
 
@@ -90,17 +88,12 @@ p
           };
         in
         {
-          git = pkgs.git;
-          openssh = pkgs.openssh;
           "ssh-bootstrap" = sshBootstrap;
-          default = pkgs.buildEnv {
-            name = "dotfiles-base";
-            paths = [
-              pkgs.git
-              pkgs.openssh
-            ];
-          };
         }
+      );
+
+      formatter = forAllSystems (
+        system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style
       );
 
       apps = forAllSystems (
@@ -113,25 +106,41 @@ p
         }
       );
 
-      devShells = forAllSystems (
-        system:
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
-        in
-        {
-          default = pkgs.mkShell {
-            packages = [
-              pkgs.git
-              pkgs.openssh
-              pkgs.nodejs_24
-              pkgs.nixd # ← LSPサーバー
-              pkgs.nixfmt-rfc-style # ← フォーマッター
-            ];
-          };
-        }
-      );
+      homeConfigurations."koki" = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.aarch64-darwin;
+        modules = [
+          (
+            { pkgs, lib, ... }:
+            {
+              home.username = "koki";
+              home.homeDirectory = "/Users/koki";
+              home.stateVersion = "24.11";
+
+              home.packages = [
+                pkgs.git
+                pkgs.mise
+                pkgs.openssh
+              ];
+
+              programs.ssh = {
+                enable = true;
+                matchBlocks."github.com" = {
+                  hostname = "github.com";
+                  user = "git";
+                  identityFile = "~/.ssh/id_ed25519";
+                  identitiesOnly = true;
+                  extraOptions =
+                    {
+                      AddKeysToAgent = "yes";
+                    }
+                    // lib.optionalAttrs pkgs.stdenv.isDarwin {
+                      UseKeychain = "yes";
+                    };
+                };
+              };
+            }
+          )
+        ];
+      };
     };
 }
