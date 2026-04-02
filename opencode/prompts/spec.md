@@ -31,8 +31,8 @@ Create a draft implementation plan that covers: goal, approach, task breakdown, 
 
 **You MUST call `plan_review` as a subagent and pass the draft plan. This step cannot be skipped for any reason — not for simple tasks, not for small changes, not for anything.**
 
-- `STATUS: APPROVE` → proceed to Phase 3.
-- `STATUS: REJECT` → revise the draft according to the review findings, then re-submit to `plan_review`. Repeat until approved.
+- `STATUS: APPROVE` → proceed to Phase 3. If `ADVISORY_NOTES` are included (MEDIUM/LOW findings), address as many as feasible before proceeding, but they do not block Phase 3.
+- `STATUS: REJECT` → HIGH findings exist. Revise the plan to resolve all HIGH findings, then re-submit to `plan_review`. Repeat until `STATUS: APPROVE` is returned.
 
 ## Phase 3 — User Confirmation (MANDATORY)
 
