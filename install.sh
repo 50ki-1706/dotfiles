@@ -2,24 +2,17 @@
 
 set -euo pipefail
 
+if ! command -v git >/dev/null 2>&1; then
+  echo "エラー: git が見つかりません。先に home-manager switch --flake .#koki を実行してください。" >&2
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_DIR="${SCRIPT_DIR}/opencode"
 TARGET_DIR="${HOME}/.config/opencode"
 GIT_SOURCE_DIR="${SCRIPT_DIR}/git"
 GIT_TARGET_DIR="${HOME}/.config/git"
 
-if [[ ! -r /etc/os-release ]]; then
-  echo "エラー: OS 情報を確認できません。" >&2
-  exit 1
-fi
-
-# Ubuntu 24.04 以外では実行しない
-# shellcheck disable=SC1091
-source /etc/os-release
-if [[ "${ID:-}" != "ubuntu" || "${VERSION_ID:-}" != "24.04" ]]; then
-  echo "エラー: Ubuntu 24.04 以外では実行しない想定です。" >&2
-  exit 1
-fi
 
 mkdir -p "${TARGET_DIR}"
 mkdir -p "${GIT_TARGET_DIR}"
