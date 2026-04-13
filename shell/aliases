@@ -1,0 +1,38 @@
+# シェルエイリアス テンプレート (bash / zsh 共通)
+#
+# 使い方:
+#   以下のいずれかのファイルに追記してください:
+#     - ~/.bash_profile (macOS の bash ログインシェルの場合)
+#     - ~/.bashrc (Linux 等の対話的 bash の場合)
+#     - ~/.zshrc (zsh の場合)
+#   追記内容: source ~/.config/shell/aliases
+#
+# 必要なエイリアスの行頭の # を削除して有効にしてください。
+
+# --- 基本 ---
+# alias ll='ls -l'
+# alias la='ls -la'
+# alias ..='cd ..'
+# alias ...='cd ../..'
+
+# --- セーフティネット ---
+# alias rm='rm -i'
+# alias cp='cp -i'
+# alias mv='mv -i'
+
+# --- Git ---
+# alias gs='git status'
+# alias gd='git diff'
+# alias gl='git log --oneline -20'
+
+# --- ショートカット ---
+# alias h='history'
+# alias d='dirs -v'
+# alias reload='exec $SHELL'
+# alias ip='ipconfig getifaddr en0'
+
+# --- macOS 固有 (Linux ではコマンドが存在しないためエラーになります) ---
+# alias o='open .'
+# alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
+
+alias oc='OPENCODE_ENABLE_EXA=1 opencode'
