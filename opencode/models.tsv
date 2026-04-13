@@ -1,11 +1,11 @@
 # agent_name	model
 # "model" と "small_model" はトップレベルの設定
-model	opencode/mimo-v2-pro-free
+model	opencode-go/glm-5.1
 small_model	openai/gpt-5.4-mini
 # primary
-idea	anthropic/claude-opus-4-6
-spec	opencode/kimi-k2.5
-fast	opencode/kimi-k2.5
+idea	opencode-go/minimax-m2.7
+spec	opencode-go/mimo-v2-pro
+fast	opencode-go/kimi-k2.5
 review	openai/gpt-5.4
 # sub
 explore	github-copilot/grok-code-fast-1

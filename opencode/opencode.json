@@ -26,7 +26,7 @@
     ]
   },
   "autoupdate": true,
-  "model": "opencode/mimo-v2-pro-free",
+  "model": "opencode-go/glm-5.1",
   "small_model": "openai/gpt-5.4-mini",
   "mcp": {
     "chrome-devtools": {
@@ -58,7 +58,7 @@
   "agent": {
     "fast": {
       "mode": "primary",
-      "model": "opencode/kimi-k2.5",
+      "model": "opencode-go/kimi-k2.5",
       "description": "Primary agent for small, focused implementation tasks: function creation/modification, lint fixes, type error fixes, and minor refactors. Implements changes itself without delegating to execute.",
       "permission": {
         "task": {
@@ -105,7 +105,7 @@
     },
     "spec": {
       "mode": "primary",
-      "model": "opencode/kimi-k2.5",
+      "model": "opencode-go/mimo-v2-pro",
       "description": "Primary agent for implementation planning and execution. Clarifies requirements through dialogue, creates a draft plan reviewed by plan_review, gets user confirmation, then delegates tasks to execute in parallel.",
       "permission": {
         "task": {
@@ -215,7 +215,7 @@
     },
     "idea": {
       "mode": "primary",
-      "model": "anthropic/claude-opus-4-6",
+      "model": "opencode-go/minimax-m2.7",
       "description": "Primary agent for collaborative ideation and specification design. Helps the user explore approaches and concretize ideas through dialogue. Does not create implementation plans. Uses internet_search when external knowledge is needed.",
       "permission": {
         "task": {
