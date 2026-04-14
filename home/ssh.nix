@@ -21,6 +21,10 @@ in
   programs.ssh = {
     enable = true;
 
+    extraConfig = ''
+      Include ~/.ssh/config.d/accounts
+    '';
+
     matchBlocks = {
       "github.com" = mkGitHubBlock "~/.ssh/id_ed25519";
     }
