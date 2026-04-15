@@ -14,10 +14,14 @@ CSV_FILE="${SCRIPT_DIR}/accounts.csv"
 echo "== アカウント設定の生成 =="
 
 clear_account_settings() {
-    # 既存のアカウント設定をクリア
     rm -rf "$HOME/.config/git/accounts"
-    rm -f "$HOME/.config/git/accounts.include"
+    mkdir -p "$HOME/.config/git"
+    : > "$HOME/.config/git/accounts.include"
     rm -f "$HOME/.ssh/config.d/accounts"
+    # 生成途中の一時ファイルもクリア
+    rm -rf "$HOME/.config/git/accounts.new"
+    rm -f "$HOME/.config/git/accounts.include.new"
+    rm -f "$HOME/.ssh/config.d/accounts.new"
     echo "既存のアカウント設定をクリアしました。"
 }
 
