@@ -204,26 +204,7 @@ GIT_TARGET_DIR="${HOME}/.config/git"
 
 link_git_ignore_and_configure() {
   link_file_to "ignore" "${GIT_SOURCE_DIR}" "${GIT_TARGET_DIR}"
-
-  local previous_value
-  previous_value="$(git config --global --get core.excludesfile 2>/dev/null || true)"
-  if [[ -n "${previous_value}" && "${previous_value}" != "${GIT_TARGET_DIR}/ignore" ]]; then
-    echo "バックアップ: core.excludesfile の既存値 (global)=${previous_value}"
-    echo "復旧コマンド: git config --global core.excludesfile \"${previous_value}\""
-  elif [[ -z "${previous_value}" ]]; then
-    echo "バックアップ: core.excludesfile は未設定 (global)"
-    echo "復旧コマンド: git config --global --unset core.excludesfile"
-  fi
-
-  git config --global core.excludesfile "${GIT_TARGET_DIR}/ignore"
-
-  local configured
-  configured="$(git config --global --get core.excludesfile)"
-  if [[ "${configured}" != "${GIT_TARGET_DIR}/ignore" ]]; then
-    echo "エラー: core.excludesfile の設定確認に失敗しました。" >&2
-    exit 1
-  fi
-  echo "確認: git config --global --get core.excludesfile => ${configured}"
+  echo "core.excludesfile の設定は Nix (home-manager switch) で管理されます。ステップ2の実行で反映されます。"
 }
 
 link_git_ignore_and_configure

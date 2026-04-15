@@ -86,7 +86,7 @@ ssh -T git@github.com
 
 5. **git global ignore の設定**
    - `git/ignore` -> `~/.config/git/ignore`
-   - `git config --global core.excludesfile` の設定
+   - `core.excludesfile` の値は Nix（`home/default.nix` の `programs.git.settings`）で管理
 
 6. **シェルエイリアスのシンボリックリンク**
    - `shell/aliases` -> `~/.config/shell/aliases`
