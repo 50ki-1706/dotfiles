@@ -8,6 +8,10 @@
   programs.git = {
     enable = true;
 
+    signing = {
+      format = "ssh";
+    };
+
     settings = {
       core = {
         excludesFile = "~/.config/git/ignore";
