@@ -20,12 +20,14 @@ in
 {
   programs.ssh = {
     enable = true;
+    enableDefaultConfig = false;
 
     extraConfig = ''
       Include ~/.ssh/config.d/accounts
     '';
 
     matchBlocks = {
+      "*" = {};
       "github.com" = mkGitHubBlock "~/.ssh/id_ed25519";
     }
     // lib.mapAttrs' (
