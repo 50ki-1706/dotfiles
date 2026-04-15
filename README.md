@@ -135,6 +135,19 @@ cp accounts.csv.example accounts.csv
 
 4. 出力された公開鍵を対応するGitHubアカウントに登録
 
+### 補足（includeIf の挙動について）
+
+`includeIf gitdir:~/Dev/{dir}/` は、Git リポジトリの作業ディレクトリがそのパスに含まれているときにだけ設定を切り替えます。
+単にディレクトリに `cd` しただけでは切り替わらず、対象ディレクトリ内で `git init` または `git clone` して初めて有効になります。
+
+```sh
+# 例: work アカウントの切り替えを有効にする
+cd ~/Dev/work
+git init
+git config user.name   # → Koki Work
+git config user.email  # → koki@work.example.com
+```
+
 ## 関連ファイル
 
 - [install.sh](install.sh)
