@@ -58,10 +58,8 @@ pkgs.writeShellApplication {
 
     if [ -n "$account" ]; then
       key_path="''${key_path:-$HOME/.ssh/id_ed25519_$account}"
-      test_host="github.com-$account"
     else
       key_path="''${key_path:-$HOME/.ssh/id_ed25519}"
-      test_host="github.com"
     fi
 
     mkdir -p "$HOME/.ssh"
@@ -83,6 +81,10 @@ pkgs.writeShellApplication {
     echo
     echo "Next:"
     echo "  1. Add the public key to GitHub or your Git server"
-    echo "  2. Test with: ssh -T git@$test_host"
+    if [ -n "$account" ]; then
+      echo "  2. Test with: ssh -i $key_path -o IdentitiesOnly=yes -T git@github.com"
+    else
+      echo "  2. Test with: ssh -T git@github.com"
+    fi
   '';
 }

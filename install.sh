@@ -29,7 +29,6 @@ parse_accounts() {
     local csv_file="$1"
     local git_accounts_tmp="$HOME/.config/git/accounts.new"
     local git_include_tmp="$HOME/.config/git/accounts.include.new"
-    local ssh_accounts_tmp="$HOME/.ssh/config.d/accounts.new"
 
     if [[ ! -f "$csv_file" ]]; then
         echo "accounts.csv が見つかりません。"
@@ -46,16 +45,13 @@ parse_accounts() {
 
     # 一時生成先の親ディレクトリのみ作成（既存設定はまだ消さない）
     mkdir -p "$HOME/.config/git"
-    mkdir -p "$HOME/.ssh/config.d"
 
     # 前回失敗時の一時生成物を削除
     rm -rf "$git_accounts_tmp"
     rm -f "$git_include_tmp"
-    rm -f "$ssh_accounts_tmp"
 
     mkdir -p "$git_accounts_tmp"
     : > "$git_include_tmp"
-    : > "$ssh_accounts_tmp"
 
     local account_count=0
     local line_no=0
@@ -88,7 +84,7 @@ parse_accounts() {
             if [[ "$comma_count" -ne 1 ]]; then
                 echo "エラー: ${line_no}行目はデフォルトアカウントとして name,email の2項目が必要です。" >&2
                 rm -rf "$git_accounts_tmp"
-                rm -f "$git_include_tmp" "$ssh_accounts_tmp"
+                rm -f "$git_include_tmp"
                 return 1
             fi
             name="$(printf '%s' "$trimmed" | cut -d',' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
@@ -100,7 +96,7 @@ parse_accounts() {
             if [[ "$comma_count" -ne 2 ]]; then
                 echo "エラー: ${line_no}行目は追加アカウントとして name,email,dir の3項目が必要です。" >&2
                 rm -rf "$git_accounts_tmp"
-                rm -f "$git_include_tmp" "$ssh_accounts_tmp"
+                rm -f "$git_include_tmp"
                 return 1
             fi
             name="$(printf '%s' "$trimmed" | cut -d',' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
@@ -113,7 +109,7 @@ parse_accounts() {
         if [[ -z "$name" || -z "$email" ]]; then
             echo "エラー: ${line_no}行目の name または email が空です。" >&2
             rm -rf "$git_accounts_tmp"
-            rm -f "$git_include_tmp" "$ssh_accounts_tmp"
+            rm -f "$git_include_tmp"
             return 1
         fi
 
@@ -122,13 +118,13 @@ parse_accounts() {
             if [[ -z "$dir" ]] || [[ ! "$dir" =~ ^[a-zA-Z0-9_-]+$ ]]; then
                 echo "エラー: ${line_no}行目の dir が不正です（許可: 英数字/アンダースコア/ハイフン）。" >&2
                 rm -rf "$git_accounts_tmp"
-                rm -f "$git_include_tmp" "$ssh_accounts_tmp"
+                rm -f "$git_include_tmp"
                 return 1
             fi
             if [[ "$seen_dirs" == *"|$dir|"* ]]; then
                 echo "エラー: ${line_no}行目の dir '${dir}' が重複しています。" >&2
                 rm -rf "$git_accounts_tmp"
-                rm -f "$git_include_tmp" "$ssh_accounts_tmp"
+                rm -f "$git_include_tmp"
                 return 1
             fi
             seen_dirs+="${dir}|"
@@ -141,8 +137,7 @@ parse_accounts() {
         generate_gitconfig "$name" "$email" "$dir" "$is_default" "$git_accounts_tmp" "$git_include_tmp"
 
         if [[ "$is_default" == false ]]; then
-            # 追加アカウントのみ SSH Match と SSH 鍵を生成
-            generate_ssh_match "$dir" "$ssh_accounts_tmp"
+            # 追加アカウントのみ SSH 鍵を生成
             check_and_create_ssh_key "$email" "$dir"
         fi
 
@@ -159,7 +154,6 @@ parse_accounts() {
     # 原子的置換: 既存を消してから new を本番名へリネーム
     rm -rf "$HOME/.config/git/accounts"
     rm -f "$HOME/.config/git/accounts.include"
-    rm -f "$HOME/.ssh/config.d/accounts"
 
     if ! mv "$git_accounts_tmp" "$HOME/.config/git/accounts"; then
         echo "エラー: $git_accounts_tmp を $HOME/.config/git/accounts へリネームできませんでした。" >&2
@@ -167,10 +161,6 @@ parse_accounts() {
     fi
     if ! mv "$git_include_tmp" "$HOME/.config/git/accounts.include"; then
         echo "エラー: $git_include_tmp を $HOME/.config/git/accounts.include へリネームできませんでした。" >&2
-        return 1
-    fi
-    if ! mv "$ssh_accounts_tmp" "$HOME/.ssh/config.d/accounts"; then
-        echo "エラー: $ssh_accounts_tmp を $HOME/.ssh/config.d/accounts へリネームできませんでした。" >&2
         return 1
     fi
 
@@ -192,16 +182,9 @@ generate_gitconfig() {
     else
         # 追加アカウントはディレクトリ条件付き include
         printf '[user]\n    name = %s\n    email = %s\n' "$name" "$email" > "$accounts_dir/$dir.gitconfig"
+        printf '[core]\n    sshCommand = ssh -i ~/.ssh/id_ed25519_%s -o IdentitiesOnly=yes\n' "$dir" >> "$accounts_dir/$dir.gitconfig"
         printf '[includeIf "gitdir:~/Dev/%s/"]\n    path = ~/.config/git/accounts/%s.gitconfig\n' "$dir" "$dir" >> "$include_file"
     fi
-}
-
-generate_ssh_match() {
-    local dir="$1"
-    local ssh_accounts_file="$2"
-
-    # SSH Matchブロックを生成
-    printf 'Match host github.com exec "pwd | grep -qE \x27^%s/Dev/%s(/|$)\x27"\n    IdentityFile ~/.ssh/id_ed25519_%s\n' "$HOME" "$dir" "$dir" >> "$ssh_accounts_file"
 }
 
 check_and_create_ssh_key() {
