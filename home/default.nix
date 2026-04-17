@@ -5,6 +5,32 @@
     ./ssh.nix
   ];
 
+  programs.zsh = {
+    enable = true;
+    initContent = lib.mkMerge [
+      (lib.mkOrder 1000 ''
+        if [[ -f ~/.config/shell/aliases ]]; then
+          source ~/.config/shell/aliases
+        fi
+      '')
+      (lib.mkOrder 1500 ''
+        if [[ -f ~/.zshrc.local ]]; then
+          source ~/.zshrc.local
+        fi
+      '')
+    ];
+  };
+
+  programs.mise = {
+    enable = true;
+    enableZshIntegration = true;
+  };
+
+  programs.starship = {
+    enable = true;
+    enableZshIntegration = true;
+  };
+
   programs.git = {
     enable = true;
 
