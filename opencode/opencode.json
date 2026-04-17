@@ -105,7 +105,7 @@
     },
     "spec": {
       "mode": "primary",
-      "model": "opencode-go/mimo-v2-pro",
+      "model": "opencode-go/glm-5.1",
       "description": "Primary agent for implementation planning and execution. Clarifies requirements through dialogue, creates a draft plan reviewed by plan_review, gets user confirmation, then delegates tasks to execute in parallel.",
       "permission": {
         "task": {
@@ -215,7 +215,7 @@
     },
     "idea": {
       "mode": "primary",
-      "model": "opencode-go/minimax-m2.7",
+      "model": "opencode-go/qwen3.6-plus",
       "description": "Primary agent for collaborative ideation and specification design. Helps the user explore approaches and concretize ideas through dialogue. Does not create implementation plans. Uses internet_search when external knowledge is needed.",
       "permission": {
         "task": {
