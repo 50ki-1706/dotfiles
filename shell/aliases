@@ -36,3 +36,82 @@
 # alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
 
 alias oc='OPENCODE_ENABLE_EXA=1 opencode'
+
+# --- アカウント別 git clone ---
+# Usage: agclone <dir> <url> [<path>]
+#   dir: accounts.csv のディレクトリ名（例: startgear）
+#   url: SSH URL（git@... または ssh://... のみ対応）
+#   path: clone先（省略時は ~/Dev/<dir>/<repo名>）
+#        相対パスはカレントディレクトリ基準で解決後、
+#        ~/Dev/<dir>/ 配下のみ許可。通常は省略を推奨。
+agclone() {
+  local dir="$1"
+  local url="$2"
+  local target="$3"
+  if [[ -z "$dir" || -z "$url" ]]; then
+    echo "Usage: agclone <dir> <url> [<path>]" >&2
+    echo "  dir: accounts.csv のディレクトリ名 (例: startgear)" >&2
+    echo "  url: SSH URL (例: git@github.com:owner/repo.git)" >&2
+    return 1
+  fi
+  # Intent: dir は英数字/ハイフン/アンダースコアのみ（accounts.csv と同じ制約）
+  if [[ ! "$dir" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    echo "エラー: dir は英数字、ハイフン、アンダースコアのみ使用できます" >&2
+    return 1
+  fi
+  if [[ "$url" != git@* && "$url" != ssh://* ]]; then
+    echo "エラー: agclone はSSH URL専用です" >&2
+    return 1
+  fi
+  # Intent: dest_base を可能な限り canonical path に解決（symlink 経由の脱出を防ぐ）
+  local dev_real dest_base
+  if [[ -d "${HOME}/Dev/${dir}" ]]; then
+    dest_base="$(cd "${HOME}/Dev/${dir}" && pwd -P)"
+  elif [[ -d "${HOME}/Dev" ]]; then
+    dev_real="$(cd "${HOME}/Dev" && pwd -P)"
+    dest_base="${dev_real}/${dir}"
+  else
+    local home_real
+    home_real="$(cd && pwd -P)"
+    dest_base="${home_real}/Dev/${dir}"
+  fi
+  if [[ -z "$target" ]]; then
+    target="${dest_base}/$(basename "$url" .git)"
+  fi
+  # Intent: 既存ファイルや symlink を拒否（git clone も失敗するため安全な早期エラー）
+  if [[ -e "$target" || -L "$target" ]]; then
+    echo "エラー: clone先が既に存在します: $target" >&2
+    return 1
+  fi
+  # Intent: パストラバーサルを防ぐため .. を拒否
+  if [[ "$target" == *"/../"* || "$target" == "../"* || "$target" == *"/.." ]]; then
+    echo "エラー: パスに .. を含めることはできません" >&2
+    return 1
+  fi
+  # Intent: abs_target を可能な限り canonical path に解決して検証
+  local abs_target
+  local target_dir
+  target_dir="$(dirname "$target")"
+  if [[ -d "$target_dir" ]]; then
+    abs_target="$(cd "$target_dir" && pwd -P)/$(basename "$target")"
+  else
+    # Intent: 親が未存在の場合は最も近い既存祖先まで辿って解決
+    local walk="$target_dir"
+    local remaining=""
+    while [[ ! -d "$walk" ]] && [[ "$walk" != "/" ]]; do
+      remaining="/$(basename "$walk")${remaining}"
+      walk="$(dirname "$walk")"
+    done
+    if [[ -d "$walk" ]]; then
+      abs_target="$(cd "$walk" && pwd -P)${remaining}/$(basename "$target")"
+    else
+      abs_target="$target"
+    fi
+  fi
+  if [[ "$abs_target" != "${dest_base}" && "$abs_target" != "${dest_base}/"* ]]; then
+    echo "エラー: clone先は ~/Dev/${dir}/ 配下にしてください" >&2
+    return 1
+  fi
+  mkdir -p "$target_dir"
+  git -c core.sshCommand="ssh -i ~/.ssh/id_ed25519_${dir} -o IdentitiesOnly=yes" clone "$url" "$target"
+}
