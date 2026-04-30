@@ -8,8 +8,8 @@
     ]
   },
   "autoupdate": true,
-  "model": "opencode-go/glm-5.1",
-  "small_model": "openai/gpt-5.4-mini",
+  "model": "openai/gpt-5.4-fast",
+  "small_model": "openai/gpt-5.4-mini-fast",
   "mcp": {
     "chrome-devtools": {
       "type": "local",
@@ -40,7 +40,7 @@
   "agent": {
     "fast": {
       "mode": "primary",
-      "model": "opencode-go/kimi-k2.5",
+      "model": "opencode-go/kimi-k2.6",
       "description": "Primary agent for small, focused implementation tasks: function creation/modification, lint fixes, type error fixes, and minor refactors. Implements changes itself without delegating to execute.",
       "permission": {
         "task": {
@@ -87,7 +87,7 @@
     },
     "spec": {
       "mode": "primary",
-      "model": "opencode-go/glm-5.1",
+      "model": "opencode-go/deepseek-v4-pro",
       "description": "Primary agent for implementation planning and execution. Clarifies requirements through dialogue, creates a draft plan reviewed by plan_review, gets user confirmation, then delegates tasks to execute in parallel.",
       "permission": {
         "task": {
@@ -175,7 +175,7 @@
     },
     "explore": {
       "mode": "subagent",
-      "model": "github-copilot/grok-code-fast-1",
+      "model": "openai/gpt-5.4-mini",
       "description": "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.",
       "permission": {
         "task": {
@@ -197,7 +197,7 @@
     },
     "idea": {
       "mode": "primary",
-      "model": "opencode-go/qwen3.6-plus",
+      "model": "opencode-go/deepseek-v4-flash",
       "description": "Primary agent for collaborative ideation and specification design. Helps the user explore approaches and concretize ideas through dialogue. Does not create implementation plans. Uses internet_search when external knowledge is needed.",
       "permission": {
         "task": {
@@ -232,7 +232,7 @@
     },
     "execute": {
       "mode": "subagent",
-      "model": "openai/gpt-5.3-codex",
+      "model": "openai/gpt-5.4-mini-fast",
       "description": "Implementation subagent activated by spec to implement a specific delegated task. Reports STATUS (IN_PROGRESS / FAIL / COMPLETE) at each checkpoint. May create, edit, and delete files only within the delegated task scope.",
       "permission": {
         "task": {
