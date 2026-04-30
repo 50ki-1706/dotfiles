@@ -1,23 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "opencode-claude-auth"
-  ],
-  "provider": {
-    "sakura": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Sakura AI Engine",
-      "options": {
-        "baseURL": "{env:SAKURA_BASE_URL}",
-        "apiKey": "{env:SAKURA_API_KEY}"
-      },
-      "models": {
-        "preview/kimi-k2.5": {
-          "tools": true
-        }
-      }
-    }
-  },
   "watcher": {
     "ignore": [
       "node_modules/**",
