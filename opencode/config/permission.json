@@ -1,18 +1,22 @@
 {
   "permission": {
+    "read": {
+      "*": "allow",
+      ".env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "*.key": "deny",
+      "*.pem": "deny",
+      "id_rsa*": "deny"
+    },
     "bash": {
       "*": "ask",
       "sudo *": "deny",
       "rm -rf *": "deny",
-      "git push --force*": "deny",
-      "git status*": "allow",
-      "git diff*": "allow",
-      "npm test*": "allow",
-      "pytest*": "allow",
-      "go test*": "allow",
-      "pnpm test*": "allow",
-      "cargo test*": "allow",
-      "make test*": "allow"
+      "curl * | sh": "deny",
+      "wget * | sh": "deny",
+      "git reset --hard *": "deny",
+      "git clean -fdx *": "deny"
     }
   }
 }

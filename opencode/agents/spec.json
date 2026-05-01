@@ -10,6 +10,7 @@
         "explore": "allow",
         "deep_explore": "allow",
         "execute": "allow",
+        "inspect": "allow",
         "plan_review": "allow"
       },
       "bash": {

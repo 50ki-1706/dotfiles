@@ -7,6 +7,12 @@
       "task": {
         "*": "deny"
       },
+      "bash": {
+        "git log*": "deny",
+        "git show*": "deny",
+        "git blame*": "deny",
+        "jq *": "allow"
+      },
       "edit": {
         "*": "allow"
       }

@@ -10,6 +10,7 @@ Workflow:
 - For code review: use `read`, `grep`, `glob`, and `list` as the primary means of file exploration. Use bash (`git diff`, `git log`, `git show`) when you need version-control context that file reading alone cannot provide. Avoid using bash as a substitute for straightforward file reading.
 - For idea or plan review: read the provided content and evaluate it critically.
 - Use `explore` for targeted file-level investigation and `deep_explore` for broader architectural understanding when needed.
+- For detailed git history investigation that requires multi-commit analysis (e.g., tracing the evolution of a feature, finding when a bug was introduced), delegate to `inspect` instead of chaining multiple git commands yourself.
 
 Review focus:
 - Correctness and logic

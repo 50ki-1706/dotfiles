@@ -23,19 +23,23 @@
     }
   },
   "permission": {
+    "read": {
+      "*": "allow",
+      ".env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "*.key": "deny",
+      "*.pem": "deny",
+      "id_rsa*": "deny"
+    },
     "bash": {
       "*": "ask",
       "sudo *": "deny",
       "rm -rf *": "deny",
-      "git push --force*": "deny",
-      "git status*": "allow",
-      "git diff*": "allow",
-      "npm test*": "allow",
-      "pytest*": "allow",
-      "go test*": "allow",
-      "pnpm test*": "allow",
-      "cargo test*": "allow",
-      "make test*": "allow"
+      "curl * | sh": "deny",
+      "wget * | sh": "deny",
+      "git reset --hard *": "deny",
+      "git clean -fdx *": "deny"
     }
   },
   "agent": {
@@ -73,6 +77,12 @@
       "permission": {
         "task": {
           "*": "deny"
+        },
+        "bash": {
+          "git log*": "deny",
+          "git show*": "deny",
+          "git blame*": "deny",
+          "jq *": "allow"
         },
         "edit": {
           "*": "allow"
@@ -114,7 +124,8 @@
         "task": {
           "*": "deny",
           "internet_search": "allow",
-          "explore": "allow"
+          "explore": "allow",
+          "inspect": "allow"
         },
         "edit": {
           "*": "allow"
@@ -166,7 +177,8 @@
         "task": {
           "*": "deny",
           "internet_search": "allow",
-          "explore": "allow"
+          "explore": "allow",
+          "inspect": "allow"
         },
         "bash": {
           "*": "deny"
@@ -191,6 +203,34 @@
       "tools": {
         "websearch": false,
         "webfetch": false
+      }
+    },
+    "inspect": {
+      "mode": "subagent",
+      "model": "openai/gpt-5.4-mini",
+      "description": "Git history inspection subagent. Activated by a primary agent when git history inspection (diff, log, show, status, blame) is needed. Read-only and git-only — no file access, no edits.",
+      "permission": {
+        "task": {
+          "*": "deny"
+        },
+        "bash": {
+          "*": "deny",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "git status*": "allow",
+          "git blame*": "allow"
+        },
+        "edit": {
+          "*": "deny"
+        },
+        "read": {
+          "*": "deny"
+        }
+      },
+      "prompt": "{file:./prompts/inspect.md}",
+      "tools": {
+        "question": false
       }
     },
     "internet_search": {
@@ -272,7 +312,8 @@
         "task": {
           "*": "deny",
           "explore": "allow",
-          "deep_explore": "allow"
+          "deep_explore": "allow",
+          "inspect": "allow"
         },
         "bash": {
           "*": "deny",
@@ -301,6 +342,7 @@
           "explore": "allow",
           "deep_explore": "allow",
           "execute": "allow",
+          "inspect": "allow",
           "plan_review": "allow"
         },
         "bash": {

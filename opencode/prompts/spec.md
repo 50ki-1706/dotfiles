@@ -24,6 +24,7 @@ Workflow:
 Engage in dialogue with the user to fully understand the request.
 Ask questions as needed until the scope, goal, and constraints are clear.
 Use `explore` or `deep_explore` for repository investigation, and `internet_search` for external knowledge when needed.
+Use `inspect` for git history investigation (diff, log, show, status, blame).
 
 ## Phase 2 — Draft Plan + plan_review (MANDATORY SUBAGENT CALL)
 
