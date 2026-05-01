@@ -56,15 +56,15 @@ cat ~/.ssh/id_ed25519.pub
 ssh -T git@github.com
 ```
 
-### 6. dotfiles の配置（install.sh）
+### 6. dotfiles の配置（scripts/install.sh）
 
-リポジトリのルートで `install.sh` を実行すると、各設定ファイルが配置されます。
+リポジトリのルートで `scripts/install.sh` を実行すると、各設定ファイルが配置されます。
 
 ```bash
-./install.sh
+./scripts/install.sh
 ```
 
-`install.sh` は以下の処理を順番に実行します。
+`scripts/install.sh` は以下の処理を順番に実行します。
 
 1. **アカウント設定の生成**（accounts.csv がある場合）
    - `~/Dev/{DIR}/`: 各アカウントの作業ディレクトリ（自動作成）
@@ -124,13 +124,13 @@ cp accounts.csv.example accounts.csv
 
 2. 自分のアカウント情報に書き換える
 
-3. `install.sh` を再実行
+3. `scripts/install.sh` を再実行
 
 ```sh
-./install.sh
+./scripts/install.sh
 ```
 
-`install.sh` が自動的に以下を処理します：
+`scripts/install.sh` が自動的に以下を処理します：
 - 作業ディレクトリ（`~/Dev/{DIR}/`）の作成
 - SSH鍵（`~/.ssh/id_ed25519_{DIR}`）の作成と公開鍵の出力
 - Git設定の生成（`[user]` と `[core] sshCommand` を含む）
@@ -177,6 +177,6 @@ git config core.sshCommand  # → ssh -i ~/.ssh/id_ed25519_work -o IdentitiesOnl
 
 ## 関連ファイル
 
-- [install.sh](install.sh)
+- [scripts/install.sh](scripts/install.sh)
 - [accounts.csv.example](accounts.csv.example)
 - [opencode/README.md](opencode/README.md)
