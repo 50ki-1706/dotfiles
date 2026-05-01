@@ -2,8 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CSV_FILE="${SCRIPT_DIR}/settings/models.csv"
-JSON_FILE="${SCRIPT_DIR}/../opencode/opencode.json"
+CSV_FILE="${SCRIPT_DIR}/../settings/models.csv"
+JSON_FILE="${SCRIPT_DIR}/../../opencode/opencode.json"
 
 if [[ ! -f "$CSV_FILE" ]]; then
   echo "Error: $CSV_FILE not found" >&2
