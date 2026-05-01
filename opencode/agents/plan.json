@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "mode": "subagent",
+    "hidden": true,
+    "disable": true
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "spec": {
+    "mode": "primary",
+    "model": "opencode-go/deepseek-v4-pro",
+    "description": "Primary agent for implementation planning and execution. Clarifies requirements through dialogue, creates a draft plan reviewed by plan_review, gets user confirmation, then delegates tasks to execute in parallel.",
+    "permission": {
+      "task": {
+        "*": "deny",
+        "internet_search": "allow",
+        "explore": "allow",
+        "deep_explore": "allow",
+        "execute": "allow",
+        "plan_review": "allow"
+      },
+      "bash": {
+        "*": "deny"
+      },
+      "edit": {
+        "*": "deny"
+      },
+      "read": {
+        "*": "deny"
+      },
+      "grep": {
+        "*": "deny"
+      },
+      "glob": {
+        "*": "deny"
+      },
+      "list": {
+        "*": "deny"
+      }
+    },
+    "prompt": "{file:./prompts/spec.md}",
+    "tools": {
+      "websearch": false,
+      "webfetch": false,
+      "question": true,
+      "todowrite": true
+    }
+  }
+}

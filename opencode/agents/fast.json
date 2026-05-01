@@ -1,0 +1,49 @@
+{
+  "fast": {
+    "mode": "primary",
+    "model": "opencode-go/deepseek-v4-flash",
+    "description": "Primary agent for small, focused implementation tasks: function creation/modification, lint fixes, type error fixes, and minor refactors. Implements changes itself without delegating to execute.",
+    "permission": {
+      "task": {
+        "*": "deny",
+        "internet_search": "allow",
+        "explore": "allow"
+      },
+      "edit": {
+        "*": "allow"
+      },
+      "read": {
+        "*": "deny"
+      },
+      "write": {
+        "*": "allow"
+      },
+      "grep": {
+        "*": "deny"
+      },
+      "glob": {
+        "*": "deny"
+      },
+      "list": {
+        "*": "deny"
+      },
+      "bash": {
+        "cat *": "deny",
+        "head *": "deny",
+        "tail *": "deny",
+        "sed *": "deny",
+        "awk *": "deny",
+        "grep *": "deny",
+        "rg *": "deny",
+        "find *": "deny",
+        "ls": "deny",
+        "ls *": "deny",
+        "git diff*": "deny",
+        "git log*": "deny",
+        "git show*": "deny",
+        "git blame*": "deny"
+      }
+    },
+    "prompt": "{file:./prompts/fast.md}"
+  }
+}

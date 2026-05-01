@@ -1,0 +1,20 @@
+{
+  "execute": {
+    "mode": "subagent",
+    "model": "openai/gpt-5.4-mini-fast",
+    "description": "Implementation subagent activated by spec to implement a specific delegated task. Reports STATUS (IN_PROGRESS / FAIL / COMPLETE) at each checkpoint. May create, edit, and delete files only within the delegated task scope.",
+    "permission": {
+      "task": {
+        "*": "deny"
+      },
+      "edit": {
+        "*": "allow"
+      }
+    },
+    "prompt": "{file:./prompts/execute.md}",
+    "hidden": true,
+    "tools": {
+      "question": false
+    }
+  }
+}

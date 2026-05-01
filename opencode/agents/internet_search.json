@@ -1,0 +1,36 @@
+{
+  "internet_search": {
+    "mode": "subagent",
+    "model": "openai/gpt-5.4-mini",
+    "description": "Web research subagent. Activated by a primary agent when the latest library specifications, API documentation, or coding conventions cannot be answered from the local repository. Can only perform web searches — no file access or local operations.",
+    "permission": {
+      "task": {
+        "*": "deny"
+      },
+      "bash": {
+        "*": "deny"
+      },
+      "edit": {
+        "*": "deny"
+      },
+      "read": {
+        "*": "deny"
+      },
+      "grep": {
+        "*": "deny"
+      },
+      "glob": {
+        "*": "deny"
+      },
+      "list": {
+        "*": "deny"
+      }
+    },
+    "prompt": "{file:./prompts/internet_search.md}",
+    "tools": {
+      "websearch": true,
+      "webfetch": true,
+      "question": false
+    }
+  }
+}

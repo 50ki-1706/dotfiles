@@ -1,0 +1,9 @@
+{
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".git/**"
+    ]
+  }
+}

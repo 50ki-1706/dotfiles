@@ -1,0 +1,18 @@
+{
+  "permission": {
+    "bash": {
+      "*": "ask",
+      "sudo *": "deny",
+      "rm -rf *": "deny",
+      "git push --force*": "deny",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "npm test*": "allow",
+      "pytest*": "allow",
+      "go test*": "allow",
+      "pnpm test*": "allow",
+      "cargo test*": "allow",
+      "make test*": "allow"
+    }
+  }
+}

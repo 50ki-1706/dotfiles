@@ -31,75 +31,77 @@
 
 ```
 opencode/
-├── opencode.json      # メイン設定ファイル（エージェント定義・モデル・プロンプト）
-├── models.tsv         # エージェントごとのモデル設定（TSV形式）
-├── prompts/           # エージェントごとのプロンプトファイル（Markdown）
-├── AGENTS.md          # エージェントの行動ポリシー定義
-├── sync_models.sh     # models.tsv → opencode.json へモデル設定を同期
-└── sync_prompts.sh    # prompts/*.md → opencode.json へプロンプトを同期
+├── opencode.json        # 生成物（scripts/opencode/sync.sh で自動生成）
+├── config/
+│   ├── base.json         # スキーマ・モデル・デフォルトエージェント設定
+│   ├── watcher.json      # ファイル監視の除外パターン
+│   ├── mcp.json           # MCP サーバー定義
+│   └── permission.json    # グローバル権限ルール
+├── agents/
+│   ├── fast.json          # 小規模実装用エージェント
+│   ├── spec.json          # 実装計画・実行管理エージェント
+│   ├── review.json        # コードレビューエージェント
+│   ├── idea.json          # アイデア整理エージェント
+│   ├── deep_explore.json   # 広範囲コードベース調査サブエージェント
+│   ├── explore.json       # 局所コード調査サブエージェント
+│   ├── execute.json       # 実装サブエージェント
+│   ├── internet_search.json # Web 検索サブエージェント
+│   ├── plan_review.json   # 計画レビューサブエージェント
+│   ├── build.json         # 無効化済みエージェント
+│   ├── plan.json          # 無効化済みエージェント
+│   └── general.json       # 無効化済みエージェント
+├── prompts/              # エージェントごとのプロンプトファイル（Markdown）
+└── AGENTS.md             # エージェントの行動ポリシー定義
+
+scripts/opencode/
+└── sync.sh               # 分割ファイル → opencode.json 統合スクリプト
 ```
 
-## sync_models.sh
+### 分割ファイルのルール
 
-`models.tsv` に記述したモデル名を `opencode.json` に同期するスクリプト。
+- `config/` ディレクトリ: トップレベルキーごとに分割。重複するキーは禁止。
+- `agents/` ディレクトリ: 1ファイルにつき1エージェント。ファイル名とJSON内のキー名が一致している必要がある（例: `fast.json` → `{"fast": {...}}`）。
+- `opencode.json` は `scripts/opencode/sync.sh` で生成されるため、直接編集しない。
+
+## scripts/opencode/sync.sh
+
+`config/*.json` と `agents/*.json` を統合して `opencode.json` を生成するスクリプト。
 
 ### 使い方
 
 ```bash
 # 同期実行
-./sync_models.sh
-
-# 変更内容の確認のみ（ファイルへの書き込みなし）
-./sync_models.sh --dry-run
+./scripts/opencode/sync.sh
 ```
 
-### models.tsv の書式
+### 挿入順
 
-タブ区切りの2カラム形式。`#` で始まる行はコメントとして無視される。
+1. `config/base.json` → `config/watcher.json` → `config/mcp.json` → `config/permission.json` の順で deep merge
+2. `agents/*.json` をアルファベット順で deep merge し、`agent` キー配下に配置
+3. 1 と 2 を deep merge して `opencode.json` を生成
 
-```tsv
-# agent_name	model
-model	anthropic/claude-sonnet-4-6      # トップレベルの model キー
-small_model	anthropic/claude-haiku-4-5   # トップレベルの small_model キー
-spec	anthropic/claude-opus-4-6          # agent.spec.model
-execute	opencode/kimi-k2.5             # agent.execute.model
-```
+### 検証
 
-`model` と `small_model` はトップレベルキーとして処理され、それ以外はすべて `.agent.<name>.model` として処理される。
+スクリプトは実行前に以下を検証する:
 
----
+- 各 `agents/*.json` がちょうど1つのトップレベルキーを持つこと
+- ファイル名とキー名が一致すること
+- `config/` ファイル間でトップレベルキーが重複していないこと
+- エージェント名が重複していないこと
 
-## sync_prompts.sh
-
-`prompts/` ディレクトリ内の Markdown ファイルから `## Prompt` セクションを抽出し、対応するエージェントの `prompt` フィールドを `opencode.json` に同期するスクリプト。
-
-### 使い方
-
-```bash
-./sync_prompts.sh
-```
-
-### prompts/*.md の書式
-
-ファイル名（拡張子なし）がエージェント名に対応する。`## Prompt` という見出し以降のテキストがプロンプト本文として抽出される。
-
-```markdown
-# spec エージェント
-
-（説明や備考など、自由に記述可）
-
-## Prompt
-
-ここに書いた内容が opencode.json の agent.spec.prompt に書き込まれる。
-```
-
-- `## Prompt` セクションが存在しないファイルはスキップされる
-- `opencode.json` に対応するエージェントキーが存在しないファイルもスキップされる
-- すべての更新は jq を1回だけ実行してアトミックに適用される
+生成後、出力が有効な JSON であることを検証し、一時ファイルから原子性をもって置換する。
 
 ### 依存関係
 
-両スクリプトとも `jq` が必要。
+`jq` が必要。
+
+```bash
+# Ubuntu/Debian
+sudo apt install jq
+
+# macOS
+brew install jq
+```
 
 ## 補足: OpenCode の環境変数参照
 
@@ -124,8 +126,3 @@ execute	opencode/kimi-k2.5             # agent.execute.model
 - 環境変数 `OPENCODE_ENABLE_EXA=1` が設定されている
 
 この前提が満たされていない環境では、`fast` / `spec` / `idea` から `internet_search` への委譲が失敗します。
-
-```bash
-# Ubuntu/Debian
-sudo apt install jq
-```

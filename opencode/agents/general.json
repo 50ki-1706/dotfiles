@@ -1,0 +1,7 @@
+{
+  "general": {
+    "mode": "subagent",
+    "hidden": true,
+    "disable": true
+  }
+}
