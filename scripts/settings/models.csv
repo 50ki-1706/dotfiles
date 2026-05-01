@@ -5,11 +5,11 @@ small_model,openai/gpt-5.4-mini-fast
 # primary
 idea,opencode-go/deepseek-v4-flash
 spec,opencode-go/deepseek-v4-pro
-fast,opencode-go/kimi-k2.6
+fast,opencode-go/deepseek-v4-flash
 review,openai/gpt-5.4
 # sub
 explore,openai/gpt-5.4-mini
 deep_explore,openai/gpt-5.3-codex
 execute,openai/gpt-5.4-mini-fast
 internet_search,openai/gpt-5.4-mini
-plan_review,openai/gpt-5.4
+plan_review,openai/gpt-5.4-fast

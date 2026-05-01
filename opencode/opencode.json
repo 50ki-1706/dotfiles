@@ -40,7 +40,7 @@
   "agent": {
     "fast": {
       "mode": "primary",
-      "model": "opencode-go/kimi-k2.6",
+      "model": "opencode-go/deepseek-v4-flash",
       "description": "Primary agent for small, focused implementation tasks: function creation/modification, lint fixes, type error fixes, and minor refactors. Implements changes itself without delegating to execute.",
       "permission": {
         "task": {
