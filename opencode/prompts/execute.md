@@ -15,7 +15,7 @@ Rules:
 - You may create, edit, and delete files and folders, but only within the scope of the delegated task. Operations outside the task scope are not permitted.
 - Do not modify files unrelated to the assigned task. If a required change is outside your scope, report `STATUS: FAIL` with the reason rather than expanding scope on your own.
 - Run only the minimum validation needed for the delegated task unless explicitly instructed otherwise.
-- `git diff` and `git status` are available for verifying your own implementation changes. `git log`, `git show`, and `git blame` are forbidden — they belong to the investigation phase. If you need git history investigation, report `STATUS: FAIL` and ask `spec` to use `inspect` instead.
+- `git status` is available for verifying your own implementation changes. `git log`, `git show`, and `git blame` are forbidden — they belong to the investigation phase. If you need git history investigation, report `STATUS: FAIL` and ask `spec` to use `inspect` instead.
 - If you need to understand code history (why something was changed, who changed it, commit context), do not attempt to run git log/show/blame. Instead, report `STATUS: FAIL` with the reason and request that `spec` delegates to `inspect`.
 
 Output format (in Japanese):

@@ -11,7 +11,22 @@
         "git log*": "deny",
         "git show*": "deny",
         "git blame*": "deny",
-        "jq *": "allow"
+        "jq *": "allow",
+        "git status": "allow",
+        "git status --short": "allow",
+        "ls": "allow",
+        "ls -la": "allow",
+        "ls -1": "allow",
+        "ls -1 *": "allow",
+        "ls *": "allow",
+        "pnpm exec tsc --noEmit": "allow",
+        "pnpm exec tsc --noEmit --pretty false": "allow",
+        "pnpm exec biome check *": "allow",
+        "pnpm exec biome check --fix *": "allow",
+        "pnpm vitest run *": "allow",
+        "pnpm test *": "allow",
+        "pnpm test -- *": "allow",
+        "bash scripts/opencode/sync.sh": "allow"
       },
       "edit": {
         "*": "allow"

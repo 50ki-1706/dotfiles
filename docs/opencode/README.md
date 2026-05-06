@@ -25,7 +25,7 @@
 | エージェント | 用途 | 許可コマンド |
 |---|---|---|
 | `inspect` | 調査段階: コード履歴の調査・原因分析 | `git diff`, `git log`, `git show`, `git status`, `git blame` |
-| `execute` | 実装チェック: 自身の変更確認・作業状態把握 | `git diff`, `git status` のみ（`git log`, `git show`, `git blame` は禁止） |
+| `execute` | 実装チェック: 自身の変更確認・作業状態把握 | `git status`, `git status --short` のみ |
 
 `execute` が履歴調査を必要とする場合は `spec` にエスカレーションし、`spec` が `inspect` に委譲する。
 
@@ -33,7 +33,7 @@
 
 - `idea`: 要件や方向性が曖昧な段階で、実装前のアイデア整理と仕様の具体化を支援する
 - `spec`: 仕様の明確化、実装計画、計画レビュー、承認取得、実装委譲までを担当する
-- `execute`: `spec` から渡された明確なタスクだけを実装する（`git diff` / `git status` は実装チェック用に使用可能、`git log` / `git show` / `git blame` は禁止。履歴調査が必要な場合は `inspect` を使用する）
+- `execute`: `spec` から渡された明確なタスクだけを実装する（`git status`, `git status --short` は実装チェック用に使用可能、`git log` / `git show` / `git blame` は禁止。履歴調査が必要な場合は `inspect` を使用する）
 - `plan_review`: `spec` が作成した計画の不備や曖昧さをレビューする
 - `fast`: ファイルと変更内容が明示されている小さな変更を素早く処理する
 - `review`: 実装結果や変更差分をレビューする
