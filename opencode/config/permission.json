@@ -17,6 +17,9 @@
       "wget * | sh": "deny",
       "git reset --hard *": "deny",
       "git clean -fdx *": "deny"
+    },
+    "skill": {
+      "*": "deny"
     }
   }
 }

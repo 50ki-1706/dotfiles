@@ -40,6 +40,9 @@
       "wget * | sh": "deny",
       "git reset --hard *": "deny",
       "git clean -fdx *": "deny"
+    },
+    "skill": {
+      "*": "deny"
     }
   },
   "agent": {
@@ -93,17 +96,23 @@
           "ls -1": "allow",
           "ls -1 *": "allow",
           "ls *": "allow",
-          "pnpm build": "allow",
+          "bash scripts/opencode/sync.sh": "allow",
           "pnpm dev": "allow",
-          "pnpm test": "allow",
-          "pnpm preview": "allow",
-          "pnpm format": "allow",
-          "pnpm lint": "allow",
+          "pnpm build": "allow",
+          "pnpm start": "allow",
           "pnpm check": "allow",
-          "bash scripts/opencode/sync.sh": "allow"
+          "pnpm format": "allow",
+          "pnpm typecheck": "allow",
+          "pnpm typecheck:go": "allow",
+          "pnpm test": "allow",
+          "pnpm test:run": "allow",
+          "pnpm verify": "allow"
         },
         "edit": {
           "*": "allow"
+        },
+        "skill": {
+          "verify": "allow"
         }
       },
       "prompt": "{file:./prompts/execute.md}",
@@ -285,11 +294,6 @@
         "question": false
       }
     },
-    "plan": {
-      "mode": "subagent",
-      "hidden": true,
-      "disable": true
-    },
     "plan_review": {
       "mode": "subagent",
       "model": "openai/gpt-5.4",
@@ -321,6 +325,11 @@
         "websearch": false,
         "webfetch": false
       }
+    },
+    "plan": {
+      "mode": "subagent",
+      "hidden": true,
+      "disable": true
     },
     "review": {
       "mode": "primary",

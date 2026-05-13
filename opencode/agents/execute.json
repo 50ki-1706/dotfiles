@@ -22,17 +22,24 @@
         "ls -1": "allow",
         "ls -1 *": "allow",
         "ls *": "allow",
-        "pnpm build": "allow",
+        "bash scripts/opencode/sync.sh": "allow",
+        
         "pnpm dev": "allow",
-        "pnpm test": "allow",
-        "pnpm preview": "allow",
-        "pnpm format": "allow",
-        "pnpm lint": "allow",
+        "pnpm build": "allow",
+        "pnpm start": "allow",
         "pnpm check": "allow",
-        "bash scripts/opencode/sync.sh": "allow"
+        "pnpm format": "allow",
+        "pnpm typecheck": "allow",
+        "pnpm typecheck:go": "allow",
+        "pnpm test": "allow",
+        "pnpm test:run": "allow",
+        "pnpm verify": "allow"
       },
       "edit": {
         "*": "allow"
+      },
+      "skill": {
+        "verify": "allow"
       }
     },
     "prompt": "{file:./prompts/execute.md}",
