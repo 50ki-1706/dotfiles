@@ -33,6 +33,7 @@
         "pnpm typecheck:go": "allow",
         "pnpm test": "allow",
         "pnpm test:run": "allow",
+        "pnpm build-storybook": "allow",
         "pnpm verify": "allow"
       },
       "edit": {
