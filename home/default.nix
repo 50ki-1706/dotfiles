@@ -5,6 +5,7 @@
     ./ssh.nix
     ./fonts.nix
     ./helix.nix
+    ./ghostty.nix
   ];
 
   programs.zsh = {
