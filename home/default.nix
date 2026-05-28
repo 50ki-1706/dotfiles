@@ -4,6 +4,7 @@
     ./packages.nix
     ./ssh.nix
     ./fonts.nix
+    ./helix.nix
   ];
 
   programs.zsh = {
