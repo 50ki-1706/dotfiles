@@ -3,6 +3,7 @@
   home.packages = [
     pkgs.fzf
     pkgs.git
+    pkgs.devbox
     pkgs.ripgrep
     pkgs.yazi
     pkgs.zellij
