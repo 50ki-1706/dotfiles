@@ -34,7 +34,7 @@
     settings = {
       theme = "catppuccin_mocha";
       keys.normal."C-y" =
-        ":sh zellij run -n Yazi -c -f -x 10%% -y 10%% --width 80%% --height 80%% -- bash ~/.config/helix/yazi-picker.sh";
+        ":sh ${pkgs.zellij}/bin/zellij run -n Yazi -c -f -x 10%% -y 10%% --width 80%% --height 80%% -- ${pkgs.bash}/bin/bash ~/.config/helix/yazi-picker.sh";
       editor = {
         cursor-shape = {
           normal = "block";
