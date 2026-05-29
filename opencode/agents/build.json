@@ -1,7 +1,0 @@
-{
-  "build": {
-    "mode": "subagent",
-    "hidden": true,
-    "disable": true
-  }
-}

@@ -1,6 +1,6 @@
 # .dotfiles
 
-このリポジトリは、git,opencode,mise,ollama等の環境設定ファイルを管理するための dotfiles。
+MacOS 向けの dotfiles リポジトリです。Nix と Home Manager を使って設定とパッケージを管理しています。
 
 ## 初回セットアップ
 
@@ -26,8 +26,6 @@ cd ~/.dotfiles
 ```sh
 nix run home-manager -- switch --flake .#koki
 ```
-
-これにより `git`、`openssh`、`mise` が導入され、`~/.ssh/config` の `github.com` ホストブロックも設定されます。
 
 ### 4. SSH キーの生成
 
@@ -79,9 +77,10 @@ ssh -T git@github.com
 3. **SSH キーの存在チェック**
    - 不足している場合は作成方法を案内
 
-4. **opencode 設定のシンボリックリンク**
-   - `opencode/AGENTS.md` -> `~/.config/opencode/AGENTS.md`
-   - `opencode/opencode.json` -> `~/.config/opencode/opencode.json`
+4. **opencode 設定**
+   - `opencode` 本体と `~/.config/opencode/opencode.json` は Nix（Home Manager）で生成・管理
+   - `home/opencode/opencode.nix` が設定の source of truth
+   - プロンプト本文は `home/opencode/prompts/*.md` に置き、Nix から読み込む
 
 5. **git global ignore の設定**
    - `git/ignore` -> `~/.config/git/ignore`
@@ -180,6 +179,4 @@ git config core.sshCommand  # → ssh -i ~/.ssh/id_ed25519_work -o IdentitiesOnl
 
 - [scripts/install.sh](scripts/install.sh)
 - [accounts.csv.example](accounts.csv.example)
-- [docs/fzf-ripgrep.md](docs/fzf-ripgrep.md)
-- [docs/ghostty.md](docs/ghostty.md)
-- [opencode/README.md](opencode/README.md)
+- [docs/opencode/README.md](docs/opencode/README.md)

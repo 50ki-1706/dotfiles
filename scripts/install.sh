@@ -55,15 +55,7 @@ if [[ ${#MISSING_KEYS[@]} -gt 0 ]]; then
 fi
 
 echo ""
-echo "== opencode 設定の配置 =="
-SOURCE_DIR="${REPO_ROOT}/opencode"
-TARGET_DIR="${HOME}/.config/opencode"
-
-mkdir -p "${TARGET_DIR}"
-
-link_file_to "AGENTS.md" "${SOURCE_DIR}" "${TARGET_DIR}"
-link_file_to "opencode.json" "${SOURCE_DIR}" "${TARGET_DIR}"
-link_dir_to "prompts" "${SOURCE_DIR}" "${TARGET_DIR}"
+echo "opencode 本体と設定は Nix (home-manager switch) で管理されます。"
 
 echo ""
 echo "== git global ignore の配置 =="

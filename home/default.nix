@@ -1,4 +1,9 @@
-{ lib, config, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./packages.nix
@@ -59,6 +64,16 @@
   };
 
   home.file.".config/shell/aliases".source = ../shell/aliases;
+  home.file.".config/opencode/AGENTS.md" = {
+    source = ./opencode/AGENTS.md;
+    force = true;
+  };
+
+  programs.opencode = {
+    enable = true;
+    package = pkgs.opencode;
+    settings = import ./opencode/opencode.nix { };
+  };
 
   # https://github.com/nix-community/home-manager/pull/6242
   # HM 内部で nix profile install を使っているが、Nix は install を add に改名済み。
