@@ -39,6 +39,7 @@
 | `fonts.fontconfig.enable` | fontconfigベースのアプリでHome Manager管理フォントを利用できるようにします。 |
 | `home.activation.installFonts` | macOSネイティブアプリ向けにNerd Fontを`~/Library/Fonts/HomeManager`へコピーします。 |
 | `home.file.".config/shell/aliases"` | `shell/aliases`を`~/.config/shell/aliases`として配置します。 |
+| `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/opencode/AGENTS.md"` | `home/opencode/AGENTS.md`をOpenCode用の`~/.config/opencode/AGENTS.md`として配置します。 |
 | `home.file.".config/helix/yazi-picker.sh"` | HelixからYaziを開き、選択ファイルをHelixで開く補助スクリプトを配置します。 |
 | `home.activation.installPackages` | Home Managerのパッケージ導入処理を、現在のNix CLIに合わせて`nix profile add`へ調整します。 |
@@ -63,5 +64,9 @@
 
 20260529 23:24:59 +0900 - home-managerで管理しているツール、ライブラリ、生成ファイルの一覧を実装に合わせて整理しました。
 20260529 23:32:07 +0900 - home-managerで管理するCLIツールにlazygitを追加しました。
+20260529 23:44:38 +0900 - ide用のZellijレイアウトをhome-managerで配置する設定を追加しました。
 20260529 23:49:00 +0900 - OpenCodeのprimary agentをspecに一本化し、grill-me-docs相当の事前確認subagentを追加しました。
 20260529 23:50:11 +0900 - OpenCodeの未使用subagentを削除し、docsにagent構成と関係性を追記しました。
+20260529 23:57:08 +0900 - ide用のZellijレイアウトでtab-barとstatus-barを表示するようにしました。
+20260530 00:06:41 +0900 - ide用のZellijレイアウトをdefault_tab_template形式に変更しました。
+20260530 00:11:26 +0900 - ide用のZellijレイアウトで左カラムの上下比率を3対1にしました。

@@ -37,6 +37,16 @@
 
 alias oc='OPENCODE_ENABLE_EXA=1 opencode'
 
+ide() {
+  local layout="${HOME}/.config/zellij/layouts/ide.kdl"
+
+  if [[ -n "${ZELLIJ:-}" ]]; then
+    zellij action new-tab --name ide --layout "$layout"
+  else
+    zellij --session ide --layout "$layout"
+  fi
+}
+
 # --- アカウント別 git clone ---
 # Usage: agclone <dir> <url> [<path>]
 #   dir: accounts.csv のディレクトリ名（例: work）
