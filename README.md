@@ -87,8 +87,9 @@ ssh -T git@github.com
    - `git/ignore` -> `~/.config/git/ignore`
    - `core.excludesfile` の値は Nix（`home/default.nix` の `programs.git.settings`）で管理
 
-6. **シェルエイリアスのシンボリックリンク**
+6. **シェルエイリアスの設定**
    - `shell/aliases` -> `~/.config/shell/aliases`
+   - 配置と zsh からの読み込みは Nix（`home/default.nix`）で管理
 
 ## 追加アカウントの設定（任意）
 
@@ -179,4 +180,6 @@ git config core.sshCommand  # → ssh -i ~/.ssh/id_ed25519_work -o IdentitiesOnl
 
 - [scripts/install.sh](scripts/install.sh)
 - [accounts.csv.example](accounts.csv.example)
+- [docs/fzf-ripgrep.md](docs/fzf-ripgrep.md)
+- [docs/ghostty.md](docs/ghostty.md)
 - [opencode/README.md](opencode/README.md)

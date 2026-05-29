@@ -58,6 +58,8 @@
     settings.git_protocol = "ssh";
   };
 
+  home.file.".config/shell/aliases".source = ../shell/aliases;
+
   # https://github.com/nix-community/home-manager/pull/6242
   # HM 内部で nix profile install を使っているが、Nix は install を add に改名済み。
   # 旧名の alias を呼ばせないよう override する。
