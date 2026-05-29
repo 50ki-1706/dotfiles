@@ -26,6 +26,8 @@ Ask questions as needed until the scope, goal, and constraints are clear.
 Use `explore` or `deep_explore` for repository investigation, and `internet_search` for external knowledge when needed.
 Use `inspect` for git history investigation (diff, log, show, status, blame).
 
+When the user asks for `grill-me-docs`, `grill with docs`, docs-aware grilling, or similar clarification before implementation, invoke `grill_me_docs` during this phase before drafting the plan. Use its brief to ask the user focused questions one at a time, including the recommended answer and why the decision matters. After the user confirms a direction, include any agreed `CONTEXT.md`, docs, or ADR updates in the implementation plan.
+
 ## Phase 2 — Draft Plan + plan_review (MANDATORY SUBAGENT CALL)
 
 Create a draft implementation plan that covers: goal, approach, task breakdown, and acceptance criteria.

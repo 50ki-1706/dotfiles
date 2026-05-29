@@ -50,11 +50,6 @@ in
     };
   };
   agent = {
-    build = {
-      mode = "subagent";
-      hidden = true;
-      disable = true;
-    };
     deep_explore = {
       mode = "subagent";
       model = "openai/gpt-5.3-codex";
@@ -149,69 +144,15 @@ in
         webfetch = false;
       };
     };
-    fast = {
-      mode = "primary";
-      model = "opencode-go/deepseek-v4-flash";
-      description = "Primary agent for small, focused implementation tasks: function creation/modification, lint fixes, type error fixes, and minor refactors. Implements changes itself without delegating to execute.";
-      permission = {
-        task = {
-          "*" = "deny";
-          internet_search = "allow";
-          explore = "allow";
-          inspect = "allow";
-        };
-        edit = {
-          "*" = "allow";
-        };
-        read = {
-          "*" = "deny";
-        };
-        write = {
-          "*" = "allow";
-        };
-        grep = {
-          "*" = "deny";
-        };
-        glob = {
-          "*" = "deny";
-        };
-        list = {
-          "*" = "deny";
-        };
-        bash = {
-          "cat *" = "deny";
-          "head *" = "deny";
-          "tail *" = "deny";
-          "sed *" = "deny";
-          "awk *" = "deny";
-          "grep *" = "deny";
-          "rg *" = "deny";
-          "find *" = "deny";
-          ls = "deny";
-          "ls *" = "deny";
-          "git diff*" = "deny";
-          "git log*" = "deny";
-          "git show*" = "deny";
-          "git blame*" = "deny";
-        };
-      };
-      prompt = readPrompt "fast";
-    };
-    general = {
+    grill_me_docs = {
       mode = "subagent";
-      hidden = true;
-      disable = true;
-    };
-    idea = {
-      mode = "primary";
-      model = "opencode-go/deepseek-v4-flash";
-      description = "Primary agent for collaborative ideation and specification design. Helps the user explore approaches and concretize ideas through dialogue. Does not create implementation plans. Uses internet_search when external knowledge is needed.";
+      model = "openai/gpt-5.4";
+      description = "Docs-aware grilling subagent for `grill-me-docs` / `grill-with-docs` style clarification. Reviews CONTEXT.md, ADRs, local docs, and relevant code, then returns focused questions with recommended answers before implementation planning.";
       permission = {
         task = {
           "*" = "deny";
-          internet_search = "allow";
           explore = "allow";
-          inspect = "allow";
+          deep_explore = "allow";
         };
         bash = {
           "*" = "deny";
@@ -219,21 +160,10 @@ in
         edit = {
           "*" = "deny";
         };
-        read = {
-          "*" = "deny";
-        };
-        grep = {
-          "*" = "deny";
-        };
-        glob = {
-          "*" = "deny";
-        };
-        list = {
-          "*" = "deny";
-        };
       };
-      prompt = readPrompt "idea";
+      prompt = readPrompt "grill_me_docs";
       tools = {
+        question = false;
         websearch = false;
         webfetch = false;
       };
@@ -300,11 +230,6 @@ in
         question = false;
       };
     };
-    plan = {
-      mode = "subagent";
-      hidden = true;
-      disable = true;
-    };
     plan_review = {
       mode = "subagent";
       model = "openai/gpt-5.4";
@@ -337,33 +262,6 @@ in
         webfetch = false;
       };
     };
-    review = {
-      mode = "primary";
-      model = "openai/gpt-5.4";
-      description = "Primary agent for code review and idea review. Inspects changes via git diff and file exploration, then provides structured findings. Uses explore and deep_explore for investigation. Does not modify code.";
-      permission = {
-        task = {
-          "*" = "deny";
-          explore = "allow";
-          deep_explore = "allow";
-          inspect = "allow";
-        };
-        bash = {
-          "*" = "deny";
-          "git diff*" = "allow";
-          "git log*" = "allow";
-          "git show*" = "allow";
-          "git status*" = "allow";
-          "git blame*" = "allow";
-          "ls*" = "allow";
-          "find*" = "allow";
-        };
-        edit = {
-          "*" = "deny";
-        };
-      };
-      prompt = readPrompt "review";
-    };
     spec = {
       mode = "primary";
       model = "opencode-go/deepseek-v4-pro";
@@ -375,6 +273,7 @@ in
           explore = "allow";
           deep_explore = "allow";
           execute = "allow";
+          grill_me_docs = "allow";
           inspect = "allow";
           plan_review = "allow";
         };
