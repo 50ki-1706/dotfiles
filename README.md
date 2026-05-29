@@ -4,141 +4,90 @@ MacOS 向けの dotfiles リポジトリです。Nix と Home Manager を使っ�
 
 ## 初回セットアップ
 
-### 1. Nix のインストール
-
-Nix がインストールされていない場合:
+このリポジトリを clone したあと、リポジトリのルートで `scripts/install.sh` を実行してください。
 
 ```sh
-sh <(curl -L https://nixos.org/nix/install)
+./scripts/install.sh
 ```
 
-### 2. リポジトリの clone
+`scripts/install.sh` が初回セットアップに必要な処理をまとめて実行します。
 
-Nix を使って一時的に `git` をインストールし、リポジトリを clone します:
+1. Nix が未インストールの場合、確認後に Nix 公式インストーラを実行
+2. Git/GitHub アカウント設定を対話的に作成
+3. デフォルト SSH キーを作成
+4. 追加 GitHub アカウント用の作業ディレクトリ、Git 設定、SSH キーを作成
+5. Home Manager を `nix run home-manager -- switch --flake .#koki` で実行
+6. git global ignore など、Nix 管理外の設定を配置
+
+Nix インストール直後に現在のシェルから `nix` が見つからない場合は、新しいシェルを開いてから同じコマンドを再実行してください。
+
+## リポジトリの取得
+
+Nix がすでにある場合は、次のように一時的に `git` を使って clone できます。
 
 ```sh
 nix shell nixpkgs#git --command git clone https://github.com/koki/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-```
-
-### 3. Home Manager でパッケージを導入
-
-```sh
-nix run home-manager -- switch --flake .#koki
-```
-
-### 4. SSH キーの生成
-
-```sh
-nix run .#ssh-bootstrap -- --email "you@example.com"
-```
-
-これにより:
-
-- `~/.ssh/id_ed25519` が存在しない場合に作成
-- macOS の場合はキーチェーンへ登録
-
-### 5. 公開鍵の登録と接続確認
-
-生成された公開鍵を GitHub に登録します:
-
-```sh
-cat ~/.ssh/id_ed25519.pub
-```
-
-上記で表示された公開鍵をコピーし、GitHub の **Settings > SSH and GPG keys > New SSH key** に登録してください。
-
-登録後、接続確認:
-
-```sh
-ssh -T git@github.com
-```
-
-### 6. dotfiles の配置（scripts/install.sh）
-
-リポジトリのルートで `scripts/install.sh` を実行すると、各設定ファイルが配置されます。
-
-```bash
 ./scripts/install.sh
 ```
 
-`scripts/install.sh` は以下の処理を順番に実行します。
+Nix がまだない場合は、任意の方法でこのリポジトリを `~/.dotfiles` に配置してから `./scripts/install.sh` を実行してください。Nix のインストール以降はスクリプトが案内します。
 
-1. **アカウント設定の生成**（accounts.csv がある場合）
-   - `~/Dev/{DIR}/`: 各アカウントの作業ディレクトリ（自動作成）
-   - `~/.config/git/accounts.include`: Git設定のincludeIf
-   - `~/.config/git/accounts/{DIR}.gitconfig`: 各アカウントのGit設定（`[user]` と `[core] sshCommand` を含む）
-   - `~/.ssh/id_ed25519_{DIR}`: SSH鍵（存在しない場合は自動作成し、公開鍵を出力）
-   - accounts.csv がない場合、既存の生成済み設定をクリア
+## 複数 GitHub アカウント
 
-2. **Nix 設定の同期**
-   - `nix run home-manager -- switch --flake .#koki`
+複数の GitHub アカウントを使う場合は、`scripts/install.sh` の対話入力で追加アカウントを登録してください。スクリプトは `accounts.csv` を生成し、次の設定を作成します。
 
-3. **SSH キーの存在チェック**
-   - 不足している場合は作成方法を案内
+- `~/Dev/{dir}/`: 追加アカウントの作業ディレクトリ
+- `~/.config/git/accounts.include`: Git 設定の includeIf
+- `~/.config/git/accounts/{dir}.gitconfig`: アカウント別の Git 設定
+- `~/.ssh/id_ed25519_{dir}`: 追加アカウント用の SSH キー
 
-4. **opencode 設定**
-   - `opencode` 本体と `~/.config/opencode/opencode.json` は Nix（Home Manager）で生成・管理
-   - `home/opencode/opencode.nix` が設定の source of truth
-   - プロンプト本文は `home/opencode/prompts/*.md` に置き、Nix から読み込む
+既存の `accounts.csv` がある場合、スクリプト実行時にそのまま使うか、対話入力で作り直すかを選べます。
 
-5. **git global ignore の設定**
-   - `git/ignore` -> `~/.config/git/ignore`
-   - `core.excludesfile` の値は Nix（`home/default.nix` の `programs.git.settings`）で管理
+### accounts.csv の形式
 
-6. **シェルエイリアスの設定**
-   - `shell/aliases` -> `~/.config/shell/aliases`
-   - 配置と zsh からの読み込みは Nix（`home/default.nix`）で管理
+手動で編集する場合は、次の形式にしてください。
 
-## 追加アカウントの設定（任意）
-
-複数のGitHubアカウントを切り替える場合は、`accounts.csv`ファイルを作成してください。
-
-### フォーマット
-
-```
+```csv
 使いたい名前,メールアドレス
 追加アカウント名,メールアドレス,ディレクトリ名
 ```
 
 - ヘッダなし
-- カンマ区切り
-- 1行目: デフォルトアカウント（名前,メールアドレスの2項目）
-- 2行目以降: 追加アカウント（名前,メールアドレス,ディレクトリ名の3項目）
+- 1行目: デフォルトアカウント
+- 2行目以降: 追加アカウント
 - ディレクトリ名は英数字、ハイフン、アンダースコアのみ
 
-### 例
+## 公開鍵の登録
 
-```
-Koki Okada,koki.okada@example.com
-Koki Okada,koki@work.com,work
-```
+`scripts/install.sh` が表示した公開鍵を、対応する GitHub アカウントの **Settings > SSH and GPG keys > New SSH key** に登録してください。
 
-### 設定手順
-
-1. `accounts.csv.example`をコピーして`accounts.csv`を作成
+あとから確認する場合:
 
 ```sh
-cp accounts.csv.example accounts.csv
+cat ~/.ssh/id_ed25519.pub
+cat ~/.ssh/id_ed25519_<dir>.pub
 ```
 
-2. 自分のアカウント情報に書き換える
-
-3. `scripts/install.sh` を再実行
+デフォルトアカウントの接続確認:
 
 ```sh
-./scripts/install.sh
+ssh -T git@github.com
 ```
 
-`scripts/install.sh` が自動的に以下を処理します：
-- 作業ディレクトリ（`~/Dev/{DIR}/`）の作成
-- SSH鍵（`~/.ssh/id_ed25519_{DIR}`）の作成と公開鍵の出力
-- Git設定の生成（`[user]` と `[core] sshCommand` を含む）
-- 旧方式の `~/.ssh/config.d/accounts` が存在する場合は自動削除
+追加アカウントの SSH コマンド単体での確認:
 
-4. 出力された公開鍵を対応するGitHubアカウントに登録
+```sh
+ssh -i ~/.ssh/id_ed25519_<dir> -o IdentitiesOnly=yes -T git@github.com
+```
 
-5. 追加アカウントのリポジトリをclone
+> [!NOTE]
+> `ssh -T git@github.com` はディレクトリに関係なく、常に SSH のデフォルト鍵で接続します。
+> 追加アカウントの鍵切り替えは Git の `includeIf gitdir` と `core.sshCommand` で行うため、実際の切り替え確認は `git push` や `git ls-remote` など Git 経由で行ってください。
+
+## 追加アカウントの clone
+
+追加アカウントのリポジトリを初回 clone するときは `agclone` を使えます。
 
 ```sh
 agclone <dir> <url>
@@ -146,37 +95,4 @@ agclone <dir> <url>
 agclone work git@github.com:org/repo.git
 ```
 
-`agclone` はSSH鍵を指定してcloneし、リポジトリを `~/Dev/<dir>/` 配下に配置します。
-
-### SSH鍵の切り替え仕組み
-
-追加アカウントのSSH鍵切り替えは `includeIf gitdir` + `core.sshCommand` で実現しています。
-
-- `~/Dev/{dir}/` 配下のGitリポジトリでは、`includeIf` により `[user]` と `[core] sshCommand` が自動で切り替わります
-- デフォルトアカウントのリポジトリでは `~/.ssh/id_ed25519` が使われます
-- `agclone` は初回clone時のみ必要です。clone後は `includeIf` が自動で鍵を切り替えます
-- 既存のリポジトリはcloneし直す必要はありません。`~/Dev/{dir}/` 配下にあれば次回の `git` 実行時から自動で切り替わります
-
-> [!NOTE]
-> `ssh -T git@github.com` はディレクトリに関係なく、常にSSHのデフォルト鍵で接続します。
-> `core.sshCommand` は Git コマンドが内部で呼び出す SSH にのみ適用されるため、鍵切り替えの確認は `git push` や `git ls-remote` などの Git 経由で行ってください。
-> SSH コマンド単体で特定鍵を確認したい場合は、`ssh -i ~/.ssh/id_ed25519_<dir> -o IdentitiesOnly=yes -T git@github.com` を使用してください。
-
-### 補足（includeIf の挙動について）
-
-`includeIf gitdir:~/Dev/{dir}/` は、Git リポジトリの作業ディレクトリがそのパスに含まれているときにだけ設定を切り替えます。
-単にディレクトリに `cd` しただけでは切り替わらず、対象ディレクトリ内で `git init` または `git clone` して初めて有効になります。
-
-```sh
-# 例: work アカウントの切り替えを確認する
-cd ~/Dev/work/repo
-git config user.name   # → 追加アカウントの名前
-git config user.email  # → 追加アカウントのメール
-git config core.sshCommand  # → ssh -i ~/.ssh/id_ed25519_work -o IdentitiesOnly=yes
-```
-
-## 関連ファイル
-
-- [scripts/install.sh](scripts/install.sh)
-- [accounts.csv.example](accounts.csv.example)
-- [docs/opencode/README.md](docs/opencode/README.md)
+`agclone` は SSH 鍵を指定して clone し、リポジトリを `~/Dev/<dir>/` 配下に配置します。clone 後は `includeIf` により、対象ディレクトリ内の Git リポジトリで `[user]` と `[core] sshCommand` が自動で切り替わります。

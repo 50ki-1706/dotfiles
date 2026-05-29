@@ -179,11 +179,17 @@ check_and_create_ssh_key() {
     local dir="$2"
     local key_path="$HOME/.ssh/id_ed25519_$dir"
 
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+
     if [[ -f "$key_path" ]]; then
         echo "OK: $key_path"
     else
         echo "未作成: $key_path"
         ssh-keygen -t ed25519 -C "$email" -f "$key_path" -N ""
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            /usr/bin/ssh-add --apple-use-keychain "$key_path" >/dev/null 2>&1 || true
+        fi
         echo "作成: $key_path"
         echo "公開鍵:"
         cat "$key_path.pub"
