@@ -71,3 +71,4 @@
 20260530 00:06:41 +0900 - ide用のZellijレイアウトをdefault_tab_template形式に変更しました。
 20260530 00:11:26 +0900 - ide用のZellijレイアウトで左カラムの上下比率を3対1にしました。
 20260530 00:25:32 +0900 - HelixのYazi起動キーバインドをNix storeの絶対パス参照にしました。
+20260601 09:15:00 +0900 - gccをHomebrew管理からNix管理に移行しました（home/packages.nixにpkgs.gccを追加）。
