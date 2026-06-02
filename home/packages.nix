@@ -2,7 +2,6 @@
 {
   home.packages = [
     pkgs.fzf
-    pkgs.gcc
     pkgs.git
     pkgs.lazygit
     pkgs.devbox
