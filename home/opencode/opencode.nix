@@ -37,13 +37,35 @@ in
       "id_rsa*" = "deny";
     };
     bash = {
-      "*" = "ask";
+      "*" = "allow";
+
+      # 破壊的操作
       "sudo *" = "deny";
       "rm -rf *" = "deny";
+      "chmod 777 *" = "deny";
+      "chmod -R 777 *" = "deny";
+      "chown -R *" = "deny";
+      "dd *" = "deny";
+      "shutdown *" = "deny";
+      "reboot *" = "deny";
+      "halt *" = "deny";
+
+      # パイプインストール
       "curl * | sh" = "deny";
+      "curl * | bash" = "deny";
       "wget * | sh" = "deny";
+      "wget * | bash" = "deny";
+
+      # Git 破壊的操作
       "git reset --hard *" = "deny";
-      "git clean -fdx *" = "deny";
+      "git clean *" = "deny";
+
+      # リモート操作
+      "git push*" = "ask";
+
+      # 環境構築
+      "brew *" = "ask";
+      "nix *" = "ask";
     };
     skill = {
       "*" = "deny";
@@ -84,30 +106,6 @@ in
           "git log*" = "deny";
           "git show*" = "deny";
           "git blame*" = "deny";
-          "jq *" = "allow";
-          "git status" = "allow";
-          "git status --short" = "allow";
-          "git status --short *" = "allow";
-          "git diff" = "allow";
-          "git diff *" = "allow";
-          ls = "allow";
-          "ls -la" = "allow";
-          "ls -1" = "allow";
-          "ls -1 *" = "allow";
-          "ls *" = "allow";
-          "pnpm dev" = "allow";
-          "pnpm build" = "allow";
-          "pnpm start" = "allow";
-          "pnpm check" = "allow";
-          "pnpm format" = "allow";
-          "pnpm typecheck" = "allow";
-          "pnpm typecheck:go" = "allow";
-          "pnpm test" = "allow";
-          "pnpm test:run" = "allow";
-          "pnpm build-storybook" = "allow";
-          "pnpm verify" = "allow";
-          "pnpm verify:frontend" = "allow";
-          "pnpm verify:backend" = "allow";
         };
         edit = {
           "*" = "allow";

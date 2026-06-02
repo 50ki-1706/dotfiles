@@ -86,3 +86,4 @@
 20260602 12:00:17 +0900 - VSCodeのNix管理用設定を追加し、home/vscode/settings.nix にユーザー設定を集約しました。
 20260602 11:59:50 +0900 - home/vscode.nixをhome/vscode/ディレクトリに分割し、extensions.nix、keybindings.nix、settings.nixに整理しました。
 20260602 12:03:17 +0900 - VSCode拡張機能の分割定義を見直し、GitHub Copilotを追加して24+6構成に揃えました。
+20260602 13:31:40 +0900 - OpenCodeのpermission.bash設定を整理し、危険コマンド(chmod 777/chown -R/dd/shutdown/reboot/halt等)のdenyを追加。execute agentのpermission構文エラー(m ... m)も修正。
