@@ -87,3 +87,4 @@
 20260602 11:59:50 +0900 - home/vscode.nixをhome/vscode/ディレクトリに分割し、extensions.nix、keybindings.nix、settings.nixに整理しました。
 20260602 12:03:17 +0900 - VSCode拡張機能の分割定義を見直し、GitHub Copilotを追加して24+6構成に揃えました。
 20260602 13:31:40 +0900 - OpenCodeのpermission.bash設定を整理し、危険コマンド(chmod 777/chown -R/dd/shutdown/reboot/halt等)のdenyを追加。execute agentのpermission構文エラー(m ... m)も修正。
+20260602 14:57:23 +0900 - VSCode profilesのMarketplace拡張6件のsha256を実値へ更新し、既存の~/.vscode/extensionsをactivationで退避してhome-manager switchを通るようにしました。
