@@ -32,23 +32,23 @@
     }
     {
       key = "ctrl+m d";
-      command = "workbench.files.action.createFolderFromExplorer";
-      when = "isLinux && view == 'workbench.explorer.fileView'";
+      command = "explorer.newFolder";
+      when = "isLinux && explorerViewletVisible && filesExplorerFocus";
     }
     {
       key = "cmd+m d";
-      command = "workbench.files.action.createFolderFromExplorer";
-      when = "isMac && view == 'workbench.explorer.fileView'";
+      command = "explorer.newFolder";
+      when = "isMac && explorerViewletVisible && filesExplorerFocus";
     }
     {
       key = "ctrl+m f";
-      command = "workbench.files.action.createFileFromExplorer";
-      when = "isLinux && view == 'workbench.explorer.fileView'";
+      command = "explorer.newFile";
+      when = "isLinux && explorerViewletVisible && filesExplorerFocus";
     }
     {
       key = "cmd+m f";
-      command = "workbench.files.action.createFileFromExplorer";
-      when = "isMac && view == 'workbench.explorer.fileView'";
+      command = "explorer.newFile";
+      when = "isMac && explorerViewletVisible && filesExplorerFocus";
     }
     {
       key = "ctrl+shift+j";
@@ -148,11 +148,6 @@
       key = "cmd+q";
       command = "workbench.action.closeFolder";
       when = "isMac && emptyWorkspaceSupport && workbenchState != 'empty'";
-    }
-    {
-      key = "ctrl+shift+[BracketLeft]";
-      command = "workbench.action.quickOpenTerm";
-      when = "terminalHasBeenCreated || terminalProcessSupported";
     }
   ];
 }

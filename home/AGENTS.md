@@ -89,3 +89,4 @@
 20260602 13:31:40 +0900 - OpenCodeのpermission.bash設定を整理し、危険コマンド(chmod 777/chown -R/dd/shutdown/reboot/halt等)のdenyを追加。execute agentのpermission構文エラー(m ... m)も修正。
 20260602 14:57:23 +0900 - VSCode profilesのMarketplace拡張6件のsha256を実値へ更新し、既存の~/.vscode/extensionsをactivationで退避してhome-manager switchを通るようにしました。
 20260602 15:34:41 +0900 - gccをNix管理からdevbox管理へ移行しました（home/packages.nixからpkgs.gccを削除）。
+20260602 15:35:00 +0900 - VSCodeのcmd+m d / cmd+m f（フォルダ/ファイル新規作成）のキーバインドのコマンドIDを標準のexplorer.newFolder / explorer.newFileに修正し、when句もexplorerViewletVisible && filesExplorerFocusに変更しました。
