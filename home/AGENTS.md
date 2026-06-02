@@ -31,6 +31,7 @@
 | `programs.opencode` | OpenCode CLIを有効化し、`home/opencode/opencode.nix`の設定を適用します。 |
 | `programs.helix` | Helixエディタを有効化し、テーマ、キー設定、Nixの自動フォーマットを設定します。 |
 | `programs.ghostty` | Ghosttyを有効化し、起動時に`zellij attach -c ghostty`を実行するよう設定します。 |
+| `programs.vscode` | VSCodeを有効化し、settings/keybindings/extensionsを`home/vscode/`で管理します。 |
 
 ### その他の管理対象
 
@@ -42,6 +43,7 @@
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/opencode/AGENTS.md"` | `home/opencode/AGENTS.md`をOpenCode用の`~/.config/opencode/AGENTS.md`として配置します。 |
 | `home.file.".config/helix/yazi-picker.sh"` | HelixからYaziを開き、選択ファイルをHelixで開く補助スクリプトを配置します。 |
+| `home.file.".config/vscode/"` | `config/vscode/`は凍結済み（参照専用・編集禁止）です。VSCodeのsettings/keybindings/extensionsは`home/vscode/vscode.nix`をsource of truthとして管理します。 |
 | `home.activation.installPackages` | Home Managerのパッケージ導入処理を、現在のNix CLIに合わせて`nix profile add`へ調整します。 |
 
 ### 設定内で補助的に参照しているパッケージ
@@ -54,6 +56,10 @@
 
 ## docsディレクトリについて
 - OpenCode: `docs/opencode/README.md`
+
+## ロールバック
+- `home/default.nix` から `./vscode/vscode.nix` のimportを削除して `home-manager switch` を再実行します。
+- Homebrew版に戻す場合は `brew install --cask visual-studio-code` を実行します。
 
 ## EDR timeline
 以下のフォーマットで、homeディレクト内の変更を記録してください。変更の内容がわかるように、簡潔な説明をつけてください。
@@ -72,3 +78,11 @@
 20260530 00:11:26 +0900 - ide用のZellijレイアウトで左カラムの上下比率を3対1にしました。
 20260530 00:25:32 +0900 - HelixのYazi起動キーバインドをNix storeの絶対パス参照にしました。
 20260601 09:15:00 +0900 - gccをHomebrew管理からNix管理に移行しました（home/packages.nixにpkgs.gccを追加）。
+20260601 22:49:10 +0900 - VSCodeをhome-managerで管理するためのモジュールを追加しました。
+20260601 22:49:09 +0900 - vscodeをHomebrew管理からNix管理に移行（programs.vscode, home/vscode/新設）。拡張機能29個をversion+sha256固定で管理。config/vscode/は参照用として凍結。
+20260602 11:36:06 +0900 - VSCode拡張機能の定義をvscode-extensions参照とMarketplace拡張の分割構成に整理しました。
+20260602 12:00:00 +0900 - VSCode拡張機能管理を改善: 29個中24個をpkgs.vscode-extensionsの直接参照に切り替え、未収録の5個のみvscode-utilsで管理するように変更しました。
+20260602 11:39:58 +0900 - yzane.markdown-pdf を vscode-utils 側へ移し、macOSで失敗する vscode-extensions 参照を避けるようにしました。
+20260602 12:00:17 +0900 - VSCodeのNix管理用設定を追加し、home/vscode/settings.nix にユーザー設定を集約しました。
+20260602 11:59:50 +0900 - home/vscode.nixをhome/vscode/ディレクトリに分割し、extensions.nix、keybindings.nix、settings.nixに整理しました。
+20260602 12:03:17 +0900 - VSCode拡張機能の分割定義を見直し、GitHub Copilotを追加して24+6構成に揃えました。

@@ -11,6 +11,7 @@
     ./fonts.nix
     ./helix.nix
     ./ghostty.nix
+    ./vscode/vscode.nix
   ];
 
   programs.zsh = {

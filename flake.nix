@@ -47,7 +47,10 @@
       });
 
       homeConfigurations."koki" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.aarch64-darwin;
+        pkgs = import nixpkgs {
+          system = "aarch64-darwin";
+          config.allowUnfree = true;
+        };
         extraSpecialArgs = {
           # Intent: M5 Mac で動作する最新バージョン（0.20.3）に固定。これ以降のバージョンはバグで動作しない。
           ollamaPkgs = import nixpkgs-ollama {
