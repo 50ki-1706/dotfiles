@@ -91,3 +91,4 @@
 20260602 15:34:41 +0900 - gccをNix管理からdevbox管理へ移行しました（home/packages.nixからpkgs.gccを削除）。
 20260602 15:35:00 +0900 - VSCodeのcmd+m d / cmd+m f（フォルダ/ファイル新規作成）のキーバインドのコマンドIDを標準のexplorer.newFolder / explorer.newFileに修正し、when句もexplorerViewletVisible && filesExplorerFocusに変更しました。
 20260602 15:00:00 +0900 - Java VSCodeプロファイル: Extension Pack (vscjava.vscode-java-pack) を削除し、6つの個別拡張機能 (redhat.java, vscjava.vscode-java-debug, vscjava.vscode-java-test, vscjava.vscode-maven, vscjava.vscode-gradle, vscjava.vscode-java-dependency) に置き換えました。
+20260603 20:58:47 +0900 - Zellij ideレイアウトの左上ペインからHelix自動起動を削除し、devbox shell有効化後に手動起動する方式に変更しました。

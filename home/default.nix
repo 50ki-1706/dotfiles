@@ -80,7 +80,7 @@
         tab name="ide" {
             pane split_direction="vertical" {
                 pane split_direction="horizontal" size="70%" {
-                    pane command="${lib.getExe pkgs.helix}" focus=true size="75%"
+                    pane focus=true size="75%"
                     pane
                 }
                 pane split_direction="horizontal" {
