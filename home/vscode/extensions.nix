@@ -97,13 +97,13 @@ let
       }
     ];
 
-  javaExtensions = pkgs.vscode-utils.extensionsFromVscodeMarketplace [
-    {
-      publisher = "vscjava";
-      name = "vscode-java-pack";
-      version = "0.29.0";
-      sha256 = "sha256-qusk1X3mgRdzb4MRBr9WyOViG9UGYFDIv3aQOSrMSVo=";
-    }
+  javaExtensions = with pkgs.vscode-extensions; [
+    redhat.java
+    vscjava.vscode-java-debug
+    vscjava.vscode-java-test
+    vscjava.vscode-maven
+    vscjava.vscode-gradle
+    vscjava.vscode-java-dependency
   ];
 
   cppExtensions = with pkgs.vscode-extensions; [
