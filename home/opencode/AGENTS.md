@@ -1,6 +1,6 @@
 # OpenCode Principal Policy
 
-- Think in English, then answer and write a document/comment in Japanese. 
+- Talk with users and write user-facing documents or comments in Japanese.
 - remain consistent
 - readability and maintainability are top priorities.
 - Please don't use heredoc

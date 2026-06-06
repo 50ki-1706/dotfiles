@@ -99,3 +99,5 @@
 20260602 15:00:00 +0900 - Java VSCodeプロファイル: Extension Pack (vscjava.vscode-java-pack) を削除し、6つの個別拡張機能 (redhat.java, vscjava.vscode-java-debug, vscjava.vscode-java-test, vscjava.vscode-maven, vscjava.vscode-gradle, vscjava.vscode-java-dependency) に置き換えました。
 20260603 20:58:47 +0900 - Zellij ideレイアウトの左上ペインからHelix自動起動を削除し、devbox shell有効化後に手動起動する方式に変更しました。
 20260605 00:00:00 +0900 - claude-codeをNix管理のhome.packagesに追加
+20260606 23:11:11 +0900 - OpenCodeのREADMEを正としてagent構成とpromptを再構築し、未使用agent設定を削除しました。
+20260607 00:53:14 +0900 - OpenCode agentの言語ルールを共通AGENTSから各agent promptへ移動しました。

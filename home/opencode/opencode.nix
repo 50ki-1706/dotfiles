@@ -75,7 +75,7 @@ in
     deep_explore = {
       mode = "subagent";
       model = "openai/gpt-5.3-codex";
-      description = "Read-only broad codebase investigation subagent. Activated when architecture-level understanding is needed — cross-module dependencies, call graphs, or repository-wide conventions. Additionally recommends specific targets for follow-up `explore` investigation.";
+      description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/archtecture.md` for reuse.";
       permission = {
         task = {
           "*" = "deny";
@@ -85,6 +85,7 @@ in
         };
         edit = {
           "*" = "deny";
+          ".agents/archtecture.md" = "allow";
         };
       };
       prompt = readPrompt "deep_explore";
@@ -94,10 +95,10 @@ in
         webfetch = false;
       };
     };
-    execute = {
+    executer = {
       mode = "subagent";
       model = "openai/gpt-5.4-mini-fast";
-      description = "Implementation subagent activated by spec to implement a specific delegated task. Reports STATUS (IN_PROGRESS / FAIL / COMPLETE) at each checkpoint. May create, edit, and delete files only within the delegated task scope.";
+      description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
       permission = {
         task = {
           "*" = "deny";
@@ -115,7 +116,6 @@ in
         };
       };
       prompt = readPrompt "execute";
-      hidden = true;
       tools = {
         question = false;
       };
@@ -142,62 +142,10 @@ in
         webfetch = false;
       };
     };
-    grill_me_docs = {
-      mode = "subagent";
-      model = "openai/gpt-5.4";
-      description = "Docs-aware grilling subagent for `grill-me-docs` / `grill-with-docs` style clarification. Reviews CONTEXT.md, ADRs, local docs, and relevant code, then returns focused questions with recommended answers before implementation planning.";
-      permission = {
-        task = {
-          "*" = "deny";
-          explore = "allow";
-          deep_explore = "allow";
-        };
-        bash = {
-          "*" = "deny";
-        };
-        edit = {
-          "*" = "deny";
-        };
-      };
-      prompt = readPrompt "grill_me_docs";
-      tools = {
-        question = false;
-        websearch = false;
-        webfetch = false;
-      };
-    };
-    inspect = {
-      mode = "subagent";
-      model = "openai/gpt-5.4-mini";
-      description = "Git history inspection subagent. Activated by a primary agent when git history inspection (diff, log, show, status, blame) is needed. Read-only and git-only — no file access, no edits.";
-      permission = {
-        task = {
-          "*" = "deny";
-        };
-        bash = {
-          "*" = "deny";
-          "git diff*" = "allow";
-          "git log*" = "allow";
-          "git show*" = "allow";
-          "git status*" = "allow";
-          "git blame*" = "allow";
-        };
-        edit = {
-          "*" = "deny";
-        };
-        read = {
-          "*" = "deny";
-        };
-      };
-      prompt = readPrompt "inspect";
-      tools = {
-        question = false;
-      };
-    };
     internet_search = {
       mode = "subagent";
       model = "openai/gpt-5.4-mini";
-      description = "Web research subagent. Activated by a primary agent when the latest library specifications, API documentation, or coding conventions cannot be answered from the local repository. Can only perform web searches — no file access or local operations.";
+      description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
       permission = {
         task = {
           "*" = "deny";
@@ -231,7 +179,7 @@ in
     plan_review = {
       mode = "subagent";
       model = "openai/gpt-5.4";
-      description = "Plan review subagent activated by spec to rigorously review a draft implementation plan. May ask clarifying questions before issuing a verdict. Returns STATUS: REJECT (with required changes) or APPROVE (ends the review).";
+      description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
       permission = {
         task = {
           "*" = "deny";
@@ -253,7 +201,6 @@ in
         };
       };
       prompt = readPrompt "plan_review";
-      hidden = true;
       tools = {
         question = false;
         websearch = false;
@@ -263,16 +210,14 @@ in
     spec = {
       mode = "primary";
       model = "opencode-go/deepseek-v4-pro";
-      description = "Primary agent for implementation planning and execution. Clarifies requirements through dialogue, creates a draft plan reviewed by plan_review, gets user confirmation, then delegates tasks to execute in parallel.";
+      description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
       permission = {
         task = {
           "*" = "deny";
           internet_search = "allow";
           explore = "allow";
           deep_explore = "allow";
-          execute = "allow";
-          grill_me_docs = "allow";
-          inspect = "allow";
+          executer = "allow";
           plan_review = "allow";
         };
         bash = {
