@@ -9,6 +9,7 @@
     pkgs.ripgrep
     pkgs.yazi
     pkgs.zellij
+    pkgs.claude-code
     ollamaPkgs.ollama
   ];
 }
