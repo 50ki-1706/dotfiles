@@ -13,6 +13,7 @@ in
       "node_modules/**"
       "dist/**"
       ".git/**"
+      ".agents/archtecture-diff.md"
     ];
   };
   mcp = {

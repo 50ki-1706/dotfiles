@@ -101,3 +101,6 @@
 20260605 00:00:00 +0900 - claude-codeをNix管理のhome.packagesに追加
 20260606 23:11:11 +0900 - OpenCodeのREADMEを正としてagent構成とpromptを再構築し、未使用agent設定を削除しました。
 20260607 00:53:14 +0900 - OpenCode agentの言語ルールを共通AGENTSから各agent promptへ移動しました。
+20260607 01:07:50 +0900 - OpenCodeのdeep_explore向けにgit履歴差分を生成するpluginと差分更新ルールを追加しました。
+
+20260609 12:01:33 +0900 - architecture-diff-contextプラグインにメタデータ解析機能を追加。architecture.md先頭の-----区切りメタデータブロックからcommit-hashを読み取り、差分計算の基準コミットとして使用可能にしました。

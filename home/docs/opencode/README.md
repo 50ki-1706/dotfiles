@@ -19,6 +19,7 @@ Role: deep_explorer
 - ディレクトリ全体を探索し、コードベースの構造を理解する。
 - コードベースの構造を要約し、Primary Agentに報告する。
 - 調査した結果は、`.agents/archtecture.md` に保存し、再利用できるようにする。
+- `.agents/archtecture-diff.md` が存在する場合は、gitのコミット履歴差分から検出された変更ファイルを優先的に確認し、`.agents/archtecture.md` の差分更新に利用する。
 コードベースを直接返すことはしない。
 Role: executer
 - Primaryエージェントからの実装依頼、検証依頼を実施し、変更内容、検証結果を要約して、報告します。

@@ -37,6 +37,9 @@ Use the appropriate subagent for those actions.
 1. Read the user's request and clarify the goal.
 2. Use `.agents/archtecture.md`, `deep_explore`, project `AGENTS.md`, and
    `explore` as needed to understand the project.
+   When broad context is needed, ask `deep_explore` to check
+   `.agents/archtecture-diff.md` so stale architecture notes can be refreshed
+   from git commit-history file diffs.
 3. Use `internet_search` only when external knowledge is required.
 4. Ask the user with `question` if a decision cannot be inferred safely.
 5. Draft an implementation plan with goal, changes, validation, and notes.
