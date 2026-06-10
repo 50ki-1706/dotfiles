@@ -10,6 +10,7 @@ in
     package = pkgs.ghostty-bin;
     settings = {
       command = "${ghosttyZellij}";
+      font-family = "JetBrainsMono Nerd Font Mono";
     };
   };
 }

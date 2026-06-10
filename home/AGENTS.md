@@ -109,3 +109,4 @@
 20260610 09:58:23 +0900 - vscode.nixのactivation参照をlib.hm.dag.entryBeforeへ修正し、hm未定義エラーを解消しました。
 20260610 10:17:56 +0900 - VSCode activationでmarker作成前にUserディレクトリをmkdir -pするようにして、初回switch時のtouch失敗を防ぎました。
 20260610 10:30:00 +0900 - VSCodeにpreviousEditorの左タブ移動キーバインドを追加しました。
+20260610 12:00:00 +0900 - Ghosttyの設定にJetBrainsMono Nerd Font Monoを指定しました。
