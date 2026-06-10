@@ -18,6 +18,15 @@
     fi
   '';
 
+  home.activation.resetVscodeState = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+    MARKER="$HOME/.config/Code/User/.vscode-state-reset"
+    if [ ! -f "$MARKER" ]; then
+      run rm -f "$HOME/.config/Code/User/globalStorage/state.vscdb"
+      run mkdir -p "$(dirname "$MARKER")"
+      run touch "$MARKER"
+    fi
+  '';
+
   home.file.".vscode/extensions".force = true;
 
   programs.vscode = {

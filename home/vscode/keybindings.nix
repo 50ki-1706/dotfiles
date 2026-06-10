@@ -21,16 +21,6 @@
       when = "isMac";
     }
     {
-      key = "ctrl+shift+g";
-      command = "-workbench.view.scm";
-      when = "isLinux && workbench.scm.active";
-    }
-    {
-      key = "cmd+shift+g";
-      command = "-workbench.view.scm";
-      when = "isMac && workbench.scm.active";
-    }
-    {
       key = "ctrl+m d";
       command = "explorer.newFolder";
       when = "isLinux && explorerViewletVisible && filesExplorerFocus";
@@ -71,16 +61,6 @@
       when = "isMac && terminal.active";
     }
     {
-      key = "ctrl+shift+[BracketLeft]";
-      command = "-workbench.action.terminal.toggleTerminal";
-      when = "isLinux && terminal.active";
-    }
-    {
-      key = "cmd+shift+[BracketLeft]";
-      command = "-workbench.action.terminal.toggleTerminal";
-      when = "isMac && terminal.active";
-    }
-    {
       key = "ctrl+shift+[Quote]";
       command = "workbench.action.terminal.splitInActiveWorkspace";
       when = "isLinux";
@@ -111,23 +91,9 @@
       when = "isMac && workbench.panel.output.active";
     }
     {
-      key = "shift+cmd+[BracketRight]";
+      key = "shift+cmd+2";
       command = "workbench.action.quickOpenTerm";
       when = "true";
-    }
-    {
-      key = "alt+left";
-      command = "workbench.action.previousEditor";
-    }
-    {
-      key = "ctrl+pageup";
-      command = "-workbench.action.previousEditor";
-      when = "isLinux";
-    }
-    {
-      key = "cmd+pageup";
-      command = "-workbench.action.previousEditor";
-      when = "isMac";
     }
     {
       key = "ctrl+alt+q";
@@ -135,19 +101,19 @@
       when = "isLinux";
     }
     {
-      key = "cmd+option+q";
+      key = "cmd+alt+q";
       command = "-workbench.action.quit";
       when = "isMac";
     }
     {
-      key = "ctrl+q";
-      command = "workbench.action.closeFolder";
-      when = "isLinux && emptyWorkspaceSupport && workbenchState != 'empty'";
+      key = "ctrl+shift+[";
+      command = "workbench.action.previousEditor";
+      when = "isLinux";
     }
     {
-      key = "cmd+q";
-      command = "workbench.action.closeFolder";
-      when = "isMac && emptyWorkspaceSupport && workbenchState != 'empty'";
+      key = "cmd+shift+[";
+      command = "workbench.action.previousEditor";
+      when = "isMac";
     }
   ];
 }

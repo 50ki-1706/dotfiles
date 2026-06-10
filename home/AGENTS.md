@@ -104,3 +104,8 @@
 20260607 01:07:50 +0900 - OpenCodeのdeep_explore向けにgit履歴差分を生成するpluginと差分更新ルールを追加しました。
 
 20260609 12:01:33 +0900 - architecture-diff-contextプラグインにメタデータ解析機能を追加。architecture.md先頭の-----区切りメタデータブロックからcommit-hashを読み取り、差分計算の基準コミットとして使用可能にしました。
+20260610 00:00:00 +0900 - VSCodeの次回switch時にstate.vscdbを1回だけ削除するactivationを追加しました。
+20260610 09:54:46 +0900 - VSCodeのSCM削除とcloseFolderのキーバインドを整理し、不要な4件を削除しました。
+20260610 09:58:23 +0900 - vscode.nixのactivation参照をlib.hm.dag.entryBeforeへ修正し、hm未定義エラーを解消しました。
+20260610 10:17:56 +0900 - VSCode activationでmarker作成前にUserディレクトリをmkdir -pするようにして、初回switch時のtouch失敗を防ぎました。
+20260610 10:30:00 +0900 - VSCodeにpreviousEditorの左タブ移動キーバインドを追加しました。
