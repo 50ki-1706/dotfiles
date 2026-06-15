@@ -55,6 +55,43 @@ prompt_required() {
   done
 }
 
+cleanup_existing_nix_store_volume() {
+  local diskutil_info
+  local device_identifier
+  local volume_name
+  local mount_point
+
+  [[ "$(uname -s)" == "Darwin" ]] || return
+  command -v diskutil >/dev/null 2>&1 || return
+
+  if ! mount | grep -Eq ' on /nix \(apfs,'; then
+    return
+  fi
+
+  if ! diskutil_info="$(diskutil info /nix 2>/dev/null)"; then
+    echo "警告: /nix のディスク情報を確認できませんでした。既存ボリュームの削除をスキップします。" >&2
+    return
+  fi
+
+  device_identifier="$(printf '%s\n' "$diskutil_info" | awk -F': *' '/^[[:space:]]*Device Identifier:/ { print $2; exit }')"
+  volume_name="$(printf '%s\n' "$diskutil_info" | awk -F': *' '/^[[:space:]]*Volume Name:/ { print $2; exit }')"
+  mount_point="$(printf '%s\n' "$diskutil_info" | awk -F': *' '/^[[:space:]]*Mount Point:/ { print $2; exit }')"
+
+  if [[ -z "$device_identifier" || "$volume_name" != "Nix Store" || "$mount_point" != "/nix" ]]; then
+    echo "警告: /nix はマウントされていますが、Nix Store ボリュームとして確認できませんでした。" >&2
+    echo "必要であれば手動で確認してください: diskutil info /nix" >&2
+    return
+  fi
+
+  echo ""
+  echo "既存の Nix Store ボリュームが見つかりました: ${device_identifier} (${mount_point})"
+  if prompt_yes_no "Nix の再インストール前にこのボリュームを削除しますか?" "y"; then
+    diskutil apfs deleteVolume "$device_identifier"
+  else
+    echo "既存の Nix Store ボリュームを残したまま続行します。"
+  fi
+}
+
 ensure_nix() {
   echo "== Nix の確認 =="
 
@@ -69,6 +106,8 @@ ensure_nix() {
     echo "対話シェルで scripts/install.sh を再実行してください。" >&2
     exit 1
   fi
+
+  cleanup_existing_nix_store_volume
 
   if prompt_yes_no "Nix 公式インストーラを実行しますか?" "y"; then
     sh <(curl -L https://nixos.org/nix/install)
