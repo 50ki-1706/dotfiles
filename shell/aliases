@@ -47,6 +47,16 @@ ide() {
   fi
 }
 
+split() {
+  local layout="${HOME}/.config/zellij/layouts/split.kdl"
+
+  if [[ -n "${ZELLIJ:-}" ]]; then
+    zellij action new-tab --name split --layout "$layout"
+  else
+    zellij --session split --layout "$layout"
+  fi
+}
+
 # --- アカウント別 git clone ---
 # Usage: agclone <dir> <url> [<path>]
 #   dir: accounts.csv のディレクトリ名（例: work）

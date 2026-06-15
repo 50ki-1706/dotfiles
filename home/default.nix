@@ -91,6 +91,26 @@
         }
     }
   '';
+  home.file.".config/zellij/layouts/split.kdl".text = ''
+    layout {
+        default_tab_template {
+            pane size=1 borderless=true {
+                plugin location="tab-bar"
+            }
+            children
+            pane size=1 borderless=true {
+                plugin location="status-bar"
+            }
+        }
+
+        tab name="split" {
+            pane split_direction="vertical" {
+                pane focus=true
+                pane
+            }
+        }
+    }
+  '';
   home.file.".config/opencode/AGENTS.md" = {
     source = ./opencode/AGENTS.md;
     force = true;
