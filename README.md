@@ -1,68 +1,68 @@
-# .dotfiles
+# dotfiles
 
-MacOS 向けの dotfiles リポジトリです。Nix と Home Manager を使って設定とパッケージを管理しています。
+## features
+- Manage applications with Nix and Home Manager
+- Manage multiple Git accounts with separate SSH keys and Git settings
+- user settings (e.g. git global ignore) managed by Nix, symlinked to the home directory
+## Usage
 
-## 初回セットアップ
+`git clone` or Extract the zip file to get this repository on your local machine.
 
-このリポジトリを clone したあと、リポジトリのルートで `scripts/install.sh` を実行してください。
+### Initial setup
+Run the installation script to set up Nix, Home Manager, and Git accounts.
 
 ```sh
 ./scripts/install.sh
 ```
 
-`scripts/install.sh` が初回セットアップに必要な処理をまとめて実行します。
+In the case of multiple Git accounts, `scripts/install.sh` will prompt you to register additional accounts.
 
-1. Nix が未インストールの場合、確認後に Nix 公式インストーラを実行
-2. Git/GitHub アカウント設定を対話的に作成
-3. デフォルト SSH キーを作成
-4. 追加 GitHub アカウント用の作業ディレクトリ、Git 設定、SSH キーを作成
-5. Home Manager を `nix run home-manager -- switch --flake .#koki` で実行
-6. git global ignore など、Nix 管理外の設定を配置
+This installation script creates `accounts.csv` in the repository root to manage additional Git accounts. The script uses this file to set up the following:
 
-Nix インストール直後に現在のシェルから `nix` が見つからない場合は、新しいシェルを開いてから同じコマンドを再実行してください。
+- `~/Dev/{dir}/`: Additional account's development directory
+- `~/.config/git/accounts.include`: Git configuration that includes account-specific settings based on the current directory
+- `~/.config/git/accounts/{dir}.gitconfig`: Account-specific Git settings
+- `~/.ssh/id_ed25519_{dir}`: SSH keys for additional accountsi
 
-## リポジトリの取得
+If an existing `accounts.csv` file is present, the script will ask whether to use it as is or create a new one through interactive input.
 
-Nix がすでにある場合は、次のように一時的に `git` を使って clone できます。
+If you edit `accounts.csv` by hand, follow  `accounts.csv.example` format and make sure to run `./scripts/install.sh` again to apply the changes.
+
+### Git account management
+
+You can use `agc` to clone repositories with the appropriate SSH key and Git settings based on the directory.
 
 ```sh
-nix shell nixpkgs#git --command git clone https://github.com/koki/dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
-./scripts/install.sh
+Usage: agc [<dir>] <url> [<path>]
+dir: accounts.csv のディレクトリ名（例: work）。省略時はデフォルトアカウント
+url: SSH URL（git@... または ssh://... のみ対応）
+path: clone先（省略時は ~/Dev/<dir>/<repo名>、dir省略時は ~/Dev/<repo名>）
+相対パスはカレントディレクトリ基準で解決後、
+clone先ベース配下のみ許可。通常は省略を推奨。
 ```
 
-Nix がまだない場合は、任意の方法でこのリポジトリを `~/.dotfiles` に配置してから `./scripts/install.sh` を実行してください。Nix のインストール以降はスクリプトが案内します。
+After clone ripository, you can use `git` commands as usual. The appropriate SSH key and Git settings will be applied based on the directory.
 
-## 複数 GitHub アカウント
+## 変更適用方法
 
-複数の GitHub アカウントを使う場合は、`scripts/install.sh` の対話入力で追加アカウントを登録してください。スクリプトは `accounts.csv` を生成し、次の設定を作成します。
+nixとhome-managerの設定は、リポジトリルートで次のコマンドを実行することで適用されます。
 
-- `~/Dev/{dir}/`: 追加アカウントの作業ディレクトリ
-- `~/.config/git/accounts.include`: Git 設定の includeIf
-- `~/.config/git/accounts/{dir}.gitconfig`: アカウント別の Git 設定
-- `~/.ssh/id_ed25519_{dir}`: 追加アカウント用の SSH キー
-
-既存の `accounts.csv` がある場合、スクリプト実行時にそのまま使うか、対話入力で作り直すかを選べます。
-
-### accounts.csv の形式
-
-手動で編集する場合は、次の形式にしてください。
-
-```csv
-使いたい名前,メールアドレス
-追加アカウント名,メールアドレス,ディレクトリ名
+```sh
+nix run home-manager -- switch --flake .#koki
 ```
 
-- ヘッダなし
-- 1行目: デフォルトアカウント
-- 2行目以降: 追加アカウント
-- ディレクトリ名は英数字、ハイフン、アンダースコアのみ
+claude codeやcodex等のAIエージェントでは、`nix-verify` skillにより、フォーマットとビルドを含めた変更の適用を行うようにしています。
 
-## 公開鍵の登録
+aliasなどのsymlinkで管理している設定は、ディレクトリの移動を伴わないものであれば、変更を加えるだけで次回のターミナル起動時に反映されます。
 
-`scripts/install.sh` が表示した公開鍵を、対応する GitHub アカウントの **Settings > SSH and GPG keys > New SSH key** に登録してください。
+## Troubleshooting
 
-あとから確認する場合:
+### nixコマンドが見つからない場合
+
+macOSのアップデートなど、特定のタイミングで、nixで管理するアプリケーションが使用できなくなることがあります。
+その場合は、`scripts/install.sh` を再度実行してみてください。NixのインストールとHome Managerの設定が再度適用されます。
+
+## gitアカウントの確認
 
 ```sh
 cat ~/.ssh/id_ed25519.pub
@@ -84,15 +84,3 @@ ssh -i ~/.ssh/id_ed25519_<dir> -o IdentitiesOnly=yes -T git@github.com
 > [!NOTE]
 > `ssh -T git@github.com` はディレクトリに関係なく、常に SSH のデフォルト鍵で接続します。
 > 追加アカウントの鍵切り替えは Git の `includeIf gitdir` と `core.sshCommand` で行うため、実際の切り替え確認は `git push` や `git ls-remote` など Git 経由で行ってください。
-
-## 追加アカウントの clone
-
-追加アカウントのリポジトリを初回 clone するときは `agclone` を使えます。
-
-```sh
-agclone <dir> <url>
-# 例:
-agclone work git@github.com:org/repo.git
-```
-
-`agclone` は SSH 鍵を指定して clone し、リポジトリを `~/Dev/<dir>/` 配下に配置します。clone 後は `includeIf` により、対象ディレクトリ内の Git リポジトリで `[user]` と `[core] sshCommand` が自動で切り替わります。
