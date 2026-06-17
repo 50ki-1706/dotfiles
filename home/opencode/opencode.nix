@@ -5,7 +5,7 @@ in
 {
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
-  model = "openai/gpt-5.4-fast";
+  model = "openai/gpt-5.5";
   small_model = "openai/gpt-5.4-mini-fast";
   default_agent = "spec";
   watcher = {
@@ -75,7 +75,8 @@ in
   agent = {
     deep_explore = {
       mode = "subagent";
-      model = "openai/gpt-5.3-codex";
+      model = "openai/gpt-5.5";
+      reasoningEffort = "low";
       description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/archtecture.md` for reuse.";
       permission = {
         task = {
@@ -179,7 +180,8 @@ in
     };
     plan_review = {
       mode = "subagent";
-      model = "openai/gpt-5.4";
+      model = "openai/gpt-5.5";
+      reasoningEffort = "high";
       description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
       permission = {
         task = {
