@@ -75,8 +75,7 @@ in
   agent = {
     deep_explore = {
       mode = "subagent";
-      model = "openai/gpt-5.5";
-      reasoningEffort = "low";
+      model = "opencode-go/minimax-m3";
       description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/archtecture.md` for reuse.";
       permission = {
         task = {
