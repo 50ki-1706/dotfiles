@@ -75,7 +75,7 @@ in
   agent = {
     deep_explore = {
       mode = "subagent";
-      model = "opencode-go/minimax-m3";
+      model = "opencode-go/glm-5.2";
       description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/archtecture.md` for reuse.";
       permission = {
         task = {
@@ -98,7 +98,7 @@ in
     };
     executer = {
       mode = "subagent";
-      model = "openai/gpt-5.4-mini-fast";
+      model = "opencode-go/kimi-k2.7-code";
       description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
       permission = {
         task = {
@@ -145,7 +145,7 @@ in
     };
     internet_search = {
       mode = "subagent";
-      model = "openai/gpt-5.4-mini";
+      model = "openai/gpt-5.4-mini-fast";
       description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
       permission = {
         task = {
@@ -179,7 +179,7 @@ in
     };
     plan_review = {
       mode = "subagent";
-      model = "openai/gpt-5.5";
+      model = "opencode-go/qwen3.7-max";
       reasoningEffort = "high";
       description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
       permission = {
@@ -211,7 +211,7 @@ in
     };
     spec = {
       mode = "primary";
-      model = "opencode-go/deepseek-v4-pro";
+      model = "openai/gpt-5.5";
       description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
       permission = {
         task = {
