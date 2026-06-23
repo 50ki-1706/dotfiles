@@ -26,6 +26,8 @@ cask "docker-desktop"
 cask "gimp"
 # Web browser
 cask "google-chrome"
+# Open-source code editor
+cask "visual-studio-code"
 # Client for the Google Drive storage service
 cask "google-drive"
 # Speech to text application

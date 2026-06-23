@@ -267,6 +267,16 @@ link_file_to "ignore" "${GIT_SOURCE_DIR}" "${GIT_TARGET_DIR}"
 echo "core.excludesfile の設定は Nix (home-manager switch) で管理されます。"
 
 echo ""
+echo "== VSCode 設定の配置 =="
+VSCODE_SOURCE_DIR="${REPO_ROOT}/config/Code/User"
+VSCODE_TARGET_DIR="${HOME}/Library/Application Support/Code/User"
+
+mkdir -p "${VSCODE_TARGET_DIR}"
+link_file_to "settings.json" "${VSCODE_SOURCE_DIR}" "${VSCODE_TARGET_DIR}"
+link_file_to "keybindings.json" "${VSCODE_SOURCE_DIR}" "${VSCODE_TARGET_DIR}"
+echo "VSCode 本体と拡張機能は Homebrew (Brewfile) で管理されます。"
+
+echo ""
 echo "シェルエイリアスは Nix (home-manager switch) で管理されます。"
 echo ""
 echo "公開鍵を GitHub の Settings > SSH and GPG keys に登録してください。"

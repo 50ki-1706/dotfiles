@@ -37,7 +37,6 @@
 | `programs.opencode` | OpenCode CLIを有効化し、`home/opencode/opencode.nix`の設定を適用します。 |
 | `programs.helix` | Helixエディタを有効化し、テーマ、キー設定、Nixの自動フォーマットを設定します。 |
 | `programs.ghostty` | Ghosttyを有効化し、起動時に`zellij attach -c ghostty`を実行するよう設定します。 |
-| `programs.vscode` | VSCodeを有効化し、settings/keybindings/extensionsを`home/vscode/`で管理します。 |
 
 ### その他の管理対象
 
@@ -49,7 +48,6 @@
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/opencode/AGENTS.md"` | `home/opencode/AGENTS.md`をOpenCode用の`~/.config/opencode/AGENTS.md`として配置します。 |
 | `home.file.".config/helix/yazi-picker.sh"` | HelixからYaziを開き、選択ファイルをHelixで開く補助スクリプトを配置します。 |
-| `home.file.".config/vscode/"` | `config/vscode/`は凍結済み（参照専用・編集禁止）です。VSCodeのsettings/keybindings/extensionsは`home/vscode/vscode.nix`をsource of truthとして管理します。 |
 | `home.activation.installPackages` | Home Managerのパッケージ導入処理を、現在のNix CLIに合わせて`nix profile add`へ調整します。 |
 
 ### 設定内で補助的に参照しているパッケージ
@@ -60,11 +58,17 @@
 | `pkgs.gnused` | Yaziの`search://`形式のパス整形 |
 | `pkgs.ghostty-bin` | Ghosttyの実行パッケージ |
 
+## VSCodeについて
+
+- VSCode本体と拡張機能はHomebrew/Brewfileで管理します。ルートの `Brewfile` に `vscode "..."` として拡張機能を記載しています。
+- VSCodeの `settings.json` / `keybindings.json` は `config/Code/User/` で管理し、`scripts/install.sh` で `~/Library/Application Support/Code/User/` へシンボリックリンクします。
+- `home/vscode/` によるNix管理は廃止しました。
+- Linux で同様の構成を使う場合は、リンク先を `~/.config/Code/User/` に変更してください。ディストリビューションや VSCode 変種によってパスが異なる可能性があるため、事前に確認してください。
+
 ## docsディレクトリについて
 - OpenCode: `docs/opencode/README.md`
 
 ## ロールバック
-- `home/default.nix` から `./vscode/vscode.nix` のimportを削除して `home-manager switch` を再実行します。
 - Homebrew版に戻す場合は `brew install --cask visual-studio-code` を実行します。
 
 ## EDR timeline
@@ -112,3 +116,5 @@
 20260610 12:00:00 +0900 - Ghosttyの設定にJetBrainsMono Nerd Font Monoを指定しました。
 20260611 14:23:04 +0900 - 1:1縦分割のZellijレイアウト split.kdl を追加しました。
 20260618 10:10:40 +0900 - OpenCodeのagent model割り当てを更新しました（plan_review→opencode-go/qwen3.7-max、deep_explore→opencode-go/glm-5.2、executer→opencode-go/kimi-k2.7-code、internet_search→openai/gpt-5.4-mini-fast）。
+20260623 11:29:00 +0900 - VSCodeをNix管理（programs.vscode, home/vscode/）からHomebrew/Brewfile + `config/Code/User/` シンボリックリンク管理へ移行しました。
+20260623 12:00:00 +0900 - VSCode設定のシンボリックリンク先を、macOS の `~/Library/Application Support/Code/User/` に限定しました。Linux 利用時は `~/.config/Code/User/` への変更が必要です。

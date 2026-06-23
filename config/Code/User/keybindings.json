@@ -1,0 +1,117 @@
+[
+  {
+    "command": "workbench.action.toggleSidebarVisibility",
+    "key": "ctrl+b p",
+    "when": "isLinux"
+  },
+  {
+    "command": "workbench.action.toggleSidebarVisibility",
+    "key": "cmd+b p",
+    "when": "isMac"
+  },
+  {
+    "command": "workbench.action.toggleAuxiliaryBar",
+    "key": "ctrl+b s",
+    "when": "isLinux"
+  },
+  {
+    "command": "workbench.action.toggleAuxiliaryBar",
+    "key": "cmd+b s",
+    "when": "isMac"
+  },
+  {
+    "command": "explorer.newFolder",
+    "key": "ctrl+m d",
+    "when": "isLinux && explorerViewletVisible && filesExplorerFocus"
+  },
+  {
+    "command": "explorer.newFolder",
+    "key": "cmd+m d",
+    "when": "isMac && explorerViewletVisible && filesExplorerFocus"
+  },
+  {
+    "command": "explorer.newFile",
+    "key": "ctrl+m f",
+    "when": "isLinux && explorerViewletVisible && filesExplorerFocus"
+  },
+  {
+    "command": "explorer.newFile",
+    "key": "cmd+m f",
+    "when": "isMac && explorerViewletVisible && filesExplorerFocus"
+  },
+  {
+    "command": "workbench.action.toggleMaximizedPanel",
+    "key": "ctrl+shift+j",
+    "when": "isLinux"
+  },
+  {
+    "command": "workbench.action.toggleMaximizedPanel",
+    "key": "cmd+shift+j",
+    "when": "isMac"
+  },
+  {
+    "command": "workbench.action.terminal.toggleTerminal",
+    "key": "ctrl+b t",
+    "when": "isLinux && terminal.active"
+  },
+  {
+    "command": "workbench.action.terminal.toggleTerminal",
+    "key": "cmd+b t",
+    "when": "isMac && terminal.active"
+  },
+  {
+    "command": "workbench.action.terminal.splitInActiveWorkspace",
+    "key": "ctrl+shift+[Quote]",
+    "when": "isLinux"
+  },
+  {
+    "command": "workbench.action.terminal.splitInActiveWorkspace",
+    "key": "cmd+shift+[Quote]",
+    "when": "isMac"
+  },
+  {
+    "command": "workbench.panel.chat",
+    "key": "ctrl+b a",
+    "when": "isLinux && workbench.panel.chat.view.copilot.active"
+  },
+  {
+    "command": "workbench.panel.chat",
+    "key": "cmd+b a",
+    "when": "isMac && workbench.panel.chat.view.copilot.active"
+  },
+  {
+    "command": "workbench.action.output.toggleOutput",
+    "key": "ctrl+b o",
+    "when": "isLinux && workbench.panel.output.active"
+  },
+  {
+    "command": "workbench.action.output.toggleOutput",
+    "key": "cmd+b o",
+    "when": "isMac && workbench.panel.output.active"
+  },
+  {
+    "command": "workbench.action.quickOpenTerm",
+    "key": "shift+cmd+2",
+    "when": "true"
+  },
+  {
+    "command": "-workbench.action.quit",
+    "key": "ctrl+alt+q",
+    "when": "isLinux"
+  },
+  {
+    "command": "-workbench.action.quit",
+    "key": "cmd+alt+q",
+    "when": "isMac"
+  },
+  {
+    "command": "workbench.action.previousEditor",
+    "key": "ctrl+shift+[",
+    "when": "isLinux"
+  },
+  {
+    "command": "workbench.action.previousEditor",
+    "key": "cmd+shift+[",
+    "when": "isMac"
+  }
+]
