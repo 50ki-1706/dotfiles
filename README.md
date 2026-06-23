@@ -1,7 +1,7 @@
 # dotfiles
 
 ## features
-- Manage applications with Nix and Home Manager
+- Manage applications with Nix and Home Manager, Brewfile
 - Manage multiple Git accounts with separate SSH keys and Git settings
 - user settings (e.g. git global ignore) managed by Nix, symlinked to the home directory
 ## Usage
@@ -16,6 +16,19 @@ Run the installation script to set up Nix, Home Manager, and Git accounts.
 ```
 
 In the case of multiple Git accounts, `scripts/install.sh` will prompt you to register additional accounts.
+
+If you use homebrew to manage additioanl applications, you can type this command to install additonal applications.
+
+```sh
+brew bundle
+```
+
+If you add or remove applecation, you can use
+```sh
+brew bundle dump
+```
+
+automatically, or edit Brewfile on hand.
 
 This installation script creates `accounts.csv` in the repository root to manage additional Git accounts. The script uses this file to set up the following:
 
