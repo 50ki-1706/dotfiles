@@ -11,6 +11,7 @@
     ./fonts.nix
     ./helix.nix
     ./ghostty.nix
+    ./aerospace.nix
   ];
 
   programs.zsh = {
