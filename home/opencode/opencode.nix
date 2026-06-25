@@ -65,8 +65,9 @@ in
       "git push*" = "ask";
 
       # 環境構築
-      "brew *" = "ask";
-      "nix *" = "ask";
+      "brew install *" = "ask";
+      "brew uninstall *" = "ask";
+      "nix run home-manager -- switch --flake . *" = "ask";
     };
     skill = {
       "*" = "deny";
@@ -111,9 +112,6 @@ in
         };
         edit = {
           "*" = "allow";
-        };
-        skill = {
-          verify = "allow";
         };
       };
       prompt = readPrompt "execute";
