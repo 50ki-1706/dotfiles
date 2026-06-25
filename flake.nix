@@ -46,21 +46,26 @@
         };
       });
 
-      homeConfigurations."koki" = home-manager.lib.homeManagerConfiguration {
-        pkgs = import nixpkgs {
-          system = "aarch64-darwin";
-          config.allowUnfree = true;
-        };
-        extraSpecialArgs = {
-          # Intent: M5 Mac で動作する最新バージョン（0.20.3）に固定。これ以降のバージョンはバグで動作しない。
-          ollamaPkgs = import nixpkgs-ollama {
+      homeConfigurations."koki" =
+        let
+          pkgs = import nixpkgs {
             system = "aarch64-darwin";
             config.allowUnfree = true;
           };
+        in
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          extraSpecialArgs = {
+            # Intent: M5 Mac で動作する最新バージョン（0.20.3）に固定。これ以降のバージョンはバグで動作しない。
+            ollamaPkgs = import nixpkgs-ollama {
+              system = "aarch64-darwin";
+              config.allowUnfree = true;
+            };
+            isDarwin = pkgs.stdenv.isDarwin;
+          };
+          modules = [
+            ./home
+          ];
         };
-        modules = [
-          ./home
-        ];
-      };
     };
 }

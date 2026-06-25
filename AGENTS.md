@@ -18,6 +18,7 @@ nix run home-manager -- switch --flake .#koki
 | `config/AGENTS.md` | `config/` | `.dotfiles`を編集するエージェント | インストールスクリプトでシンボリックリンクする、ユーザー編集可能な設定ファイルを管理します。 |
 | `git/AGENTS.md` | `git/` | `.dotfiles`を編集するエージェント | Git関連ファイルを置くディレクトリです。現在はグローバルignore設定を管理しています。 |
 | `home/AGENTS.md` | `home/` | `.dotfiles`を編集するエージェント | home-managerで管理するツール、ライブラリ、Zsh/GitHub CLI/OpenCodeなどの設定、関連docsの所在、EDRタイムラインの記録方法をまとめています。 |
+| `hosts/AGENTS.md` | `hosts/` | `.dotfiles`を編集するエージェント | ホスト固有のhome-managerモジュールの管理方針、プラットフォーム別設定の分割方法、EDRタイムラインの記録方法を説明しています。 |
 | `home/opencode/AGENTS.md` | `home/opencode/` | OpenCode agent | OpenCode向けの作業ポリシー、回答や文書の言語、保守性、実装時の制約を定義しています。 |
 | `packages/AGENTS.md` | `packages/` | `.dotfiles`を編集するエージェント | home-managerで読み込むパッケージ定義と、`ssh-bootstrap.nix`によるSSHキー管理、EDRタイムラインの記録方法を説明しています。 |
 | `scripts/AGENTS.md` | `scripts/` | `.dotfiles`を編集するエージェント | `install.sh`、`lib/accounts.sh`、`lib/symlink.sh`などのセットアップスクリプトと、EDRタイムラインの記録方法を説明しています。 |

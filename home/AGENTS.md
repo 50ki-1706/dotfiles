@@ -37,7 +37,6 @@
 | `programs.opencode` | OpenCode CLIを有効化し、`home/opencode/opencode.nix`の設定を適用します。 |
 | `programs.helix` | Helixエディタを有効化し、テーマ、キー設定、Nixの自動フォーマットを設定します。 |
 | `programs.ghostty` | Ghosttyを有効化し、起動時に`zellij attach -c ghostty`を実行するよう設定します。 |
-| `programs.aerospace` | AeroSpaceを有効化し、launchd経由で自動起動するよう設定します。 |
 
 ### その他の管理対象
 
@@ -120,3 +119,5 @@
 20260623 11:29:00 +0900 - VSCodeをNix管理（programs.vscode, home/vscode/）からHomebrew/Brewfile + `config/Code/User/` シンボリックリンク管理へ移行しました。
 20260623 12:00:00 +0900 - VSCode設定のシンボリックリンク先を、macOS の `~/Library/Application Support/Code/User/` に限定しました。Linux 利用時は `~/.config/Code/User/` への変更が必要です。
 20260623 12:30:00 +0900 - AeroSpaceをhome-manager経由で有効化し、launchdによる自動起動を設定しました（home/aerospace.nix新設）。
+20260624 12:00:00 +0900 - AeroSpaceの設定をhome/aerospace.nixからhosts/darwin.nixへ移行し、macOS以外では読み込まれないようにしました。
+20260624 12:30:00 +0900 - hosts/default.nix でのmacOS判定を、インポートフェーズで `isDarwin` 特殊引数を使って行う方式に整理しました。
