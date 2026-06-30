@@ -14,6 +14,7 @@
 | `pkgs.nixfmt` | Nixコードのフォーマッタ |
 | `pkgs.ripgrep` | 高速なテキスト検索ツール |
 | `pkgs.yazi` | ターミナル上のファイルマネージャ |
+| `pkgs.yq-go` | Go実装のyqコマンドラインツール |
 | `pkgs.zellij` | ターミナルマルチプレクサ |
 | `ollamaPkgs.ollama` | ローカルLLM実行ツール |
 
@@ -121,3 +122,4 @@
 20260623 12:30:00 +0900 - AeroSpaceをhome-manager経由で有効化し、launchdによる自動起動を設定しました（home/aerospace.nix新設）。
 20260624 12:00:00 +0900 - AeroSpaceの設定をhome/aerospace.nixからhosts/darwin.nixへ移行し、macOS以外では読み込まれないようにしました。
 20260624 12:30:00 +0900 - hosts/default.nix でのmacOS判定を、インポートフェーズで `isDarwin` 特殊引数を使って行う方式に整理しました。
+20260630 19:15:32 +0900 - home-managerで管理するCLIツールにyq-go（Go実装のyq）を追加しました。

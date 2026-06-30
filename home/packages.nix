@@ -8,6 +8,7 @@
     pkgs.nixfmt
     pkgs.ripgrep
     pkgs.yazi
+    pkgs.yq-go
     pkgs.zellij
     pkgs.claude-code
     ollamaPkgs.ollama
