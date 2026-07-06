@@ -123,3 +123,4 @@
 20260624 12:00:00 +0900 - AeroSpaceの設定をhome/aerospace.nixからhosts/darwin.nixへ移行し、macOS以外では読み込まれないようにしました。
 20260624 12:30:00 +0900 - hosts/default.nix でのmacOS判定を、インポートフェーズで `isDarwin` 特殊引数を使って行う方式に整理しました。
 20260630 19:15:32 +0900 - home-managerで管理するCLIツールにyq-go（Go実装のyq）を追加しました。
+20260701 12:00:00 +0900 - OpenCodeのMCP設定にplaywrightを追加しました。

@@ -26,6 +26,15 @@ in
       ];
       enabled = true;
     };
+    playwright = {
+      type = "local";
+      command = [
+        "npx"
+        "-y"
+        "@playwright/mcp@latest"
+      ];
+      enabled = true;
+    };
   };
   permission = {
     read = {
