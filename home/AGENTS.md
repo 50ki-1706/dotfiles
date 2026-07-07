@@ -127,3 +127,4 @@
 20260630 19:15:32 +0900 - home-managerで管理するCLIツールにyq-go（Go実装のyq）を追加しました。
 20260701 12:00:00 +0900 - OpenCodeのMCP設定にplaywrightを追加しました。
 20260706 21:59:53 +0900 - Zellijのキーバインド設定`home/zellij/config.kdl`をhome-manager管理に移行し、macOS Option+RightArrow衝突を避けるため`Alt f`のバインドを削除しました。
+20260707 10:14:38 +0900 - OpenCodeのarchitectureテンプレートとdiff guidanceを修正。deep_exploreが`.agents/archtecture.md`を初期化・更新し、placeholderを実情報で置き換えてメタデータを更新するようpromptとpluginを強化しました。

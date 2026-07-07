@@ -51,7 +51,6 @@ async function writeDiffContext(startDir) {
     try {
       await mkdir(agentsDir, { recursive: true })
       await copyFile(TEMPLATE_PATH, archPath)
-      await log(client, directory, "archtecture.md created from template")
     } catch (e) {
       // Template missing or copy failed — continue without it
     }
@@ -195,13 +194,17 @@ function render({ status, base, committedChanges, currentHead, recentCommits, wo
   const shortBase = base.head ? base.head.slice(0, 12) : "(none)"
   const shortHead = currentHead.slice(0, 12)
   const marker = `<!-- opencode-architecture-head: ${currentHead} -->`
-  const guidance = hasMetadataBlock
-    ? `- If status is STALE, ask deep_explore to inspect the listed files first.
-- Treat this file as a change detector, not as evidence; confirm findings by reading source files.
-- After updating ${ARCHITECTURE_PATH}, update \`commit-hash\` and \`date\` in the metadata block at the top of that file.`
-    : `- If status is STALE, ask deep_explore to inspect the listed files first.
-- Treat this file as a change detector, not as evidence; confirm findings by reading source files.
-- After updating ${ARCHITECTURE_PATH}, replace or add current_head_marker in that file.`
+  const refreshInstruction = hasMetadataBlock
+    ? `- After refreshing ${ARCHITECTURE_PATH}, set \`commit-hash\` to \`suggested_metadata_commit_hash\` and set \`date\` to today in the metadata block.`
+    : `- After refreshing ${ARCHITECTURE_PATH}, replace or add the current_head_marker.`
+  const guidance =
+    status === "MISSING" || status === "UNKNOWN_BASE"
+      ? `- Ask deep_explore to create or populate ${ARCHITECTURE_PATH}, replacing all placeholder/template content with real project information.
+${refreshInstruction}
+- Treat this file as a change detector, not as evidence; confirm findings by reading source files.`
+      : `- If status is STALE, ask deep_explore to inspect the listed files first.
+${refreshInstruction}
+- Treat this file as a change detector, not as evidence; confirm findings by reading source files.`
 
   return `# Architecture Diff Context
 

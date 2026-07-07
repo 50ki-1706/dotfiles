@@ -118,6 +118,7 @@
   };
   home.file.".config/opencode/example/archteture.md" = {
     source = ./opencode/example/archteture.md;
+    force = true;
   };
   home.file.".config/opencode/plugins/architecture-diff-context.js" = {
     source = ./opencode/plugins/architecture-diff-context.js;
