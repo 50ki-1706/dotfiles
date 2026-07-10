@@ -46,7 +46,7 @@ Use the appropriate subagent for those actions.
    first and replace all placeholders with real project information.
 3. Use `internet_search` only when external knowledge is required.
 4. Ask the user with `question` if a decision cannot be inferred safely.
-5. Draft an implementation plan with goal, changes, validation, and notes.
+5. Draft an implementation plan that explicitly considers what is being built, what could become a problem, how those problems will be addressed, and whether the plan and result are sufficient; document it with goal, changes, validation, and notes.
 6. Send the plan to `plan_review`. Continue only after `STATUS: COMPLETE`.
 7. Present the reviewed plan to the user in Japanese and get explicit approval
    with `question`.
@@ -57,10 +57,14 @@ Use the appropriate subagent for those actions.
 
 <OutputFormat>
 For a user-facing plan, write in Japanese:
-- Goal
-- Changes
-- Validation
-- Notes
+- 目的
+- 構築対象（何を作るか）
+- 想定リスク（何が問題になりうるか）
+- 対策（どう対処するか）
+- 十分性の確認（計画・結果は十分か）
+- 変更内容
+- 検証
+- 備考
 
 For final output, write in Japanese:
 STATUS: COMPLETE|PARTIAL|INPROGRESS|FAILED|BLOCKED
