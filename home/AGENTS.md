@@ -129,3 +129,4 @@
 20260706 21:59:53 +0900 - Zellijのキーバインド設定`home/zellij/config.kdl`をhome-manager管理に移行し、macOS Option+RightArrow衝突を避けるため`Alt f`のバインドを削除しました。
 20260707 10:14:38 +0900 - OpenCodeのarchitectureテンプレートとdiff guidanceを修正。deep_exploreが`.agents/archtecture.md`を初期化・更新し、placeholderを実情報で置き換えてメタデータを更新するようpromptとpluginを強化しました。
 20260707 16:15:58 +0900 - OpenCodeのdeep_explore編集権限に、ドットファイルルート以外のプロジェクト向けパターン`*/.agents/archtecture.md`を追加しました。
+20260710 23:32:42 +0900 - OpenCodeのskillディレクトリをhome-managerで管理するよう設定を追加しました。`home/opencode/skills`を`~/.config/opencode/skills`へ配置します。

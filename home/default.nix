@@ -124,6 +124,10 @@
     source = ./opencode/plugins/architecture-diff-context.js;
     force = true;
   };
+  home.file.".config/opencode/skills" = {
+    source = ./opencode/skills;
+    force = true;
+  };
 
   programs.opencode = {
     enable = true;
