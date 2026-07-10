@@ -183,6 +183,7 @@
   "workbench.iconTheme": "material-icon-theme",
   "workbench.layoutControl.enabled": false,
   "workbench.list.smoothScrolling": true,
+  "workbench.secondarySideBar.defaultVisibility": "hidden",
   "workbench.secondarySideBar.showLabels": false,
   "workbench.sideBar.location": "right",
   "workbench.startupEditor": "none",
