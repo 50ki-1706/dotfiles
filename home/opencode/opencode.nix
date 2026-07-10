@@ -97,6 +97,7 @@ in
         edit = {
           "*" = "deny";
           ".agents/archtecture.md" = "allow";
+          "*/.agents/archtecture.md" = "allow";
         };
       };
       prompt = readPrompt "deep_explore";
