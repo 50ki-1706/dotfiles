@@ -5,8 +5,8 @@ in
 {
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
-  model = "openai/gpt-5.5";
-  small_model = "openai/gpt-5.4-mini-fast";
+  model = "openai/gpt-5.6-sol";
+  small_model = "openai/gpt-5.6-luna";
   default_agent = "spec";
   watcher = {
     ignore = [
@@ -153,7 +153,7 @@ in
     };
     internet_search = {
       mode = "subagent";
-      model = "openai/gpt-5.4-mini-fast";
+      model = "opencode-go/kimi-k2.6";
       description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
       permission = {
         task = {
@@ -219,7 +219,8 @@ in
     };
     spec = {
       mode = "primary";
-      model = "openai/gpt-5.5";
+      model = "openai/gpt-5.6-sol";
+      reasoningEffort = "medium";
       description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
       permission = {
         task = {
