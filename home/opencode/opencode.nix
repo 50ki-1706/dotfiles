@@ -10,10 +10,6 @@ in
   default_agent = "spec";
   watcher = {
     ignore = [
-      ".env"
-      ".env.*"
-      "**/.env"
-      "**/.env.*"
       "node_modules/**"
       "dist/**"
       ".git/**"
@@ -48,8 +44,11 @@ in
     read = {
       "*" = "allow";
       ".env" = "deny";
-      "*.env.*" = "deny";
-      "*.env.example" = "allow";
+      ".env.*" = "deny";
+      "**/.env" = "deny";
+      "**/.env.*" = "deny";
+      ".env.example" = "allow";
+      "**/.env.example" = "allow";
       "*.key" = "deny";
       "*.pem" = "deny";
       "id_rsa*" = "deny";
