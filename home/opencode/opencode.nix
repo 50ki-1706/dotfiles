@@ -6,7 +6,7 @@ in
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
   model = "openai/gpt-5.6-sol";
-  small_model = "openai/gpt-5.6-luna";
+  small_model = "openai/gpt-5.6-terra";
   default_agent = "spec";
   watcher = {
     ignore = [
@@ -139,7 +139,7 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "openai/gpt-5.6-luna";
+      model = "openai/gpt-5.6-terra";
       reasoningEffort = "low";
       description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
       permission = {
