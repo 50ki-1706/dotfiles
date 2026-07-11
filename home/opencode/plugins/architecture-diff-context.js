@@ -6,9 +6,10 @@ import { promisify } from "node:util"
 
 const execFileAsync = promisify(execFile)
 
-const ARCHITECTURE_PATH = ".agents/archtecture.md"
-const DIFF_PATH = ".agents/archtecture-diff.md"
-const TEMPLATE_PATH = join(homedir(), ".config", "opencode", "example", "archteture.md")
+const ARCHITECTURE_PATH = ".agents/architecture.md"
+const DIFF_PATH = ".agents/architecture-diff.md"
+const LEGACY_ARCHITECTURE_PATH = ".agents/archtecture.md"
+const TEMPLATE_PATH = join(homedir(), ".config", "opencode", "example", "architecture.md")
 const HEAD_MARKER = /<!--\s*opencode-architecture-head:\s*([0-9a-f]{7,40})\s*-->/i
 const METADATA_DELIMITER = /^-----$/
 const MAX_FILES = 120
@@ -50,9 +51,24 @@ async function writeDiffContext(startDir) {
   } catch {
     try {
       await mkdir(agentsDir, { recursive: true })
-      await copyFile(TEMPLATE_PATH, archPath)
+      let initialized = false
+      const legacyPath = join(repoRoot, LEGACY_ARCHITECTURE_PATH)
+      try {
+        await stat(legacyPath)
+        await copyFile(legacyPath, archPath)
+        initialized = true
+      } catch {
+        // Legacy file not present; fall through to template.
+      }
+      if (!initialized) {
+        try {
+          await copyFile(TEMPLATE_PATH, archPath)
+        } catch {
+          // Template missing or copy failed — continue without it
+        }
+      }
     } catch (e) {
-      // Template missing or copy failed — continue without it
+      // Directory creation failed — continue without architecture file
     }
   }
   const architectureText = await readText(archPath)
@@ -135,10 +151,10 @@ async function findBaseHead(repoRoot, architectureText, metadata) {
 
   const existingCommit = await normalizeBase(repoRoot, lastArchitectureCommit)
   if (existingCommit) {
-    return { head: existingCommit, source: "last_archtecture_commit" }
+    return { head: existingCommit, source: "last_architecture_commit" }
   }
 
-  return { head: "", source: "missing_last_archtecture_commit" }
+  return { head: "", source: "missing_last_architecture_commit" }
 }
 
 async function normalizeBase(repoRoot, candidate) {

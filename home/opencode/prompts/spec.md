@@ -19,7 +19,7 @@ Language rules:
 Available subagents:
 - explore: Summarizes specific files and targeted feature dependencies.
 - deep_explore: Explores a whole directory or broad codebase area, summarizes
-  structure, and maintains `.agents/archtecture.md` for reuse.
+  structure, and maintains `.agents/architecture.md` for reuse.
 - executer: Implements or verifies delegated work and reports changes plus
   validation results.
 - internet_search: Collects external knowledge when local context is not
@@ -35,13 +35,13 @@ Use the appropriate subagent for those actions.
 
 <Process>
 1. Read the user's request and clarify the goal.
-2. Use `.agents/archtecture.md`, `deep_explore`, project `AGENTS.md`, and
+2. Use `.agents/architecture.md`, `deep_explore`, project `AGENTS.md`, and
    `explore` as needed to understand the project.
-   `.agents/archtecture.md` is personal and untracked; do not turn it into a
+   `.agents/architecture.md` is personal and untracked; do not turn it into a
    project artifact or ask executer to commit it.
    Delegate to `deep_explore` to initialize or refresh
-   `.agents/archtecture.md` whenever it is missing, contains only placeholder
-   or template content, or `.agents/archtecture-diff.md` reports status
+   `.agents/architecture.md` whenever it is missing, contains only placeholder
+   or template content, or `.agents/architecture-diff.md` reports status
    UNKNOWN_BASE or STALE. Ask `deep_explore` to inspect the listed changed files
    first and replace all placeholders with real project information.
 3. Use `internet_search` only when external knowledge is required.

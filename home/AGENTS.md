@@ -130,3 +130,4 @@
 20260707 10:14:38 +0900 - OpenCodeのarchitectureテンプレートとdiff guidanceを修正。deep_exploreが`.agents/archtecture.md`を初期化・更新し、placeholderを実情報で置き換えてメタデータを更新するようpromptとpluginを強化しました。
 20260707 16:15:58 +0900 - OpenCodeのdeep_explore編集権限に、ドットファイルルート以外のプロジェクト向けパターン`*/.agents/archtecture.md`を追加しました。
 20260710 23:32:42 +0900 - OpenCodeのskillディレクトリをhome-managerで管理するよう設定を追加しました。`home/opencode/skills`を`~/.config/opencode/skills`へ配置します。
+20260711 11:32:42 +0900 - OpenCodeのarchitectureファイル名を正しい綴り`architecture.md`へ統一しました。テンプレート、plugin、prompt、agent設定、docsをcanonical名に更新し、個人のlegacyファイル`.agents/archtecture.md`への後方互換性を保持します。

@@ -12,14 +12,14 @@ Role: Spec
 
 Role: explorer
 - 特定ファイルの処理を要約し、Primary Agentに報告する。
-- deep_explore,`.agents/archtecture.md`で確認した内容をもとに、特定の機能の依存関係を特定し、要約してPrimary Agentに報告する。
-- すでに`.agents/archtecture.md`が存在する場合、
+- deep_explore,`.agents/architecture.md`で確認した内容をもとに、特定の機能の依存関係を特定し、要約してPrimary Agentに報告する。
+- すでに`.agents/architecture.md`が存在する場合、
 コードベースを直接返すことはしない。
 Role: deep_explorer
 - ディレクトリ全体を探索し、コードベースの構造を理解する。
 - コードベースの構造を要約し、Primary Agentに報告する。
-- 調査した結果は、`.agents/archtecture.md` に保存し、再利用できるようにする。
-- `.agents/archtecture-diff.md` が存在する場合は、gitのコミット履歴差分から検出された変更ファイルを優先的に確認し、`.agents/archtecture.md` の差分更新に利用する。
+- 調査した結果は、`.agents/architecture.md` に保存し、再利用できるようにする。
+- `.agents/architecture-diff.md` が存在する場合は、gitのコミット履歴差分から検出された変更ファイルを優先的に確認し、`.agents/architecture.md` の差分更新に利用する。
 コードベースを直接返すことはしない。
 Role: executer
 - Primaryエージェントからの実装依頼、検証依頼を実施し、変更内容、検証結果を要約して、報告します。
@@ -48,7 +48,7 @@ Role: plan_review
 例:
 使用できるサブエージェント:
 explore: 単一ファイルの処理の要約や、単一機能におけるファイルの依存関係の要約を返します。
-deep_explore: プロジェクト全体のアーキテクチャを把握し、`.agents/archtecture.md`を更新します。
+deep_explore: プロジェクト全体のアーキテクチャを把握し、`.agents/architecture.md`を更新します。
 executer: 実装や検証を行い、その結果を返します。
 internet_search: あなたが把握していない外部知識を必要としている場合に使用します。聞きたいトピックの内容を要約して、報告します。
 plan_review: 実装計画を作成したら、必ずこのエージェントに検証をお願いします。
@@ -67,7 +67,7 @@ plan_review: 実装計画を作成したら、必ずこのエージェントに�
 エージェントのプロセスを指定します。
 例:
 - ユーザの入力を確認する。
-- `.agents/archtecture.md`あるいはdeep_exploreエージェント,プロジェクト内のAGENTS.mdを参考にして、プロジェクトの概要を把握する。
+- `.agents/architecture.md`あるいはdeep_exploreエージェント,プロジェクト内のAGENTS.mdを参考にして、プロジェクトの概要を把握する。
 - 必要であればexploreエージェント、internet_searchエージェントで追加の情報を取得する。
 - また必要であれば`question tool`を使用して、情報を補完する。
 - 得られた情報をもとにユーザの入力に対する実装計画を作成する。
@@ -126,7 +126,7 @@ plan_review: 実装計画を作成したら、必ずこのエージェントに�
 例:
 このエージェントができること
 - `list`,`glob`,`grep`,`read`toolを使用して、ディレクトリ、モジュール先の依存、呼び出し関係、共通パターンなどを読み取り可能なツールを使用できます。
-- `.agent/architecture.md`がなければ作成、そのファイルの編集ができます。
+- `.agents/architecture.md`がなければ作成、そのファイルの編集ができます。
 
 このエージェントができないこと
 - bashは使用できません。

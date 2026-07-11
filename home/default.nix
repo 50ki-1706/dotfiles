@@ -116,8 +116,8 @@
     source = ./opencode/AGENTS.md;
     force = true;
   };
-  home.file.".config/opencode/example/archteture.md" = {
-    source = ./opencode/example/archteture.md;
+  home.file.".config/opencode/example/architecture.md" = {
+    source = ./opencode/example/architecture.md;
     force = true;
   };
   home.file.".config/opencode/plugins/architecture-diff-context.js" = {

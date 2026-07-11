@@ -10,7 +10,7 @@
 }
 ```
 
-## archtecture差分更新フックについて
-`architecture-diff-context.js` は OpenCode plugin として読み込まれ、session作成時とidle時に `.agents/archtecture-diff.md` を生成する。
-このファイルは `.agents/archtecture.md` の `opencode-architecture-head` マーカー、または最後に `.agents/archtecture.md` を変更したcommitを基準に、現在のHEADまでの変更ファイルと未commit差分をまとめる。
-deep_exploreはこの生成ファイルを読んで、変更ファイルを優先的に確認してから `.agents/archtecture.md` を更新する。
+## architecture差分更新フックについて
+`architecture-diff-context.js` は OpenCode plugin として読み込まれ、session作成時とidle時に `.agents/architecture-diff.md` を生成する。
+このファイルは `.agents/architecture.md` の `opencode-architecture-head` マーカー、または最後に `.agents/architecture.md` を変更したcommitを基準に、現在のHEADまでの変更ファイルと未commit差分をまとめる。
+deep_exploreはこの生成ファイルを読んで、変更ファイルを優先的に確認してから `.agents/architecture.md` を更新する。

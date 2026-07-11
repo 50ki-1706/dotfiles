@@ -93,7 +93,7 @@ in
     deep_explore = {
       mode = "subagent";
       model = "opencode-go/glm-5.2";
-      description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/archtecture.md` for reuse.";
+      description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
       permission = {
         task = {
           "*" = "deny";
@@ -104,7 +104,7 @@ in
         edit = {
           "*" = "deny";
           ".agents/archtecture.md" = "allow";
-          "*/.agents/archtecture.md" = "allow";
+          ".agents/architecture.md" = "allow";
         };
       };
       prompt = readPrompt "deep_explore";
