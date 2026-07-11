@@ -10,10 +10,18 @@ in
   default_agent = "spec";
   watcher = {
     ignore = [
+      ".env"
+      ".env.*"
+      "**/.env"
+      "**/.env.*"
       "node_modules/**"
       "dist/**"
       ".git/**"
-      ".agents/archtecture-diff.md"
+      ".next/**"
+      "__pycache__/**"
+      "**/__pycache__/**"
+      ".venv/**"
+      "venv/**"
     ];
   };
   mcp = {
