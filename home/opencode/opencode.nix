@@ -92,7 +92,8 @@ in
   agent = {
     deep_explore = {
       mode = "subagent";
-      model = "opencode-go/glm-5.2";
+      model = "openai/gpt-5.6-terra";
+      reasoningEffot = "xhigh";
       description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
       permission = {
         task = {
@@ -138,7 +139,8 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "opencode-go/deepseek-v4-flash";
+      model = "openai/gpt-5.6-luna";
+      reasoningEffort = "low";
       description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
       permission = {
         task = {
