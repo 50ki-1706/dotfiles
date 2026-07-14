@@ -107,6 +107,7 @@ in
           ".agents/archtecture.md" = "allow";
           ".agents/architecture.md" = "allow";
         };
+        external_directory = "allow";
       };
       prompt = readPrompt "deep_explore";
       tools = {
@@ -152,6 +153,7 @@ in
         edit = {
           "*" = "deny";
         };
+        external_directory = "allow";
       };
       prompt = readPrompt "explore";
       tools = {
