@@ -140,7 +140,7 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "openai/gpt-5.6-sol";
+      model = "openai/gpt-5.6-luna";
       reasoningEffort = "low";
       description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
       permission = {
