@@ -5,8 +5,8 @@ in
 {
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
-  model = "openai/gpt-5.6-sol";
-  small_model = "openai/gpt-5.6-terra";
+  model = "openai/gpt-5.6-terra";
+  small_model = "openai/gpt-5.6-luna";
   default_agent = "spec";
   watcher = {
     ignore = [
@@ -92,8 +92,8 @@ in
   agent = {
     deep_explore = {
       mode = "subagent";
-      model = "openai/gpt-5.6-terra";
-      reasoningEffot = "xhigh";
+      model = "openai/gpt-5.6-sol";
+      reasoningEffort = "xhigh";
       description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
       permission = {
         task = {
@@ -140,7 +140,7 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "openai/gpt-5.6-terra";
+      model = "openai/gpt-5.6-sol";
       reasoningEffort = "low";
       description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
       permission = {
@@ -230,7 +230,7 @@ in
     };
     spec = {
       mode = "primary";
-      model = "openai/gpt-5.6-sol";
+      model = "openai/gpt-5.6-terra";
       reasoningEffort = "medium";
       description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
       permission = {
