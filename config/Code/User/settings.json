@@ -6,11 +6,7 @@
     },
     "editor.suggest.insertMode": "replace"
   },
-  "cSpell.userWords": [
-    "iniad",
-    "startuml",
-    "enduml"
-  ],
+  "cSpell.userWords": ["iniad", "startuml", "enduml"],
   "chat.agent.maxRequests": 100,
   "chat.tools.terminal.autoApprove": {
     "/^python - <<'PY'\nimport heapq\nfrom collections import defaultdict\nedges=\\[\\]\nwith open\\('/Users/koki/Documents/INIAD/spring_2026/algo/algo/05/dij\\.edgelist'\\) as f:\n    for line in f:\n        u,v,w=map\\(int,line\\.split\\(\\)\\)\n        edges\\.append\\(\\(u,v,w\\)\\)\n\nadj=defaultdict\\(list)\nverts=set\\(\\)\nfor u,v,w in edges:\n    adj\\[u\\]\\.append\\(\\(v,w\\)\\)\n    adj\\[v\\]\\.append\\(\\(u,w\\)\\)\n    verts\\.update\\(\\[u,v\\]\\)\n\nstart=min\\(verts\\)\nvisited=\\{start\\}\nheap=\\[\\]\nfor v,w in adj\\[start\\]: heapq\\.heappush\\(heap,\\(w,start,v\\)\\)\nmst=\\[\\]\nwhile heap and len\\(visited\\)<len\\(verts\\):\n    w,u,v=heapq\\.heappop\\(heap)\n    if v in visited: continue\n    visited\\.add\\(v)\n    mst\\.append\\(\\(u,v,w\\)\\)\n    for nv,nw in adj\\[v\\]:\n        if nv not in visited:\n            heapq\\.heappush\\(heap,\\(nw,v,nv\\)\\)\nprint\\(mst\\)\nprint\\(sum\\(w for \\*_,w in mst\\)\\)\nPY$/'": {
@@ -48,9 +44,7 @@
   "editor.roundedSelection": true,
   "editor.semanticHighlighting.enabled": true,
   "editor.smoothScrolling": true,
-  "editor.wordSegmenterLocales": [
-    "ja"
-  ],
+  "editor.wordSegmenterLocales": ["ja"],
   "editor.wordWrap": "on",
   "editor.wrappingIndent": "indent",
   "emmet.variables": {
@@ -68,11 +62,7 @@
   },
   "files.autoGuessEncoding": true,
   "files.autoSave": "onFocusChange",
-  "files.candidateGuessEncodings": [
-    "utf8",
-    "shiftjis",
-    "eucjp"
-  ],
+  "files.candidateGuessEncodings": ["utf8", "shiftjis", "eucjp"],
   "files.defaultLanguage": "Japanese",
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
@@ -188,5 +178,6 @@
   "workbench.sideBar.location": "right",
   "workbench.startupEditor": "none",
   "workbench.view.alwaysShowHeaderActions": true,
-  "workbench.colorTheme": "Monokai Dimmed"
+  "workbench.colorTheme": "Monokai Dimmed",
+  "chat.agent.sandbox.enabled": "on"
 }
