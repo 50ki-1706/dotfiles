@@ -118,7 +118,7 @@ in
     };
     executer = {
       mode = "subagent";
-      model = "opencode-go/kimi-k2.7-code";
+      model = "opencode-go/kimi-k3";
       description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
       permission = {
         task = {
@@ -164,7 +164,7 @@ in
     };
     internet_search = {
       mode = "subagent";
-      model = "opencode-go/kimi-k2.6";
+      model = "opencode-go/kimi-k2.7-code";
       description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
       permission = {
         task = {
