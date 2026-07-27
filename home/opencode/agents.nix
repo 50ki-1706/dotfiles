@@ -18,6 +18,8 @@ in
         "*" = "deny";
         ".agents/archtecture.md" = "allow";
         ".agents/architecture.md" = "allow";
+        "*/.agents/archtecture.md" = "allow";
+        "*/.agents/architecture.md" = "allow";
       };
       external_directory = "allow";
     };
