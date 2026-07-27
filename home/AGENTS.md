@@ -131,3 +131,4 @@
 20260707 16:15:58 +0900 - OpenCodeのdeep_explore編集権限に、ドットファイルルート以外のプロジェクト向けパターン`*/.agents/archtecture.md`を追加しました。
 20260710 23:32:42 +0900 - OpenCodeのskillディレクトリをhome-managerで管理するよう設定を追加しました。`home/opencode/skills`を`~/.config/opencode/skills`へ配置します。
 20260711 11:32:42 +0900 - OpenCodeのarchitectureファイル名を正しい綴り`architecture.md`へ統一しました。テンプレート、plugin、prompt、agent設定、docsをcanonical名に更新し、個人のlegacyファイル`.agents/archtecture.md`への後方互換性を保持します。
+20260726 08:25:48 +0900 - OpenCodeのagent定義を`home/opencode/agents.nix`へ分離し、`opencode.nix`は`agent = import ./agents.nix;`で読み込む構成に整理しました。生成される設定は変更前と同一です。
