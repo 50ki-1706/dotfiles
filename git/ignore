@@ -1,2 +1,3 @@
 .agents/*
 !.agents/skills
+.playwright-mcp/
