@@ -4,8 +4,7 @@ in
 {
   deep_explore = {
     mode = "subagent";
-    model = "opencode-go/kimi-k3";
-    reasoningEffort = "xhigh";
+    model = "opencode-go/glm-5.2";
     description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
     permission = {
       task = {
@@ -54,8 +53,7 @@ in
   };
   explore = {
     mode = "subagent";
-    model = "opencode-go/deepseek-v4-flash";
-    reasoningEffort = "low";
+    model = "opencode-go/mimo-v2.5";
     description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
     permission = {
       task = {
@@ -78,7 +76,7 @@ in
   };
   internet_search = {
     mode = "subagent";
-    model = "opencode-go/hy3";
+    model = "opencode-go/mimo-v2.5";
     description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
     permission = {
       task = {
@@ -112,8 +110,8 @@ in
   };
   plan_review = {
     mode = "subagent";
-    model = "opencode-go/qwen3.7-max";
-    reasoningEffort = "high";
+    model = "openai/gpt-5.6-sol";
+    reasoningEffort = "xhigh";
     description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
     permission = {
       task = {
@@ -144,8 +142,7 @@ in
   };
   spec = {
     mode = "primary";
-    model = "openai/gpt-5.6-sol";
-    reasoningEffort = "medium";
+    model = "opencode-go/qwen3.7-plus";
     description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
     permission = {
       task = {
