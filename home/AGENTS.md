@@ -133,3 +133,4 @@
 20260711 11:32:42 +0900 - OpenCodeのarchitectureファイル名を正しい綴り`architecture.md`へ統一しました。テンプレート、plugin、prompt、agent設定、docsをcanonical名に更新し、個人のlegacyファイル`.agents/archtecture.md`への後方互換性を保持します。
 20260726 08:25:48 +0900 - OpenCodeのagent定義を`home/opencode/agents.nix`へ分離し、`opencode.nix`は`agent = import ./agents.nix;`で読み込む構成に整理しました。生成される設定は変更前と同一です。
 20260727 16:36:13 +0900 - OpenCodeのdeep_explore編集権限に、クロスプロジェクト向けのcanonical・legacy両方の`.agents/architecture.md`パターンを復元・追加しました。
+20260731 07:02:24 +0900 - OpenCodeのarchitecture-diff-contextプラグインで、Nix store由来の0444な`.agents/architecture.md`を更新時に0644へ正規化し、既存ファイルのdeep_explore書き込み失敗を防ぐよう修正しました。

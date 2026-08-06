@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process"
-import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises"
+import { chmod, copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { promisify } from "node:util"
@@ -70,6 +70,11 @@ async function writeDiffContext(startDir) {
     } catch (e) {
       // Directory creation failed — continue without architecture file
     }
+  }
+  try {
+    await chmod(archPath, 0o644)
+  } catch {
+    // Mode normalization failed — continue without interrupting the refresh.
   }
   const architectureText = await readText(archPath)
   const metadata = parseMetadata(architectureText)
