@@ -1,23 +1,23 @@
 { lib, pkgs, ... }:
 let
-  mkGitHubBlock = identityFile: {
-    hostname = "github.com";
-    user = "git";
-    inherit identityFile;
-    identitiesOnly = true;
-    extraOptions = {
+  mkGitHubBlock =
+    identityFile:
+    {
+      HostName = "github.com";
+      User = "git";
+      IdentityFile = identityFile;
+      IdentitiesOnly = true;
       AddKeysToAgent = "yes";
     }
     // lib.optionalAttrs pkgs.stdenv.isDarwin {
       UseKeychain = "yes";
     };
-  };
 in
 {
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
-    matchBlocks = {
+    settings = {
       "github.com" = mkGitHubBlock "~/.ssh/id_ed25519";
     };
   };

@@ -34,7 +34,7 @@
 | `programs.starship` | Starshipプロンプトを有効化し、Zsh連携も有効化します。 |
 | `programs.git` | Gitを有効化し、SSH署名形式、グローバルignore、アカウント別includeを設定します。 |
 | `programs.gh` | GitHub CLIを有効化し、GitプロトコルをSSHに設定します。 |
-| `programs.ssh` | SSH設定を有効化し、GitHub用の鍵とmacOS Keychain連携を設定します。 |
+| `programs.ssh` | SSH設定を有効化し、GitHub用の鍵とmacOS Keychain連携を`settings`で設定します。 |
 | `programs.opencode` | OpenCode CLIを有効化し、`home/opencode/opencode.nix`の設定を適用します。 |
 | `programs.helix` | Helixエディタを有効化し、テーマ、キー設定、Nixの自動フォーマットを設定します。 |
 | `programs.ghostty` | Ghosttyを有効化し、起動時に`zellij attach -c ghostty`を実行するよう設定します。 |
