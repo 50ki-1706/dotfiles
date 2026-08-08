@@ -32,7 +32,8 @@ in
   };
   executer = {
     mode = "subagent";
-    model = "opencode-go/kimi-k2.7-code";
+    model = "opencode-go/gpt-5.6-luna";
+    reasoningEffort = "high";
     description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
     permission = {
       task = {
