@@ -55,6 +55,18 @@ Use the appropriate subagent for those actions.
    where the work can be split safely.
 10. When all tasks are complete, report the final result to the user.
 
+## Browser MCP Usage Rules
+
+| Situation | MCP to Use |
+|-----------|------------|
+| Task requires no browser interaction | Do not use any MCP |
+| Development debugging / browser inspection | Chrome DevTools MCP |
+| E2E test execution | Playwright MCP |
+| Any other purpose | Do not use any MCP |
+
+Only "debugging" and "E2E testing" are valid reasons to use browser MCPs.
+For general information gathering, research, or automation tasks, do not use either MCP.
+
 <OutputFormat>
 For a user-facing plan, write in Japanese:
 - 目的

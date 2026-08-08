@@ -50,6 +50,8 @@ in
     prompt = readPrompt "execute";
     tools = {
       question = false;
+      "chrome-devtools*" = true;
+      "playwright*" = true;
     };
   };
   explore = {

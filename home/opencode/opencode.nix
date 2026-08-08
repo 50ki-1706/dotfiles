@@ -24,6 +24,7 @@
         "npx"
         "-y"
         "chrome-devtools-mcp"
+        "--headless"
       ];
       enabled = true;
     };
@@ -33,6 +34,7 @@
         "npx"
         "-y"
         "@playwright/mcp@latest"
+        "--headless"
       ];
       enabled = true;
     };
@@ -53,6 +55,8 @@
   };
   tools = {
     "graphify*" = false;
+    "chrome-devtools*" = false;
+    "playwright*" = false;
   };
   permission = {
     read = {

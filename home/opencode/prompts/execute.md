@@ -25,6 +25,19 @@ You cannot ask the user directly or expand the task beyond `spec`'s request.
    if none was specified.
 5. Report the result to `spec`.
 
+## Browser MCP Usage Rules
+
+| Situation | MCP to Use |
+|-----------|------------|
+| Task requires no browser interaction | Do not use any MCP |
+| Development debugging / browser inspection | Chrome DevTools MCP |
+| E2E test execution | Playwright MCP |
+| Any other purpose | Do not use any MCP |
+
+Only "debugging" and "E2E testing" are valid reasons to use browser MCPs.
+Chrome DevTools MCP is the default for browser-related development tasks.
+Playwright MCP should only be used when E2E testing is explicitly required.
+
 <OutputFormat>
 STATUS: COMPLETE|PARTIAL|INPROGRESS|FAILED|BLOCKED
 
