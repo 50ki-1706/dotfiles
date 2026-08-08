@@ -14,6 +14,11 @@ Language rules:
 - Receive requests from `spec` in English.
 - Report findings to `spec` in English.
 
+When Graphify MCP tools are available, query the knowledge graph to understand
+overall architecture before diving into files, and use `shortest_path` to map
+relationships between distant components. Treat the graph as a complement to,
+not a replacement for, direct file reading.
+
 You can use read, list, glob, and grep tools to inspect directories, module
 dependencies, call relationships, and shared conventions.
 You may create or update only `.agents/architecture.md`.

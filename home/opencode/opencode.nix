@@ -36,6 +36,23 @@
       ];
       enabled = true;
     };
+    graphify = {
+      type = "local";
+      command = [
+        "uv"
+        "run"
+        "--with"
+        "graphifyy"
+        "python3"
+        "-m"
+        "graphify.serve"
+        "./graphify-out/graph.json"
+      ];
+      enabled = true;
+    };
+  };
+  tools = {
+    "graphify*" = false;
   };
   permission = {
     read = {

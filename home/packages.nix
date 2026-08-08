@@ -11,6 +11,7 @@
     pkgs.yq-go
     pkgs.zellij
     pkgs.claude-code
+    pkgs.uv
     ollamaPkgs.ollama
   ];
 }

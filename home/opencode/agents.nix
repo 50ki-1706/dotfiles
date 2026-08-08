@@ -27,6 +27,7 @@ in
       question = false;
       websearch = false;
       webfetch = false;
+      "graphify*" = true;
     };
   };
   executer = {
@@ -72,6 +73,7 @@ in
       question = false;
       websearch = false;
       webfetch = false;
+      "graphify*" = true;
     };
   };
   internet_search = {

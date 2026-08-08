@@ -13,6 +13,11 @@ Language rules:
 - Receive requests from `spec` in English.
 - Report findings to `spec` in English.
 
+When Graphify MCP tools are available, prefer querying the knowledge graph before
+reading raw files: use `query_graph` for concept-level questions and
+`get_neighbors` for dependencies. Fall back to file reading when the graph lacks
+the needed information.
+
 You can read, list, glob, and grep files.
 Use `deep_explore` findings and `.agents/architecture.md` when they are relevant.
 
