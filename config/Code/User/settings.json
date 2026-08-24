@@ -180,5 +180,6 @@
   "workbench.startupEditor": "none",
   "workbench.view.alwaysShowHeaderActions": true,
   "workbench.colorTheme": "Monokai Dimmed",
-  "chat.agent.sandbox.enabled": "on"
+  "chat.agent.sandbox.enabled": "on",
+  "security.promptForLocalFileProtocolHandling": false
 }
