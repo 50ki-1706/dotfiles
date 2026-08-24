@@ -3,7 +3,7 @@
   "permission": {
     "skill": {
       "*": "deny",
-      "nix-verify": "allow",
+      "nix-verify": "allow"
     }
   }
 }
