@@ -1,6 +1,6 @@
 service_tier = "priority"
-model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model = "gpt-5.6-luna"
+model_reasoning_effort = "xhigh"
 
 notify = ["/Users/koki/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 
@@ -66,6 +66,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/Users/koki/Documents/Codex/2026-08-22/referenced-chatgpt-conversation-this-is-an"]
+trust_level = "trusted"
+
+[projects."/Users/koki/.dotfiles"]
 trust_level = "trusted"
 
 [desktop]
