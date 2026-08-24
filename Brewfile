@@ -4,8 +4,12 @@ brew "helm"
 brew "k9s"
 # Run local Kubernetes cluster in Docker
 brew "kind"
+# Markup-based typesetting system
+brew "typst"
 # Vi 'workalike' with many additional features
 brew "vim"
+# Unified toolchain and entry point for web development
+brew "vite-plus"
 # Tools for building Android applications
 cask "android-studio"
 # 3D model slicing software for 3D printers, maintained by Bambu Lab
@@ -14,8 +18,8 @@ cask "bambu-studio"
 cask "bitwarden"
 # Open source IDE for exploring and testing APIs
 cask "bruno"
-# OpenAI's official ChatGPT desktop app
-cask "chatgpt"
+# Anthropic's official Claude AI desktop app
+cask "claude"
 # OpenAI's Codex desktop app for managing coding agents
 cask "codex-app"
 # Voice and text chat software
@@ -26,48 +30,53 @@ cask "docker-desktop"
 cask "gimp"
 # Web browser
 cask "google-chrome"
-# Open-source code editor
-cask "visual-studio-code"
 # Client for the Google Drive storage service
 cask "google-drive"
 # Speech to text application
 cask "handy"
+# App to write, plan, collaborate, and get organised
+cask "notion"
 # Knowledge base that works on top of a local folder of plain text Markdown files
 cask "obsidian"
 # Document editor
 cask "onlyoffice"
-# AI usage tracker for Cursor, Claude Code, Codex, Copilot and more
-cask "openusage"
+# Programmable solid 3D CAD modeller
+cask "openscad@snapshot"
+# Generate images of interactive plotly charts
+cask "orca"
 # Control your tools with a few keystrokes
 cask "raycast"
 # Music streaming service
 cask "spotify"
+# Video game digital distribution service
+cask "steam"
 # Platform for 3D content
 cask "unity"
 # Management tool for Unity
 cask "unity-hub"
+# Open-source code editor
+cask "visual-studio-code"
 # Web browser with built-in email client focusing on customization and control
 cask "vivaldi"
-vscode "bierner.markdown-mermaid"
-vscode "bpruitt-goddard.mermaid-markdown-syntax-highlighting"
+# Multiplayer code editor
+cask "zed"
+# Video communication and virtual meeting platform
+cask "zoom"
 vscode "esbenp.prettier-vscode"
-vscode "github.copilot"
 vscode "github.vscode-github-actions"
 vscode "github.vscode-pull-request-github"
+vscode "jetpack-io.devbox"
 vscode "jnoortheen.nix-ide"
-vscode "marp-team.marp-vscode"
 vscode "mechatroner.rainbow-csv"
-vscode "mikestead.dotenv"
-vscode "mkhl.direnv"
 vscode "ms-ceintl.vscode-language-pack-ja"
 vscode "ms-vscode-remote.remote-containers"
 vscode "ms-vscode.live-server"
 vscode "pkief.material-icon-theme"
-vscode "ryosuke-asano.iniad-ai-mop-vscode-chat"
 vscode "simonsiefke.svg-preview"
+vscode "sst-dev.opencode"
 vscode "streetsidesoftware.code-spell-checker"
+vscode "tamasfe.even-better-toml"
 vscode "tomoki1207.pdf"
-vscode "vscodevim.vim"
 vscode "yzane.markdown-pdf"
 go "cmd/go"
 go "cmd/gofmt"

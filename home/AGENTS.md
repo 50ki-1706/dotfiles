@@ -138,3 +138,4 @@
 20260808 12:00:00 +0900 - Graphify（コード知識グラフツール）をNix管理のhome.packages（uv経由）に追加し、OpenCodeのMCPサーバーとして設定しました。
 20260808 21:15:33 +0900 - home/opencode/skills/gh-cli/SKILL.md を追加。ghコマンドの操作（PR作成・編集、Issue管理、リモート情報取得）のためのOpenCodeグローバルスキルを作成。opencode.nix/opencode.json に権限追加、AGENTS.md にGitHub操作はghコマンドを使用する旨を追記。
 20260824 19:10:00 +0900 - OpenCodeスキルを`skills/`へ集約し、home/opencodeと`.agents/skills`から移動したスキル、および既存のグローバルスキルを統合しました。`~/.agents/skills`はmkOutOfStoreSymlinkでリポジトリの`skills/`を参照します。
+20260824 20:13:19 +0900 - Brewfileを現在の環境に合わせて再生成しました（brew formula/cask/vscode拡張の追加と削除）。
