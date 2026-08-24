@@ -124,9 +124,8 @@
     source = ./opencode/plugins/architecture-diff-context.js;
     force = true;
   };
-  home.file.".config/opencode/skills" = {
-    source = ./opencode/skills;
-    force = true;
+  home.file.".agents/skills" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/skills";
   };
 
   programs.opencode = {

@@ -23,3 +23,4 @@ nix run home-manager -- switch --flake .#koki
 | `packages/AGENTS.md` | `packages/` | `.dotfiles`を編集するエージェント | home-managerで読み込むパッケージ定義と、`ssh-bootstrap.nix`によるSSHキー管理、EDRタイムラインの記録方法を説明しています。 |
 | `scripts/AGENTS.md` | `scripts/` | `.dotfiles`を編集するエージェント | `install.sh`、`lib/accounts.sh`、`lib/symlink.sh`などのセットアップスクリプトと、EDRタイムラインの記録方法を説明しています。 |
 | `shell/AGENTS.md` | `shell/` | `.dotfiles`を編集するエージェント | shell aliasesの管理方法、home-managerからの読み込み、既存環境を壊さないためのsource方針、EDRタイムラインの記録方法を説明しています。 |
+| `skills/AGENTS.md` | `skills/` | `.dotfiles`を編集するエージェント | OpenCode/agentスキルの集約場所、`~/.agents/skills`へのデプロイ方法、EDRタイムラインの記録方法を説明しています。 |
