@@ -1,5 +1,5 @@
 ---
-name: gh
+name: gh-cli
 description: Patterns for invoking the GitHub CLI (gh) from agents. Covers structured output, pagination, repo targeting, search vs list, gh api fallback.
 ---
 
