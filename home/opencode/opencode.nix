@@ -105,6 +105,7 @@
     };
     skill = {
       "*" = "deny";
+      "gh-cli" = "allow";
     };
   };
   agent = import ./agents.nix;

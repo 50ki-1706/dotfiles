@@ -4,7 +4,7 @@ in
 {
   deep_explore = {
     mode = "subagent";
-    model = "opencode-go/glm-5.2";
+    model = "opencode-go/ox-alpha-free";
     description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
     permission = {
       task = {
@@ -33,7 +33,7 @@ in
   executer = {
     mode = "subagent";
     model = "opencode-go/gpt-5.6-luna";
-    reasoningEffort = "high";
+    reasoningEffort = "max";
     description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
     permission = {
       task = {
@@ -147,7 +147,7 @@ in
   };
   spec = {
     mode = "primary";
-    model = "opencode-go/qwen3.7-plus";
+    model = "opencode-go/deepseek-v4-flash-vision-exp";
     description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
     permission = {
       task = {
