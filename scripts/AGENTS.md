@@ -1,8 +1,8 @@
 # 各スクリプトについて
 
 - accounts.sh: GitHubアカウントの管理とSSHキーの生成を行います。
-- migrate-legacy-links.sh: 旧レイアウトのGit ignoreとVSCodeリンクをswitch前に安全に移行します。
-- install.sh: Nixのインストールと、必要なセットアップを対話的に行います。switch前に`migrate-legacy-links.sh`を実行し、Git ignoreとVSCodeの配置はhome-managerへ委譲します。
+- migrate-legacy-links.sh: zshで実行し、旧レイアウトのGit ignoreとVSCodeリンクをswitch前に安全に移行します。
+- install.sh: zshで実行し、Nixのインストールと必要なセットアップを対話的に行います。switch前に`migrate-legacy-links.sh`をzshで実行し、Git ignoreとVSCodeの配置はhome-managerへ委譲します。
 - `lib/symlink.sh`: 削除済みです。一般的なシンボリックリンク作成はinstall.shでは行いません。
 
 
@@ -16,3 +16,4 @@
 20260623 11:29:00 +0900 - VSCodeのsettings.json / keybindings.jsonをリポジトリ管理へ移行しました。
 20260623 12:00:00 +0900 - VSCode設定のシンボリックリンク先をmacOSの`~/Library/Application Support/Code/User/`に整理しました。
 20260825 09:23:06 +0900 - Git ignoreとVSCode設定の配置をhome-managerへ移し、install.shから旧シンボリックリンク処理を分離しました。switch前の移行スクリプトを追加し、lib/symlink.shを削除しました。
+20260825 09:45:56 +0900 - install.shとmigrate-legacy-links.shをzsh実行へ切り替え、既存の移行処理の挙動を維持しました。

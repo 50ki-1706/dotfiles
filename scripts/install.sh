@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${0:A}")/.." && pwd)"
 
 . "${REPO_ROOT}/scripts/lib/accounts.sh"
 
@@ -30,7 +30,7 @@ prompt_yes_no() {
   fi
 
   while true; do
-    read -r -p "${prompt} ${suffix} " answer
+    read -r "answer?${prompt} ${suffix} "
     answer="${answer:-$default}"
     case "$answer" in
       y | Y | yes | YES) return 0 ;;
@@ -45,7 +45,7 @@ prompt_required() {
   local value
 
   while true; do
-    read -r -p "$prompt" value
+    read -r "value?$prompt"
     if [[ -n "$value" ]]; then
       printf '%s\n' "$value"
       return
@@ -252,7 +252,7 @@ parse_accounts "$CSV_FILE"
 
 echo ""
 echo "== Nix 設定の同期 =="
-/bin/bash "${REPO_ROOT}/scripts/migrate-legacy-links.sh" || {
+zsh "${REPO_ROOT}/scripts/migrate-legacy-links.sh" || {
   echo "Legacy symlink migration failed; aborting before switch."
   exit 1
 }

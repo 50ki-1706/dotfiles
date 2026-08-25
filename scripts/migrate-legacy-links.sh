@@ -1,8 +1,10 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
+setopt ksharrays
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_PATH="${(%):-%N}"
+REPO_ROOT="$(cd "$(dirname "${SCRIPT_PATH:A}")/.." && pwd)"
 
 absolutize_dir() {
   local base="$1"
@@ -221,6 +223,6 @@ main() {
   fi
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ "${ZSH_EVAL_CONTEXT:-}" == "toplevel" ]]; then
   main "$@"
 fi
