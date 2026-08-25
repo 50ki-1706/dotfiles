@@ -156,3 +156,4 @@
 20260824 19:10:00 +0900 - OpenCodeスキルを`skills/`へ集約し、home/opencodeと`.agents/skills`から移動したスキル、および既存のグローバルスキルを統合しました。`~/.agents/skills`はmkOutOfStoreSymlinkでリポジトリの`skills/`を参照します。
 20260824 20:13:19 +0900 - Brewfileを現在の環境に合わせて再生成しました（brew formula/cask/vscode拡張の追加と削除）。
 20260825 09:23:06 +0900 - home-managerの入口をhome.nixへ改名し、git.nix、shell.nix、vscode.nixとdotfiles/へ設定を分割しました。旧Git/VSCodeシンボリックリンクの移行処理をswitch前に追加しました。
+20260825 10:48:18 +0900 - OpenCodeのpromptを圧縮し、共通ルール（言語・スコープ・ステータス語彙）をhome/opencode/AGENTS.mdのCommon Agent Rulesへ集約しました。モデル割当と仕様は変更なし。
