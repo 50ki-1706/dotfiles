@@ -15,12 +15,14 @@ nix run home-manager -- switch --flake .#koki
 | 所在地 | 対象ディレクトリ | 参照する対象 | 内容 |
 | --- | --- | --- | --- |
 | `AGENTS.md` | リポジトリ全体 | `.dotfiles`を編集するエージェント | home-managerのビルド方法、シンプルな実装方針、nix変更時の検証方針、各ディレクトリの`AGENTS.md`確認ルールを定義しています。 |
-| `config/AGENTS.md` | `config/` | `.dotfiles`を編集するエージェント | インストールスクリプトでシンボリックリンクする、ユーザー編集可能な設定ファイルを管理します。 |
-| `git/AGENTS.md` | `git/` | `.dotfiles`を編集するエージェント | Git関連ファイルを置くディレクトリです。現在はグローバルignore設定を管理しています。 |
-| `home/AGENTS.md` | `home/` | `.dotfiles`を編集するエージェント | home-managerで管理するツール、ライブラリ、Zsh/GitHub CLI/OpenCodeなどの設定、関連docsの所在、EDRタイムラインの記録方法をまとめています。 |
+| `home/AGENTS.md` | `home/` | `.dotfiles`を編集するエージェント | `home.nix`を入口に、git.nix、shell.nix、vscode.nixなどhome-managerの設定、関連docsの所在、EDRタイムラインの記録方法をまとめています。 |
+| `home/dotfiles/` | `home/dotfiles/` | `.dotfiles`を編集するエージェント | home-managerから配置する生設定ファイルを管理します（git/ignore、vscode/、shell/aliases）。codex/config.tomlは未配置のスナップショットです。 |
 | `hosts/AGENTS.md` | `hosts/` | `.dotfiles`を編集するエージェント | ホスト固有のhome-managerモジュールの管理方針、プラットフォーム別設定の分割方法、EDRタイムラインの記録方法を説明しています。 |
 | `home/opencode/AGENTS.md` | `home/opencode/` | OpenCode agent | OpenCode向けの作業ポリシー、回答や文書の言語、保守性、実装時の制約を定義しています。 |
 | `packages/AGENTS.md` | `packages/` | `.dotfiles`を編集するエージェント | home-managerで読み込むパッケージ定義と、`ssh-bootstrap.nix`によるSSHキー管理、EDRタイムラインの記録方法を説明しています。 |
-| `scripts/AGENTS.md` | `scripts/` | `.dotfiles`を編集するエージェント | `install.sh`、`lib/accounts.sh`、`lib/symlink.sh`などのセットアップスクリプトと、EDRタイムラインの記録方法を説明しています。 |
-| `shell/AGENTS.md` | `shell/` | `.dotfiles`を編集するエージェント | shell aliasesの管理方法、home-managerからの読み込み、既存環境を壊さないためのsource方針、EDRタイムラインの記録方法を説明しています。 |
+| `scripts/AGENTS.md` | `scripts/` | `.dotfiles`を編集するエージェント | `install.sh`と`migrate-legacy-links.sh`などのセットアップスクリプト、およびEDRタイムラインの記録方法を説明しています。 |
 | `skills/AGENTS.md` | `skills/` | `.dotfiles`を編集するエージェント | OpenCode/agentスキルの集約場所、`~/.agents/skills`へのデプロイ方法、EDRタイムラインの記録方法を説明しています。 |
+
+## EDR timeline
+
+20260825 09:23:06 +0900 - Nix dotfilesの構成を整理し、home-managerのモジュールと配置用生設定をhome/配下へ集約しました。旧シンボリックリンクの移行処理をinstall.shのswitch前に追加しました。

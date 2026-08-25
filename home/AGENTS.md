@@ -1,5 +1,17 @@
 # homeディレクトリについて
 
+## 構成
+
+- `home.nix`: home-manager設定の入口です。共通設定、Zellij/OpenCodeの配置、フォント導入アクティベーション、パッケージ導入アクティベーションを管理します。
+- `git.nix`: `programs.git`と、`home/dotfiles/git/ignore`を`mkOutOfStoreSymlink`で配置する設定を管理します。
+- `shell.nix`: `programs.zsh`と、`home/dotfiles/shell/aliases`をstore-backedで配置する設定を管理します。
+- `vscode.nix`: Darwin限定でVSCode設定を`mkOutOfStoreSymlink`により配置します。
+- `packages.nix`、`ssh.nix`、`fonts.nix`、`helix.nix`、`ghostty.nix`: 各ツール、SSH、フォント、エディタ、ターミナルのモジュールです。
+- `zellij/`: Zellij設定です。
+- `dotfiles/`: 配置対象のgit/ignore、vscode/、shell/aliasesと、未リンクのcodex/スナップショットを管理します。
+- `opencode/`: OpenCode設定、プロンプト、プラグイン、サンプルを管理します。
+- `docs/`: home-manager関連ドキュメントを管理します。
+
 ## home-managerで管理されているツール、ライブラリについて
 
 ### `home.packages`で明示的に導入しているもの
@@ -45,7 +57,7 @@
 | --- | --- |
 | `fonts.fontconfig.enable` | fontconfigベースのアプリでHome Manager管理フォントを利用できるようにします。 |
 | `home.activation.installFonts` | macOSネイティブアプリ向けにNerd Fontを`~/Library/Fonts/HomeManager`へコピーします。 |
-| `home.file.".config/shell/aliases"` | `shell/aliases`を`~/.config/shell/aliases`として配置します。 |
+| `home.file.".config/shell/aliases"` | `home/dotfiles/shell/aliases`を`~/.config/shell/aliases`としてstore-backedに配置します。 |
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/layouts/split.kdl"` | 1:1縦分割のZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/config.kdl"` | Zellijのキーバインド設定を配置します。macOSのOption+RightArrow衝突を避けるため`Alt f`を削除しています。 |
@@ -64,9 +76,13 @@
 ## VSCodeについて
 
 - VSCode本体と拡張機能はHomebrew/Brewfileで管理します。ルートの `Brewfile` に `vscode "..."` として拡張機能を記載しています。
-- VSCodeの `settings.json` / `keybindings.json` は `config/Code/User/` で管理し、`scripts/install.sh` で `~/Library/Application Support/Code/User/` へシンボリックリンクします。
-- `home/vscode/` によるNix管理は廃止しました。
-- Linux で同様の構成を使う場合は、リンク先を `~/.config/Code/User/` に変更してください。ディストリビューションや VSCode 変種によってパスが異なる可能性があるため、事前に確認してください。
+- VSCodeの `settings.json` / `keybindings.json` は `home/dotfiles/vscode/` で管理し、`home/vscode.nix` の `home.file` から配置します。Darwinの配置先は `~/Library/Application Support/Code/User/` です。
+- Linuxで同様の構成を使う場合は、`home/vscode.nix` の配置先を `~/.config/Code/User/` に変更してください。ディストリビューションやVSCode変種によってパスが異なる可能性があるため、事前に確認してください。
+
+## Gitとシェルエイリアスについて
+
+- Gitのignoreは `home/dotfiles/git/ignore` を `home/git.nix` の `mkOutOfStoreSymlink` で `~/.config/git/ignore` に配置します。`programs.git.settings.core.excludesFile` がこのパスを参照し、`programs.git.includes` は `~/.config/git/accounts.include` を参照します。
+- シェルエイリアスは `home/dotfiles/shell/aliases` を `home/shell.nix` の通常の `home.file` sourceで `~/.config/shell/aliases` に配置します。Zshはこのファイルをsourceし、既存のrcファイルを直接上書きしません。
 
 ## docsディレクトリについて
 - OpenCode: `docs/opencode/README.md`
@@ -119,8 +135,8 @@
 20260610 12:00:00 +0900 - Ghosttyの設定にJetBrainsMono Nerd Font Monoを指定しました。
 20260611 14:23:04 +0900 - 1:1縦分割のZellijレイアウト split.kdl を追加しました。
 20260618 10:10:40 +0900 - OpenCodeのagent model割り当てを更新しました（plan_review→opencode-go/qwen3.7-max、deep_explore→opencode-go/glm-5.2、executer→opencode-go/kimi-k2.7-code、internet_search→openai/gpt-5.4-mini-fast）。
-20260623 11:29:00 +0900 - VSCodeをNix管理（programs.vscode, home/vscode/）からHomebrew/Brewfile + `config/Code/User/` シンボリックリンク管理へ移行しました。
-20260623 12:00:00 +0900 - VSCode設定のシンボリックリンク先を、macOS の `~/Library/Application Support/Code/User/` に限定しました。Linux 利用時は `~/.config/Code/User/` への変更が必要です。
+20260623 11:29:00 +0900 - VSCodeをNix管理からHomebrew/Brewfileとリポジトリ管理の設定ファイルへ移行しました。
+20260623 12:00:00 +0900 - VSCode設定の配置先をmacOSの`~/Library/Application Support/Code/User/`に限定しました。Linux利用時は`~/.config/Code/User/`への変更が必要です。
 20260623 12:30:00 +0900 - AeroSpaceをhome-manager経由で有効化し、launchdによる自動起動を設定しました（home/aerospace.nix新設）。
 20260624 12:00:00 +0900 - AeroSpaceの設定をhome/aerospace.nixからhosts/darwin.nixへ移行し、macOS以外では読み込まれないようにしました。
 20260624 12:30:00 +0900 - hosts/default.nix でのmacOS判定を、インポートフェーズで `isDarwin` 特殊引数を使って行う方式に整理しました。
@@ -139,3 +155,4 @@
 20260808 21:15:33 +0900 - home/opencode/skills/gh-cli/SKILL.md を追加。ghコマンドの操作（PR作成・編集、Issue管理、リモート情報取得）のためのOpenCodeグローバルスキルを作成。opencode.nix/opencode.json に権限追加、AGENTS.md にGitHub操作はghコマンドを使用する旨を追記。
 20260824 19:10:00 +0900 - OpenCodeスキルを`skills/`へ集約し、home/opencodeと`.agents/skills`から移動したスキル、および既存のグローバルスキルを統合しました。`~/.agents/skills`はmkOutOfStoreSymlinkでリポジトリの`skills/`を参照します。
 20260824 20:13:19 +0900 - Brewfileを現在の環境に合わせて再生成しました（brew formula/cask/vscode拡張の追加と削除）。
+20260825 09:23:06 +0900 - home-managerの入口をhome.nixへ改名し、git.nix、shell.nix、vscode.nixとdotfiles/へ設定を分割しました。旧Git/VSCodeシンボリックリンクの移行処理をswitch前に追加しました。

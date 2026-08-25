@@ -4,7 +4,6 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-. "${REPO_ROOT}/scripts/lib/symlink.sh"
 . "${REPO_ROOT}/scripts/lib/accounts.sh"
 
 CSV_FILE="${REPO_ROOT}/accounts.csv"
@@ -253,27 +252,19 @@ parse_accounts "$CSV_FILE"
 
 echo ""
 echo "== Nix 設定の同期 =="
+/bin/bash "${REPO_ROOT}/scripts/migrate-legacy-links.sh" || {
+  echo "Legacy symlink migration failed; aborting before switch."
+  exit 1
+}
 nix run home-manager -- switch --flake "${REPO_ROOT}#koki"
 
 echo ""
 echo "opencode 本体と設定は Nix (home-manager switch) で管理されます。"
 
 echo ""
-echo "== git global ignore の配置 =="
-GIT_SOURCE_DIR="${REPO_ROOT}/git"
-GIT_TARGET_DIR="${HOME}/.config/git"
-
-link_file_to "ignore" "${GIT_SOURCE_DIR}" "${GIT_TARGET_DIR}"
 echo "core.excludesfile の設定は Nix (home-manager switch) で管理されます。"
 
 echo ""
-echo "== VSCode 設定の配置 =="
-VSCODE_SOURCE_DIR="${REPO_ROOT}/config/Code/User"
-VSCODE_TARGET_DIR="${HOME}/Library/Application Support/Code/User"
-
-mkdir -p "${VSCODE_TARGET_DIR}"
-link_file_to "settings.json" "${VSCODE_SOURCE_DIR}" "${VSCODE_TARGET_DIR}"
-link_file_to "keybindings.json" "${VSCODE_SOURCE_DIR}" "${VSCODE_TARGET_DIR}"
 echo "VSCode 本体と拡張機能は Homebrew (Brewfile) で管理されます。"
 
 echo ""

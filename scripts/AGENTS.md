@@ -1,8 +1,9 @@
 # 各スクリプトについて
 
 - accounts.sh: GitHubアカウントの管理とSSHキーの生成を行います。
-- symlink.sh: dotfilesのシンボリックリンクを作成します。
-- install.sh: Nixのインストールと、必要なセットアップを対話的に行います。git global ignore と VSCode の settings.json / keybindings.json をシンボリックリンクします（VSCode設定のリンク先は macOS の `~/Library/Application Support/Code/User/` です）。
+- migrate-legacy-links.sh: 旧レイアウトのGit ignoreとVSCodeリンクをswitch前に安全に移行します。
+- install.sh: Nixのインストールと、必要なセットアップを対話的に行います。switch前に`migrate-legacy-links.sh`を実行し、Git ignoreとVSCodeの配置はhome-managerへ委譲します。
+- `lib/symlink.sh`: 削除済みです。一般的なシンボリックリンク作成はinstall.shでは行いません。
 
 
 ## EDR timeline
@@ -12,5 +13,6 @@
 20260529 12:00:00 +0900 - README.mdの簡略化のため、install.shの内容を整備しました。
 ```
 20260615 19:17:12 +0900 - Nix再インストール時に既存のNix Storeボリュームを確認して削除できるよう、install.shを更新しました。
-20260623 11:29:00 +0900 - VSCodeのsettings.json / keybindings.json を `config/Code/User/` から `~/.config/Code/User/` へシンボリックリンクする処理をinstall.shに追加しました。
-20260623 12:00:00 +0900 - VSCode設定のシンボリックリンク先を macOS の `~/Library/Application Support/Code/User/` に変更し、Linux 利用時は `~/.config/Code/User/` に変更することを記載しました。
+20260623 11:29:00 +0900 - VSCodeのsettings.json / keybindings.jsonをリポジトリ管理へ移行しました。
+20260623 12:00:00 +0900 - VSCode設定のシンボリックリンク先をmacOSの`~/Library/Application Support/Code/User/`に整理しました。
+20260825 09:23:06 +0900 - Git ignoreとVSCode設定の配置をhome-managerへ移し、install.shから旧シンボリックリンク処理を分離しました。switch前の移行スクリプトを追加し、lib/symlink.shを削除しました。

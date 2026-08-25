@@ -11,24 +11,11 @@
     ./fonts.nix
     ./helix.nix
     ./ghostty.nix
+    ./git.nix
+    ./shell.nix
+    ./vscode.nix
     ../hosts
   ];
-
-  programs.zsh = {
-    enable = true;
-    initContent = lib.mkMerge [
-      (lib.mkOrder 1000 ''
-        if [[ -f ~/.config/shell/aliases ]]; then
-          source ~/.config/shell/aliases
-        fi
-      '')
-      (lib.mkOrder 1500 ''
-        if [[ -f ~/.zshrc.local ]]; then
-          source ~/.zshrc.local
-        fi
-      '')
-    ];
-  };
 
   programs.mise = {
     enable = true;
@@ -40,31 +27,12 @@
     enableZshIntegration = true;
   };
 
-  programs.git = {
-    enable = true;
-
-    signing = {
-      format = "ssh";
-    };
-
-    settings = {
-      core = {
-        excludesFile = "~/.config/git/ignore";
-      };
-    };
-
-    includes = [
-      { path = "~/.config/git/accounts.include"; }
-    ];
-  };
-
   programs.gh = {
     enable = true;
 
     settings.git_protocol = "ssh";
   };
 
-  home.file.".config/shell/aliases".source = ../shell/aliases;
   home.file.".config/zellij/layouts/ide.kdl".text = ''
     layout {
         default_tab_template {

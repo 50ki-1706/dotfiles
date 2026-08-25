@@ -64,7 +64,7 @@
             isDarwin = pkgs.stdenv.isDarwin;
           };
           modules = [
-            ./home
+            ./home/home.nix
           ];
         };
     };
