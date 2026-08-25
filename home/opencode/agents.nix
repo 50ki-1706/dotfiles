@@ -4,7 +4,8 @@ in
 {
   deep_explore = {
     mode = "subagent";
-    model = "opencode-go/ox-alpha-free";
+    model = "openai/gpt-5.6-sol";
+    reasoningEffort = "medium";
     description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
     permission = {
       task = {
