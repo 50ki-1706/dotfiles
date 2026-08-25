@@ -32,7 +32,7 @@ in
   };
   executer = {
     mode = "subagent";
-    model = "opencode-go/gpt-5.6-luna";
+    model = "openai/gpt-5.6-luna";
     reasoningEffort = "max";
     description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
     permission = {
