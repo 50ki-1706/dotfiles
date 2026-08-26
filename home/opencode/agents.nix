@@ -4,8 +4,8 @@ in
 {
   deep_explore = {
     mode = "subagent";
-    model = "openai/gpt-5.6-sol";
-    reasoningEffort = "medium";
+    model = "openai/gpt-5.6-sol-fast";
+    reasoningEffort = "high";
     description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
     permission = {
       task = {
@@ -33,7 +33,7 @@ in
   };
   executer = {
     mode = "subagent";
-    model = "openai/gpt-5.6-luna";
+    model = "openai/gpt-5.6-luna-fast";
     reasoningEffort = "max";
     description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
     permission = {
@@ -116,8 +116,8 @@ in
   };
   plan_review = {
     mode = "subagent";
-    model = "openai/gpt-5.6-sol";
-    reasoningEffort = "xhigh";
+    model = "opencode-go/ox-alpha-free";
+    reasoningEffort = "max";
     description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
     permission = {
       task = {
