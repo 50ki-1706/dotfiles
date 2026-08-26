@@ -162,3 +162,4 @@
 20260826 10:41:39 +0900 - OpenCodeの共通ルール・権限定義と重複するagent promptを圧縮し、specのtodowrite capabilityを無効化しました。
 20260826 10:49:20 +0900 - OpenCode全agentの共通出力契約をグローバルAGENTS.mdへ集約し、個別promptをrole固有の内容定義へ整理しました。
 20260826 11:02:06 +0900 - OpenCodeの共通出力形式をNixの単一定義から各agent promptへ付加し、global AGENTS.mdの反復注入コストを削減しました。
+20260826 11:18:48 +0900 - OpenCodeの共通出力形式を専用Markdownへ分離し、agents.nixをpromptの読み込みと結合だけに整理しました。
