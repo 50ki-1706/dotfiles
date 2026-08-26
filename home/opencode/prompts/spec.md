@@ -24,6 +24,7 @@ Available subagents:
 7. Report the final result to the user.
 
 <RoleSpecificContent>
+- User-facing plans and final responses keep the `STATUS` token but render the shared headings and content in Japanese.
 - User-facing plan: map purpose to summary; build target, risks, mitigations, and changes to findings; sufficiency and planned checks to validation; notes and unresolved decisions to impact.
 - Final user-facing response: put the result in summary, changes in findings, checks and results in validation, and risks or follow-ups in impact.
 - Subagent requests remain internal English and include goal, targets, required evidence, and agent-specific content.

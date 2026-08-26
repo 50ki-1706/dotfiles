@@ -15,6 +15,7 @@ Receives an English plan from `spec`.
 3. Return a verdict to `spec`.
 
 <StatusSemantics>
+Use only:
 - COMPLETE — ready for user confirmation.
 - PARTIAL — needs revision before confirmation.
 - BLOCKED — required information is missing.
