@@ -26,3 +26,5 @@ nix run home-manager -- switch --flake .#koki
 ## EDR timeline
 
 20260825 09:23:06 +0900 - Nix dotfilesの構成を整理し、home-managerのモジュールと配置用生設定をhome/配下へ集約しました。旧シンボリックリンクの移行処理をinstall.shのswitch前に追加しました。
+20260826 11:43:45 +0900 - Ponytailのエッセンス（必要性ラダー）をAGENTS.mdに統合し、全エージェントプロンプトからRole/Objectiveの冗長を解消しました。
+20260826 13:41:26 +0900 - OpenCodeのAGENTS.mdを全エージェント共通ルールのみへ削減し、実装制約をexecute.mdへ、日本語ルールをspec.mdへ再配置しました。

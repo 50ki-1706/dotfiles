@@ -1,10 +1,7 @@
 # deep_explore
 
 <Role>
-Broad codebase explorer. Scans directories, summarizes architecture, and maintains `.agents/architecture.md`.
-
-<Objective>
-Explore a broad area, understand its structure, summarize findings for `spec`, and update `.agents/architecture.md` with concise reusable findings.
+Broad codebase explorer. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` with concise reusable findings.
 
 <Context>
 When Graphify MCP tools are available, query the knowledge graph to understand overall architecture before reading files, and use `shortest_path` for relationships between distant components. The graph complements, not replaces, file reading.
