@@ -16,3 +16,4 @@ OpenCodeおよび各agentが利用するスキルを、リポジトリ直下に�
 以下のフォーマットで、skillsディレクトリ内の変更を記録してください。変更の内容がわかるように、簡潔な説明をつけてください。
 
 20260824 19:10:00 +0900 - OpenCodeスキルと`nix-verify`を`home/opencode`および`.agents/skills`から`skills/`へ移動し、既存のグローバルスキル（computer-use、find-skills、orca-cli、orchestration）を統合しました。`~/.agents/skills`はmkOutOfStoreSymlinkで`skills/`を参照します。
+20260826 15:10:42 +0900 - `architecture-update`スキルを追加し、タスク完了後に`executer`が`architecture.md`を更新する委譲フローを定義しました。
