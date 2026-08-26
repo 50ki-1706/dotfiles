@@ -157,3 +157,9 @@
 20260824 20:13:19 +0900 - Brewfileを現在の環境に合わせて再生成しました（brew formula/cask/vscode拡張の追加と削除）。
 20260825 09:23:06 +0900 - home-managerの入口をhome.nixへ改名し、git.nix、shell.nix、vscode.nixとdotfiles/へ設定を分割しました。旧Git/VSCodeシンボリックリンクの移行処理をswitch前に追加しました。
 20260825 10:48:18 +0900 - OpenCodeのpromptを圧縮し、共通ルール（言語・スコープ・ステータス語彙）をhome/opencode/AGENTS.mdのCommon Agent Rulesへ集約しました。モデル割当と仕様は変更なし。
+20260826 10:34:53 +0900 - OpenCode subagentの権限と推論強度を調整し、executerの読み取り専用Git履歴を許可するとともに、deep_exploreの過剰権限と旧スペルのパス規則を削除しました。
+20260826 10:37:29 +0900 - 実装精度を優先する運用方針に合わせ、OpenCode executerのreasoningEffortをmaxへ復元しました。
+20260826 10:41:39 +0900 - OpenCodeの共通ルール・権限定義と重複するagent promptを圧縮し、specのtodowrite capabilityを無効化しました。
+20260826 10:49:20 +0900 - OpenCode全agentの共通出力契約をグローバルAGENTS.mdへ集約し、個別promptをrole固有の内容定義へ整理しました。
+20260826 11:02:06 +0900 - OpenCodeの共通出力形式をNixの単一定義から各agent promptへ付加し、global AGENTS.mdの反復注入コストを削減しました。
+20260826 11:18:48 +0900 - OpenCodeの共通出力形式を専用Markdownへ分離し、agents.nixをpromptの読み込みと結合だけに整理しました。

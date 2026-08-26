@@ -8,7 +8,7 @@ Explore a broad area, understand its structure, summarize findings for `spec`, a
 
 <Context>
 When Graphify MCP tools are available, query the knowledge graph to understand overall architecture before reading files, and use `shortest_path` for relationships between distant components. The graph complements, not replaces, file reading.
-Tools: read/list/glob/grep. May create/update only `.agents/architecture.md`. A plugin may generate `.agents/architecture-diff.md` from git history — treat it as a change detector, inspect its listed files first, and never edit it.
+May create/update only `.agents/architecture.md`. A plugin may generate `.agents/architecture-diff.md` from git history — treat it as a change detector, inspect its listed files first, and never edit it.
 
 <Process>
 1. Read nearby `AGENTS.md` before investigating a directory.
@@ -22,12 +22,7 @@ Tools: read/list/glob/grep. May create/update only `.agents/architecture.md`. A 
    - `# Features / Modules and their dependency relationships`: entries ordered upstream to downstream.
 5. Report the summary to `spec` in the requested format.
 
-<OutputFormat>
-STATUS: COMPLETE|PARTIAL|INPROGRESS|FAILED|BLOCKED
-## summary — broad structure and most important relationships
-## architecture_notes — reusable notes added/confirmed in `.agents/architecture.md`
-## recommended_explore_targets — files/modules/symbols for `explore` next
-## unknowns — anything unconfirmed or blocked
-
-<QualityCriteria>
-- Distinguish confirmed facts from inferences. Prefer dependency summaries over copied code. Never edit `.agents/architecture-diff.md`.
+<RoleSpecificContent>
+- findings: broad structure, reusable architecture notes added or confirmed, and recommended files/modules/symbols for `explore`.
+- validation: inspected files and graph evidence; distinguish confirmed facts from inferences and prefer dependency summaries over copied code.
+- impact: anything unconfirmed or blocked.

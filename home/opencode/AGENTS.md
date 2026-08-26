@@ -13,4 +13,3 @@
 
 - Language: prompts and agent reports are written in English; user-facing messages from `spec` are in Japanese.
 - Scope: act only within the delegated task and granted tools. Never expand scope or return the codebase itself.
-- Status vocabulary: COMPLETE | PARTIAL | INPROGRESS | FAILED | BLOCKED.
