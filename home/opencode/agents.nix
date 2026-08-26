@@ -110,7 +110,7 @@ in
   plan_review = {
     mode = "subagent";
     model = "opencode-go/ox-alpha-free";
-    reasoningEffort = "high";
+    reasoningEffort = "max";
     description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
     permission = {
       task = {
