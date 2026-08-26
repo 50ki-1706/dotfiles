@@ -148,7 +148,7 @@ in
   };
   spec = {
     mode = "primary";
-    model = "opencode-go/deepseek-v4-flash-vision-exp";
+    model = "opencode-go/qwen3.7-plus";
     description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
     permission = {
       task = {

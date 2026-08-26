@@ -2,8 +2,8 @@
 {
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
-  model = "openai/gpt-5.6-terra";
-  small_model = "openai/gpt-5.6-luna";
+  model = "opencode-go/deepseek-v4-flash";
+  small_model = "opencode-go/deepseek-v4-flash";
   default_agent = "spec";
   watcher = {
     ignore = [
