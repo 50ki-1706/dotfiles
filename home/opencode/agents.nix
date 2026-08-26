@@ -129,6 +129,9 @@ in
       edit = {
         "*" = "deny";
       };
+      read = {
+        "*" = "deny";
+      };
       grep = {
         "*" = "deny";
       };
