@@ -164,3 +164,4 @@
 20260826 11:02:06 +0900 - OpenCodeの共通出力形式をNixの単一定義から各agent promptへ付加し、global AGENTS.mdの反復注入コストを削減しました。
 20260826 11:18:48 +0900 - OpenCodeの共通出力形式を専用Markdownへ分離し、agents.nixをpromptの読み込みと結合だけに整理しました。
 20260826 15:05:44 +0900 - OpenCodeのarchitecture.md管理をdeep_exploreからexecuterに移管し、更新フローをskillとしてskills/architecture-update/に作成しました。spec.mdにエージェント権限テーブルを追加しました。
+20260826 15:30:00 +0900 - OpenCodeの共通言語ルールを削除し、specの日本語指示はspec.md側へ集約しました。
