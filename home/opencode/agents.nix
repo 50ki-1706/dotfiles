@@ -7,18 +7,13 @@ in
     mode = "subagent";
     model = "openai/gpt-5.6-sol-fast";
     reasoningEffort = "high";
-    description = "Broad codebase exploration subagent. Scans directories, summarizes architecture, and maintains `.agents/architecture.md` for reuse.";
+    description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse.";
     permission = {
       task = {
         "*" = "deny";
       };
       bash = {
         "*" = "deny";
-      };
-      edit = {
-        "*" = "deny";
-        ".agents/architecture.md" = "allow";
-        "**/.agents/architecture.md" = "allow";
       };
     };
     prompt = readPrompt "deep_explore";
