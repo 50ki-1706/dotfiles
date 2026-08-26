@@ -1,22 +1,31 @@
 let
+  mkPermission = import ./permissions.nix;
+  toYamlFrontmatter = import ./yaml.nix;
+
   commonOutputFormat = builtins.readFile ./prompts/output-format.md;
-  readPrompt = name: builtins.readFile (./prompts + "/${name}.md") + "\n" + commonOutputFormat;
+  readPrompt = name: builtins.readFile (./prompts + "/${name}.md");
+  mkAgent =
+    name: config:
+    config
+    // {
+      prompt = toYamlFrontmatter config + "\n" + readPrompt name + "\n" + commonOutputFormat;
+    };
 in
 {
-  deep_explore = {
+  deep_explore = mkAgent "deep_explore" {
     mode = "subagent";
     model = "openai/gpt-5.6-sol-fast";
     reasoningEffort = "high";
     description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse.";
-    permission = {
-      task = {
-        "*" = "deny";
-      };
-      bash = {
-        "*" = "deny";
+    permission = mkPermission {
+      bash = "deny";
+      edit = {
+        ".agents/architecture.md" = "allow";
+        "*/.agents/architecture.md" = "allow";
+        ".agents/archtecture.md" = "allow";
+        "*/.agents/archtecture.md" = "allow";
       };
     };
-    prompt = readPrompt "deep_explore";
     tools = {
       question = false;
       websearch = false;
@@ -24,43 +33,34 @@ in
       "graphify*" = true;
     };
   };
-  executer = {
+  executer = mkAgent "execute" {
     mode = "subagent";
     model = "openai/gpt-5.6-luna-fast";
     reasoningEffort = "max";
     description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
-    permission = {
-      task = {
-        "*" = "deny";
-      };
-      edit = {
-        "*" = "allow";
-      };
+    permission = mkPermission {
+      bash = "allow";
+      read = "allow";
+      edit = "allow";
+      skill = "allow";
     };
-    prompt = readPrompt "execute";
     tools = {
       question = false;
       "chrome-devtools*" = true;
       "playwright*" = true;
     };
   };
-  explore = {
+  explore = mkAgent "explore" {
     mode = "subagent";
     model = "opencode-go/mimo-v2.5";
     description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
-    permission = {
-      task = {
-        "*" = "deny";
-      };
-      bash = {
-        "*" = "deny";
-      };
-      edit = {
-        "*" = "deny";
-      };
+    permission = mkPermission {
+      read = "allow";
+      grep = "allow";
+      glob = "allow";
+      list = "allow";
       external_directory = "allow";
     };
-    prompt = readPrompt "explore";
     tools = {
       question = false;
       websearch = false;
@@ -68,108 +68,42 @@ in
       "graphify*" = true;
     };
   };
-  internet_search = {
+  internet_search = mkAgent "internet_search" {
     mode = "subagent";
     model = "opencode-go/mimo-v2.5";
     description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
-    permission = {
-      task = {
-        "*" = "deny";
-      };
-      bash = {
-        "*" = "deny";
-      };
-      edit = {
-        "*" = "deny";
-      };
-      read = {
-        "*" = "deny";
-      };
-      grep = {
-        "*" = "deny";
-      };
-      glob = {
-        "*" = "deny";
-      };
-      list = {
-        "*" = "deny";
-      };
-    };
-    prompt = readPrompt "internet_search";
+    permission = mkPermission { };
     tools = {
       websearch = true;
       webfetch = true;
       question = false;
     };
   };
-  plan_review = {
+  plan_review = mkAgent "plan_review" {
     mode = "subagent";
     model = "opencode-go/ox-alpha-free";
     reasoningEffort = "max";
     description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
-    permission = {
-      task = {
-        "*" = "deny";
-      };
-      bash = {
-        "*" = "deny";
-      };
-      edit = {
-        "*" = "deny";
-      };
-      read = {
-        "*" = "deny";
-      };
-      grep = {
-        "*" = "deny";
-      };
-      glob = {
-        "*" = "deny";
-      };
-      list = {
-        "*" = "deny";
-      };
-    };
-    prompt = readPrompt "plan_review";
+    permission = mkPermission { };
     tools = {
       question = false;
       websearch = false;
       webfetch = false;
     };
   };
-  spec = {
+  spec = mkAgent "spec" {
     mode = "primary";
     model = "opencode-go/qwen3.7-plus";
     description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
-    permission = {
-      task = {
-        "*" = "deny";
-        internet_search = "allow";
-        explore = "allow";
-        deep_explore = "allow";
-        executer = "allow";
-        plan_review = "allow";
-      };
-      bash = {
-        "*" = "deny";
-      };
-      edit = {
-        "*" = "deny";
-      };
-      read = {
-        "*" = "deny";
-      };
-      grep = {
-        "*" = "deny";
-      };
-      glob = {
-        "*" = "deny";
-      };
-      list = {
-        "*" = "deny";
-      };
+    permission = mkPermission {
+      task = [
+        "explore"
+        "deep_explore"
+        "executer"
+        "internet_search"
+        "plan_review"
+      ];
     };
-    prompt = readPrompt "spec";
     tools = {
       websearch = false;
       webfetch = false;

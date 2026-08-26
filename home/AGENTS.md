@@ -21,6 +21,7 @@
 | `pkgs.fzf` | コマンドラインでの曖昧検索ツール |
 | `pkgs.git` | Gitのコマンドラインツール |
 | `pkgs.lazygit` | GitリポジトリをターミナルUIで操作するツール |
+| `pkgs.bitwarden-cli` | Bitwardenのコマンドラインツール |
 | `pkgs.devbox` | プロジェクトごとの開発環境を扱うツール |
 | `pkgs.claude-code` | Claude CodeのCLIツール |
 | `pkgs.nixfmt` | Nixコードのフォーマッタ |
@@ -58,6 +59,7 @@
 | `fonts.fontconfig.enable` | fontconfigベースのアプリでHome Manager管理フォントを利用できるようにします。 |
 | `home.activation.installFonts` | macOSネイティブアプリ向けにNerd Fontを`~/Library/Fonts/HomeManager`へコピーします。 |
 | `home.file.".config/shell/aliases"` | `home/dotfiles/shell/aliases`を`~/.config/shell/aliases`としてstore-backedに配置します。 |
+| `home.file.".npmrc"` | `home/dotfiles/npm/npmrc`を`~/.npmrc`として配置します。 |
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/layouts/split.kdl"` | 1:1縦分割のZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/config.kdl"` | Zellijのキーバインド設定を配置します。macOSのOption+RightArrow衝突を避けるため`Alt f`を削除しています。 |
@@ -165,3 +167,8 @@
 20260826 11:18:48 +0900 - OpenCodeの共通出力形式を専用Markdownへ分離し、agents.nixをpromptの読み込みと結合だけに整理しました。
 20260826 15:05:44 +0900 - OpenCodeのarchitecture.md管理をdeep_exploreからexecuterに移管し、更新フローをskillとしてskills/architecture-update/に作成しました。spec.mdにエージェント権限テーブルを追加しました。
 20260826 15:30:00 +0900 - OpenCodeの共通言語ルールを削除し、specの日本語指示はspec.md側へ集約しました。
+20260826 22:37:46 +0900 - OpenCodeのagent権限生成とYAML frontmatter生成をagents.nixに集約し、agentごとの権限設定へ移行してglobal permissionを削除しました。
+20260826 22:46:17 +0900 - OpenCodeのagent権限生成とYAML生成ヘルパーをpermissions.nixとyaml.nixへ分割しました。
+20260826 22:48:36 +0900 - Bitwarden CLIを導入し、Bitwarden経由のNPMトークン取得とnpm認証設定をhome-managerで管理するよう追加しました。
+20260826 22:57:23 +0900 - OpenCodeのYAML frontmatter生成でdenyのみの権限カテゴリとfalseのツール設定を省略するようにしました。
+20260826 23:00:00 +0900 - OpenCodeのYAML frontmatter生成で、フィルタ後に空になったpermissionとtoolsをnullとして出力するようにしました。
