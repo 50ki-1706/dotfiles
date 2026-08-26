@@ -16,12 +16,9 @@ in
       };
       edit = {
         "*" = "deny";
-        ".agents/archtecture.md" = "allow";
         ".agents/architecture.md" = "allow";
-        "**/.agents/archtecture.md" = "allow";
         "**/.agents/architecture.md" = "allow";
       };
-      external_directory = "allow";
     };
     prompt = readPrompt "deep_explore";
     tools = {
@@ -39,11 +36,6 @@ in
     permission = {
       task = {
         "*" = "deny";
-      };
-      bash = {
-        "git log*" = "deny";
-        "git show*" = "deny";
-        "git blame*" = "deny";
       };
       edit = {
         "*" = "allow";
@@ -117,7 +109,7 @@ in
   plan_review = {
     mode = "subagent";
     model = "opencode-go/ox-alpha-free";
-    reasoningEffort = "max";
+    reasoningEffort = "high";
     description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
     permission = {
       task = {
@@ -186,7 +178,7 @@ in
       websearch = false;
       webfetch = false;
       question = true;
-      todowrite = true;
+      todowrite = false;
     };
   };
 }

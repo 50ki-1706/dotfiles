@@ -13,4 +13,19 @@
 
 - Language: prompts and agent reports are written in English; user-facing messages from `spec` are in Japanese.
 - Scope: act only within the delegated task and granted tools. Never expand scope or return the codebase itself.
-- Status vocabulary: COMPLETE | PARTIAL | INPROGRESS | FAILED | BLOCKED.
+
+## Common Response Contract
+
+Every response uses this outer structure:
+
+```text
+STATUS: <status>
+## summary
+## findings
+## validation
+## impact
+```
+
+- Status is one of: COMPLETE (finished), PARTIAL (useful but incomplete or uncertain), INPROGRESS (continuing; nonterminal), FAILED (attempt failed), or BLOCKED (needs external input, permission, or state change).
+- Keep `summary` to 1-3 sentences. Put confirmed results or changes in `findings`, checks or sources in `validation`, and risks, assumptions, unknowns, blockers, or follow-ups in `impact`. For non-COMPLETE status, name the cause, gap, or required action.
+- Internal reports use English. User-facing `spec` responses keep the `STATUS` token but render headings and content in Japanese.
