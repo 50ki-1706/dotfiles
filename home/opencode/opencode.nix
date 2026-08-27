@@ -4,6 +4,10 @@
   autoupdate = false;
   model = "opencode-go/deepseek-v4-flash";
   small_model = "opencode-go/deepseek-v4-flash";
+  provider.opencode-go.models.minimax-m3.options.thinking = {
+    type = "enabled";
+    budgetTokens = 16000;
+  };
   default_agent = "spec";
   command = {
     commit = {

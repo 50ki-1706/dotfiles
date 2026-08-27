@@ -14,8 +14,7 @@ in
 {
   deep_explore = mkAgent "deep_explore" {
     mode = "subagent";
-    model = "opencode-go/mimo-v2.5-pro";
-    reasoningEffort = "high";
+    model = "opencode-go/minimax-m3";
     description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse.";
     permission = mkPermission {
       bash = "deny";
@@ -52,7 +51,7 @@ in
   };
   explore = mkAgent "explore" {
     mode = "subagent";
-    model = "opencode-go/mimo-v2.5";
+    model = "opencode-go/kimi-k2.7-code";
     description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
     permission = mkPermission {
       read = "allow";
@@ -70,7 +69,7 @@ in
   };
   internet_search = mkAgent "internet_search" {
     mode = "subagent";
-    model = "opencode-go/mimo-v2.5";
+    model = "opencode-go/longcat-2.0";
     description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
     permission = mkPermission { };
     tools = {
