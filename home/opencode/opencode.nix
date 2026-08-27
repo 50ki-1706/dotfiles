@@ -5,6 +5,12 @@
   model = "opencode-go/deepseek-v4-flash";
   small_model = "opencode-go/deepseek-v4-flash";
   default_agent = "spec";
+  command = {
+    commit = {
+      template = builtins.readFile ./commands/commit.md;
+      description = "セッションの変更をConventional Commitsでコミット";
+    };
+  };
   watcher = {
     ignore = [
       "node_modules/**"

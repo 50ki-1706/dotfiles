@@ -172,3 +172,5 @@
 20260826 22:48:36 +0900 - Bitwarden CLIを導入し、Bitwarden経由のNPMトークン取得とnpm認証設定をhome-managerで管理するよう追加しました。
 20260826 22:57:23 +0900 - OpenCodeのYAML frontmatter生成でdenyのみの権限カテゴリとfalseのツール設定を省略するようにしました。
 20260826 23:00:00 +0900 - OpenCodeのYAML frontmatter生成で、フィルタ後に空になったpermissionとtoolsをnullとして出力するようにしました。
+20260827 13:33:32 +0900 - OpenCodeのグローバル`/commit`コマンドをcommandsディレクトリから配置する設定を追加しました。
+20260827 14:27:00 +0900 - OpenCodeのグローバル`/commit`コマンドのプロンプトを英語に書き換え、簡潔化しました。
