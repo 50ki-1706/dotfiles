@@ -28,3 +28,5 @@ nix run home-manager -- switch --flake .#koki
 20260825 09:23:06 +0900 - Nix dotfilesの構成を整理し、home-managerのモジュールと配置用生設定をhome/配下へ集約しました。旧シンボリックリンクの移行処理をinstall.shのswitch前に追加しました。
 20260826 11:43:45 +0900 - Ponytailのエッセンス（必要性ラダー）をAGENTS.mdに統合し、全エージェントプロンプトからRole/Objectiveの冗長を解消しました。
 20260826 13:41:26 +0900 - OpenCodeのAGENTS.mdを全エージェント共通ルールのみへ削減し、実装制約をexecute.mdへ、日本語ルールをspec.mdへ再配置しました。
+20260827 15:58:29 +0900 - OpenCodeのプロンプトをRole、Process、Rulesの固定スキーマへ統一し、共通OutputFormatに全エージェント共通の検証条項を追加しました。
+20260827 21:04:57 +0900 - OpenCodeの全エージェントプロンプトを日本語から英語へ変換し、日本語での返信・報告指示は英語本文内に保持しました。
