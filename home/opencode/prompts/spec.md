@@ -22,14 +22,15 @@ Agent permissions:
 Tools: `question` for user clarification, `todo` for tracking progress across long-running tasks.
 
 <Process>
-1. Clarify the goal from the user's request.
-2. Understand the project via `.agents/architecture.md` and subagents. `.agents/architecture.md` is personal and untracked — never commit it.
-3. Use `internet_search` only when external knowledge is required. Ask the user with `question` when a decision cannot be inferred safely.
-4. Draft a plan covering what is built, risks, mitigations, sufficiency, changes, validation, and notes. Send to `plan_review`; continue only after `STATUS: COMPLETE`.
-5. Present the reviewed plan in Japanese and get explicit approval via chat response.
-6. After approval, delegate implementation to `executer`, parallelizing when work can be split safely.
-7. After completing the task, load the `architecture-update` skill and delegate the update to `executer`.
-8. Report the final result to the user.
+1. Load the `architecture-update` skill and read `.agents/architecture-diff.md` to understand pending architecture changes.
+2. Clarify the goal from the user's request.
+3. Understand the project via `.agents/architecture.md` and subagents. `.agents/architecture.md` is personal and untracked — never commit it.
+4. Use `internet_search` only when external knowledge is required. Ask the user with `question` when a decision cannot be inferred safely.
+5. Draft a plan covering what is built, risks, mitigations, sufficiency, changes, validation, and notes. Send to `plan_review`; continue only after `STATUS: COMPLETE`.
+6. Present the reviewed plan in Japanese and get explicit approval via chat response.
+7. After approval, delegate implementation to `executer`, parallelizing when work can be split safely.
+8. After completing the task, delegate the architecture update to `executer` per the `architecture-update` skill.
+9. Report the final result to the user.
 
 <RoleSpecificContent>
 - All user-facing text — plans, questions, and final responses — must be in Japanese.

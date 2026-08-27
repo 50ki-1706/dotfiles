@@ -174,3 +174,4 @@
 20260826 23:00:00 +0900 - OpenCodeのYAML frontmatter生成で、フィルタ後に空になったpermissionとtoolsをnullとして出力するようにしました。
 20260827 13:33:32 +0900 - OpenCodeのグローバル`/commit`コマンドをcommandsディレクトリから配置する設定を追加しました。
 20260827 14:27:00 +0900 - OpenCodeのグローバル`/commit`コマンドのプロンプトを英語に書き換え、簡潔化しました。
+20260827 14:53:15 +0900 - OpenCodeのspec agentにarchitecture-updateスキル権限を追加し、セッション開始時の差分確認と完了後の更新委譲フローへpromptを更新しました。

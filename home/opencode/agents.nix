@@ -103,6 +103,11 @@ in
         "internet_search"
         "plan_review"
       ];
+      skill = {
+        "*" = "deny";
+        "gh-cli" = "allow";
+        "architecture-update" = "allow";
+      };
     };
     tools = {
       websearch = false;
