@@ -161,10 +161,6 @@ in
 
 スキルは、モデルが毎回推測するよりも明確な手順や安全上の境界が必要な場合に限り、必要最小限に保ちます。重複する説明や、既存のエージェント・Nix 設定で代替できる内容を増やさないことが重要です。
 
-現在のスキルは次のとおりです。
-
-`architecture-update`、`computer-use`、`find-skills`、`gh-cli`、`nix-verify`、`orca-cli`、`orchestration`、`owasp-llm-top10`、`owasp-top10`
-
 ### 4.2 エージェント構成
 
 エージェントは、ユーザーとの対話を行うプライマリーと、特定の作業を担うサブエージェントに分かれています。`spec` が必要な役割へ作業を委譲し、各サブエージェントは自分の責務に集中します。
@@ -194,6 +190,14 @@ in
 | `home/opencode/prompts/plan_review.md` | 実装計画のレビュー基準を定義します。 |
 | `home/opencode/prompts/output-format.md` | 全エージェントに共通する出力形式を定義します。 |
 
+#### プロンプトの固定スキーマ
+
+許可されるプロンプトセクションは `<Role>`、`<Process>`、`<Rules>`、`<OutputFormat>` です。エージェント本体ファイルは `H1 + <Role> + <Process> + <Rules>` だけをこの順序で持ち、ほかのセクションを追加しません。新しいセクションも禁止します。
+
+`output-format.md` は H1 を持たない単一の `<OutputFormat>` フラグメントです。status-token、`summary`、`findings`、`validation`、`impact` の契約と、共通の検証条項を含みます。`agents.nix` がこのフラグメントを本体へ付加するため、各本体ファイルへ手動で埋め込んではいけません。
+
+組み立て後の runtime prompt は、YAML frontmatter → H1 → `<Role>` → `<Process>` → `<Rules>` → `<OutputFormat>` の順序になります。検証条項は全エージェント共通で適用される。
+
 ファイル名 `execute.md` とエージェント名 `executer` は意図的に異なります。`agents.nix` の `executer = mkAgent "execute" { ... };` が、`executer` に `execute.md` を対応付けます。
 
 構成を組み立てるファイルの責務は次のとおりです。
@@ -208,7 +212,7 @@ in
 
 `agents.nix` は各エージェントの設定から `prompt` を除いた値を YAML フロントマターへ変換し、対応するプロンプトと `output-format.md` を連結します。`yaml.nix` は文字列、真偽値、整数、属性集合を扱い、拒否だけで構成される権限カテゴリや無効なツール設定を生成結果から省略します。
 
-`home/opencode/AGENTS.md` の共通ルールは、可読性と保守性を優先する Principal Policy と、委譲されたタスクの範囲と付与されたツールだけを扱う Common Agent Rules で構成されています。個別の役割や言語などの内容は、各プロンプト側で定義します。
+`home/opencode/AGENTS.md` の共通ルールは、可読性と保守性を優先する Principal Policy と、委譲されたタスクの範囲と付与されたツールだけを扱う Common Agent Rules で構成されています。プロンプトは原則として英語で記述し、日本語で返信・報告する明示的な指示がある場合のみ、その指示を英語の本文内に記述します。
 
 ### 4.4 EDR タイムライン
 
