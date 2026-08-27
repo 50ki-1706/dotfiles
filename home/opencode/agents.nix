@@ -108,7 +108,7 @@ in
       websearch = false;
       webfetch = false;
       question = true;
-      todowrite = false;
+      todowrite = true;
     };
   };
 }
