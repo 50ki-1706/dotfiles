@@ -174,3 +174,15 @@ agc() {
     git -c core.sshCommand="ssh -i ~/.ssh/id_ed25519_${dir} -o IdentitiesOnly=yes" clone "$url" "$target"
   fi
 }
+
+npm-auth() {
+  if (( $+commands[bw] )); then
+    if [[ -z "$BW_SESSION" ]]; then
+      eval "export BW_SESSION=$(bw unlock --raw)"
+    fi
+    export NPM_TOKEN="$(bw get notes GITHUB_PAT 2>/dev/null)"
+    echo "NPM_TOKEN set."
+  else
+    echo "bitwarden-cli not found." >&2
+  fi
+}
