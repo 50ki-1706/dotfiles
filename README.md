@@ -1,49 +1,26 @@
 # dotfiles
 
-## features
-- Manage applications with Nix and Home Manager, Brewfile
-- Manage multiple Git accounts with separate SSH keys and Git settings
-- user settings (e.g. git global ignore) managed by Nix, symlinked to the home directory
-## Usage
+## 特徴
+- Nix、Home Manager、Brewfileによるアプリケーション管理
+- SSHキーとGit設定を分離した複数Gitアカウントの管理
+- Nixで管理されるユーザー設定（git global ignoreなど）をホームディレクトリにシンボリックリンクで配置
+## 使い方
 
-`git clone` or Extract the zip file to get this repository on your local machine.
+`git clone`またはzipファイルを展開して、ローカルマシンにこのリポジトリを取得します。
 
-### Initial setup
-Run the installation script to set up Nix, Home Manager, and Git accounts.
+### 初期設定
+
+インストールスクリプトを実行して、Nix、Home Manager、Gitアカウントを設定します。
 
 ```sh
 ./scripts/install.sh
 ```
 
-In the case of multiple Git accounts, `scripts/install.sh` will prompt you to register additional accounts.
+リポジトリの構造、OpenCodeエージェントハーネス、設定管理の詳細は [docs/USER_GUIDE.md](docs/USER_GUIDE.md) を参照してください。
 
-If you use homebrew to manage additioanl applications, you can type this command to install additonal applications.
+### Gitアカウント管理
 
-```sh
-brew bundle
-```
-
-If you add or remove applecation, you can use
-```sh
-brew bundle dump
-```
-
-automatically, or edit Brewfile on hand.
-
-This installation script creates `accounts.csv` in the repository root to manage additional Git accounts. The script uses this file to set up the following:
-
-- `~/Dev/{dir}/`: Additional account's development directory
-- `~/.config/git/accounts.include`: Git configuration that includes account-specific settings based on the current directory
-- `~/.config/git/accounts/{dir}.gitconfig`: Account-specific Git settings
-- `~/.ssh/id_ed25519_{dir}`: SSH keys for additional accountsi
-
-If an existing `accounts.csv` file is present, the script will ask whether to use it as is or create a new one through interactive input.
-
-If you edit `accounts.csv` by hand, follow  `accounts.csv.example` format and make sure to run `./scripts/install.sh` again to apply the changes.
-
-### Git account management
-
-You can use `agc` to clone repositories with the appropriate SSH key and Git settings based on the directory.
+`agc`を使用すると、ディレクトリに応じた適切なSSHキーとGit設定でリポジトリをクローンできます。
 
 ```sh
 Usage: agc [<dir>] <url> [<path>]
@@ -54,21 +31,17 @@ path: clone先（省略時は ~/Dev/<dir>/<repo名>、dir省略時は ~/Dev/<rep
 clone先ベース配下のみ許可。通常は省略を推奨。
 ```
 
-After clone ripository, you can use `git` commands as usual. The appropriate SSH key and Git settings will be applied based on the directory.
+リポジトリをクローンした後、通常通り`git`コマンドを使用できます。ディレクトリに応じたSSHキーとGit設定が適用されます。
 
 ## 変更適用方法
 
-nixとhome-managerの設定は、リポジトリルートで次のコマンドを実行することで適用されます。
+詳細は [docs/USER_GUIDE.md](docs/USER_GUIDE.md) を参照してください。
 
 ```sh
 nix run home-manager -- switch --flake .#koki
 ```
 
-claude codeやcodex等のAIエージェントでは、`nix-verify` skillにより、フォーマットとビルドを含めた変更の適用を行うようにしています。
-
-aliasなどのsymlinkで管理している設定は、ディレクトリの移動を伴わないものであれば、変更を加えるだけで次回のターミナル起動時に反映されます。
-
-## Troubleshooting
+## トラブルシューティング
 
 ### nixコマンドが見つからない場合
 
