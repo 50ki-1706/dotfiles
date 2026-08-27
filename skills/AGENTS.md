@@ -19,3 +19,4 @@ OpenCodeおよび各agentが利用するスキルを、リポジトリ直下に�
 20260826 15:10:42 +0900 - `architecture-update`スキルを追加し、タスク完了後に`executer`が`architecture.md`を更新する委譲フローを定義しました。
 20260827 14:18:10 +0900 - `minimal-repository`スキルを追加し、リポジトリの最小サイズを保つ判断基準を定義しました。
 20260827 14:22:35 +0900 - minimal-repositoryスキルをskills/から.agents/skills/へ移動し、リポジトリ固有のスキルとしました。
+20260827 14:53:15 +0900 - `architecture-update`スキルをセッション開始時の差分確認と対象セクション限定更新の委譲フローへ更新しました。

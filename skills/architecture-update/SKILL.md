@@ -1,22 +1,31 @@
 ---
 name: architecture-update
-description: This skill guides spec on how to delegate `.agents/architecture.md` updates to executer after every task completion.
+description: This skill guides spec on how to keep `.agents/architecture.md` in sync by delegating targeted updates to executer based on diff context.
 ---
 
 # Architecture Update
 
-**When to use**: After every task completion, before reporting the final result to the user.
+**When to use**: At session start, before planning the task.
 
-## Delegation flow
+## Flow
 
-1. After the implementation task is complete, delegate to `executer` with instructions to update `.agents/architecture.md`.
-2. Include the following instructions in the delegation prompt:
-   - Read `.agents/architecture-diff.md` if present for changed files and `suggested_metadata_commit_hash`.
-   - If the diff file does not exist, check `git status --short` and `git log --oneline -5` to identify recent changes.
-   - If `.agents/architecture.md` does not exist, create it from the template below.
-   - Update the file with real project information based on the changes.
-   - Set metadata: `commit-hash` = `suggested_metadata_commit_hash` from the diff or the current `HEAD`, and `date` = today in `YYYY-MM-DD` format.
-3. `.agents/architecture.md` is personal and untracked — never commit it.
+1. At the beginning of the session, load this skill.
+2. Read `.agents/architecture-diff.md` to understand what changed since the last architecture update.
+3. If the diff status is `STALE`, note the changed files and sections that may need updating.
+4. If the diff status is `CURRENT` with no changes, skip the post-task update step.
+5. Proceed with the main task (planning, execution, etc.).
+6. After task completion, delegate to `executer` to update only the affected sections of `.agents/architecture.md`.
+
+## Delegation prompt
+
+When delegating to `executer`, include these instructions:
+- Read `.agents/architecture-diff.md` for the list of changed files and `suggested_metadata_commit_hash`.
+- Read only the sections of `.agents/architecture.md` that correspond to the changed files.
+- Update only those sections based on the changes. Do NOT rewrite unchanged sections.
+- If the diff file does not exist, check `git status --short` and `git log --oneline -5`.
+- If `.agents/architecture.md` does not exist, create it from the template below.
+- Set metadata: `commit-hash` = `suggested_metadata_commit_hash` from the diff or current `HEAD`, `date` = today in `YYYY-MM-DD` format.
+- `.agents/architecture.md` is personal and untracked — never commit it.
 
 ## Template sections
 
