@@ -14,7 +14,7 @@ in
 {
   deep_explore = mkAgent "deep_explore" {
     mode = "subagent";
-    model = "openai/gpt-5.6-sol-fast";
+    model = "opencode-go/mimo-v2.5-pro";
     reasoningEffort = "high";
     description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse.";
     permission = mkPermission {
@@ -81,8 +81,8 @@ in
   };
   plan_review = mkAgent "plan_review" {
     mode = "subagent";
-    model = "opencode-go/ox-alpha-free";
-    reasoningEffort = "max";
+    model = "openai/gpt-5.6-sol-fast";
+    reasoningEffort = "high";
     description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
     permission = mkPermission { };
     tools = {
