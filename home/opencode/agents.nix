@@ -92,7 +92,7 @@ in
   };
   spec = mkAgent "spec" {
     mode = "primary";
-    model = "opencode-go/qwen3.7-plus";
+    model = "opencode-go/glm-5.3-flash";
     description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
     permission = mkPermission {
       task = [
