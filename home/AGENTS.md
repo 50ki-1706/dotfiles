@@ -177,3 +177,4 @@
 20260827 14:53:15 +0900 - OpenCodeのspec agentにarchitecture-updateスキル権限を追加し、セッション開始時の差分確認と完了後の更新委譲フローへpromptを更新しました。
 20260827 15:50:00 +0900 - OpenCodeの`/commit`コマンドを行レベルのステージングに対応させました。
 20260827 16:10:00 +0900 - OpenCodeの`/commit`コマンドを`git apply --cached`ベースの非インタラクティブな行レベルステージングに変更しました。
+20260828 11:55:15 +0900 - OpenCodeのグローバル`/create-pr`コマンドを追加しました（PRテンプレートの検索とConventional Commits形式のタイトル生成に対応し、opencode.nixへ登録）。
