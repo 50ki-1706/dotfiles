@@ -178,3 +178,4 @@
 20260827 15:50:00 +0900 - OpenCodeの`/commit`コマンドを行レベルのステージングに対応させました。
 20260827 16:10:00 +0900 - OpenCodeの`/commit`コマンドを`git apply --cached`ベースの非インタラクティブな行レベルステージングに変更しました。
 20260828 12:07:35 +0900 - vite-plus（vp）をHomebrew管理からNix管理へ移行しました（home/packages.nixにpkgs.vite-plusを追加）。
+20260828 11:55:15 +0900 - OpenCodeのグローバル`/create-pr`コマンドを追加しました（PRテンプレートの検索とConventional Commits形式のタイトル生成に対応し、opencode.nixへ登録）。
