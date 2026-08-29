@@ -80,6 +80,7 @@
     }
   '';
   home.file.".config/zellij/config.kdl".source = ./zellij/config.kdl;
+  home.file.".config/worktrunk/config.toml".source = ./dotfiles/worktrunk/config.toml;
   home.file.".config/opencode/AGENTS.md" = {
     source = ./opencode/AGENTS.md;
     force = true;

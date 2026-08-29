@@ -21,6 +21,7 @@
 | `pkgs.fzf` | コマンドラインでの曖昧検索ツール |
 | `pkgs.git` | Gitのコマンドラインツール |
 | `pkgs.lazygit` | GitリポジトリをターミナルUIで操作するツール |
+| `pkgs.worktrunk` | Git worktreeを管理するCLIツール |
 | `pkgs.bitwarden-cli` | Bitwardenのコマンドラインツール |
 | `pkgs.devbox` | プロジェクトごとの開発環境を扱うツール |
 | `pkgs.claude-code` | Claude CodeのCLIツール |
@@ -63,6 +64,7 @@
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/layouts/split.kdl"` | 1:1縦分割のZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/config.kdl"` | Zellijのキーバインド設定を配置します。macOSのOption+RightArrow衝突を避けるため`Alt f`を削除しています。 |
+| `home.file.".config/worktrunk/config.toml"` | `home/dotfiles/worktrunk/config.toml`（worktrunkユーザー設定）を配置します。 |
 | `home.file.".config/opencode/AGENTS.md"` | `home/opencode/AGENTS.md`をOpenCode用の`~/.config/opencode/AGENTS.md`として配置します。 |
 | `home.file.".config/helix/yazi-picker.sh"` | HelixからYaziを開き、選択ファイルをHelixで開く補助スクリプトを配置します。 |
 | `home.activation.installPackages` | Home Managerのパッケージ導入処理を、現在のNix CLIに合わせて`nix profile add`へ調整します。 |
