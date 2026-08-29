@@ -220,7 +220,7 @@ function render({ status, base, committedChanges, currentHead, recentCommits, wo
     : `- After refreshing ${ARCHITECTURE_PATH}, replace or add the current_head_marker.`
   const guidance =
     status === "MISSING" || status === "UNKNOWN_BASE"
-      ? `- Ask deep_explore to create or populate ${ARCHITECTURE_PATH}, replacing all placeholder/template content with real project information.
+      ? `- Ask executer to create or populate ${ARCHITECTURE_PATH}, replacing all placeholder/template content with real project information.
 ${refreshInstruction}
 - Treat this file as a change detector, not as evidence; confirm findings by reading source files.`
       : `- If status is STALE, ask deep_explore to inspect the listed files first.

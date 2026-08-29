@@ -23,10 +23,6 @@ in
       glob = "allow";
       list = "allow";
       external_directory = "allow";
-      edit = {
-        ".agents/architecture.md" = "allow";
-        "*/.agents/architecture.md" = "allow";
-      };
     };
     tools = {
       question = false;
