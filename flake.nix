@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixpkgs-ollama.url = "github:nixos/nixpkgs/dfd9566f82a6e1d55c30f861879186440614696e";
+    vite-plus.url = "github:ryoppippi/nix-vite-plus";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -16,6 +17,7 @@
       nixpkgs,
       nixpkgs-ollama,
       home-manager,
+      vite-plus,
     }:
     let
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -51,6 +53,7 @@
           pkgs = import nixpkgs {
             system = "aarch64-darwin";
             config.allowUnfree = true;
+            overlays = [ vite-plus.overlays.default ];
           };
         in
         home-manager.lib.homeManagerConfiguration {

@@ -13,6 +13,7 @@
     pkgs.zellij
     pkgs.claude-code
     pkgs.uv
+    pkgs.vite-plus
     ollamaPkgs.ollama
   ];
 }
