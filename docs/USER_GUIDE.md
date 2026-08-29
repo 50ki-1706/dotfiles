@@ -22,7 +22,7 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 | `hosts/` | ホストやプラットフォーム固有の設定を管理します。 |
 | `packages/` | Nix パッケージ定義と SSH キー管理用の定義を管理します。 |
 | `scripts/` | Nix の導入、初期セットアップ、旧シンボリックリンクの移行などのセットアップスクリプトを管理します。 |
-| `skills/` | OpenCode およびエージェントが利用するスキル定義を集約します。 |
+| `skills/` | OpenCode およびエージェントが利用するスキル定義を集約します（リポジトリ固有スキルは `.agents/skills/` 配下）。 |
 | `docs/` | リポジトリの構成や運用に関するドキュメントを管理します。 |
 
 ## 3. Home Manager の設定
@@ -245,13 +245,13 @@ EDR は Git のコミット履歴の代替ではありません。目的は、�
 
 ## 5. スキルの管理
 
-スキルは `skills/` ディレクトリに集約して管理します。各スキルは次の形式です。
+グローバルに配備するスキルは `skills/` ディレクトリに集約して管理します。各スキルは次の形式です。
 
 ```text
 skills/<skill-name>/SKILL.md
 ```
 
-現在リポジトリにあるスキルは次の 9 個です。
+現在 `skills/` にあるグローバルスキルは次の 8 個です。
 
 | スキルディレクトリ | 定義ファイル |
 | --- | --- |
@@ -259,7 +259,6 @@ skills/<skill-name>/SKILL.md
 | `skills/computer-use/` | `skills/computer-use/SKILL.md` |
 | `skills/find-skills/` | `skills/find-skills/SKILL.md` |
 | `skills/gh-cli/` | `skills/gh-cli/SKILL.md` |
-| `skills/nix-verify/` | `skills/nix-verify/SKILL.md` |
 | `skills/orca-cli/` | `skills/orca-cli/SKILL.md` |
 | `skills/orchestration/` | `skills/orchestration/SKILL.md` |
 | `skills/owasp-llm-top10/` | `skills/owasp-llm-top10/SKILL.md` |
@@ -267,7 +266,9 @@ skills/<skill-name>/SKILL.md
 
 Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。リンクが作成済みであれば、リポジトリ内の `SKILL.md` を編集した内容がグローバルスキルへ即時反映されます。リンク自体の作成や再配置を変更した場合は、Home Manager の switch を再実行してください。
 
-新しいスキルを追加するときも、まずモデルや既存のエージェント設定で代替できないかを確認します。追加する場合は `skills/<skill-name>/SKILL.md` に、目的と実行方針を必要最小限で記述します。
+リポジトリ固有のスキルは `.agents/skills/<skill-name>/SKILL.md` に配置します（現在は `nix-verify` と `minimal-repository` の 2 つ）。これらは `.gitignore` の例外設定でバージョン管理しますが、`~/.agents/skills` へのリンク対象外で、グローバルには配備されません。リポジトリ固有のスキルを追加する場合も同じ場所に配置します。
+
+グローバルに配備する新しいスキルを追加するときも、まずモデルや既存のエージェント設定で代替できないかを確認します。追加する場合は `skills/<skill-name>/SKILL.md` に、目的と実行方針を必要最小限で記述します。
 
 ## 6. スクリプト
 
