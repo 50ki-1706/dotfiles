@@ -50,7 +50,7 @@ in
   };
   explore = mkAgent "explore" {
     mode = "subagent";
-    model = "opencode-go/kimi-k2.7-code";
+    model = "opencode-go/qwen3.8-flash";
     description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
     permission = mkPermission {
       read = "allow";
