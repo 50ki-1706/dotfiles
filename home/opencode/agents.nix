@@ -18,12 +18,11 @@ in
     description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse.";
     permission = mkPermission {
       bash = "deny";
-      edit = {
-        ".agents/architecture.md" = "allow";
-        "*/.agents/architecture.md" = "allow";
-        ".agents/archtecture.md" = "allow";
-        "*/.agents/archtecture.md" = "allow";
-      };
+      read = "allow";
+      grep = "allow";
+      glob = "allow";
+      list = "allow";
+      external_directory = "allow";
     };
     tools = {
       question = false;
