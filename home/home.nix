@@ -93,6 +93,10 @@
     source = ./opencode/plugins/architecture-diff-context.js;
     force = true;
   };
+  home.file.".config/opencode/plugins/worktrunk.ts" = {
+    source = ./opencode/plugins/worktrunk.ts;
+    force = true;
+  };
   home.file.".agents/skills" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/skills";
   };

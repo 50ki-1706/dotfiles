@@ -66,6 +66,7 @@
 | `home.file.".config/zellij/config.kdl"` | Zellijのキーバインド設定を配置します。macOSのOption+RightArrow衝突を避けるため`Alt f`を削除しています。 |
 | `home.file.".config/worktrunk/config.toml"` | `home/dotfiles/worktrunk/config.toml`（worktrunkユーザー設定）を配置します。 |
 | `home.file.".config/opencode/AGENTS.md"` | `home/opencode/AGENTS.md`をOpenCode用の`~/.config/opencode/AGENTS.md`として配置します。 |
+| `home.file.".config/opencode/plugins/worktrunk.ts"` | `home/opencode/plugins/worktrunk.ts`（worktrunk公式アクティビティ追跡プラグイン）を配置します。 |
 | `home.file.".config/helix/yazi-picker.sh"` | HelixからYaziを開き、選択ファイルをHelixで開く補助スクリプトを配置します。 |
 | `home.activation.installPackages` | Home Managerのパッケージ導入処理を、現在のNix CLIに合わせて`nix profile add`へ調整します。 |
 
