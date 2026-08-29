@@ -30,3 +30,4 @@ nix run home-manager -- switch --flake .#koki
 20260826 13:41:26 +0900 - OpenCodeのAGENTS.mdを全エージェント共通ルールのみへ削減し、実装制約をexecute.mdへ、日本語ルールをspec.mdへ再配置しました。
 20260827 15:58:29 +0900 - OpenCodeのプロンプトをRole、Process、Rulesの固定スキーマへ統一し、共通OutputFormatに全エージェント共通の検証条項を追加しました。
 20260827 21:04:57 +0900 - OpenCodeの全エージェントプロンプトを日本語から英語へ変換し、日本語での返信・報告指示は英語本文内に保持しました。
+20260828 12:07:35 +0900 - vite-plusをHomebrew/Brewfile管理からNix管理へ移行しました（flake.nixにコミュニティflake ryoppippi/nix-vite-plusをoverlay経由で追加、Brewfileからvite-plusを削除）。

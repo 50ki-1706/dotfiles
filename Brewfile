@@ -8,8 +8,6 @@ brew "kind"
 brew "typst"
 # Vi 'workalike' with many additional features
 brew "vim"
-# Unified toolchain and entry point for web development
-brew "vite-plus"
 # Tools for building Android applications
 cask "android-studio"
 # 3D model slicing software for 3D printers, maintained by Bambu Lab

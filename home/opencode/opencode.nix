@@ -14,6 +14,10 @@
       template = builtins.readFile ./commands/commit.md;
       description = "セッションの変更をConventional Commitsでコミット";
     };
+    create-pr = {
+      template = builtins.readFile ./commands/create-pr.md;
+      description = "セッションの変更からConventional Commits形式のタイトルでPRを作成";
+    };
   };
   watcher = {
     ignore = [
