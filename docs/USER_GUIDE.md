@@ -77,6 +77,12 @@ nix run home-manager -- switch --flake .#koki
 
 `mkOutOfStoreSymlink` は Nix store 内のコピーではなく、リポジトリを直接参照するリンクを作るための仕組みです。そのため、`skills/` 内の編集は、構築済みのリンクを通じてグローバルスキル側へ反映されます。
 
+### 3.4 Worktrunk（Git worktree）
+
+`nix run home-manager -- switch --flake .#koki` を実行すると、Worktrunk の `wt` コマンドと設定がインストールされます。新しい worktree は `wt switch -c feature/name` で作成し、既存の worktree へは `wt switch feature/name` で切り替えます。
+
+ユーザー設定の `post-start = "wt step copy-ignored"` により、新しく作成した worktree へすべての gitignored ファイルをコピーします。`node_modules/` や `target/` も対象になるため、必要に応じてリポジトリの `.worktreeinclude` で対象を絞り込んでください。`.env` を引き継ぐには、リポジトリで `.env` が gitignore 対象になっている必要があります。
+
 ## 4. OpenCode エージェントハーネス（核心セクション）
 
 OpenCode の設定は、単一の大きなプロンプトにすべてを詰め込むのではなく、エージェント、プロンプト、権限、スキル、配置ファイルに分割されています。これにより、必要な情報だけを必要なエージェントへ渡し、調査と実装の境界を保ちます。
@@ -240,8 +246,9 @@ EDR は Git のコミット履歴の代替ではありません。目的は、�
 | `home/opencode/AGENTS.md` | `~/.config/opencode/AGENTS.md` |
 | `home/opencode/example/architecture.md` | `~/.config/opencode/example/architecture.md` |
 | `home/opencode/plugins/architecture-diff-context.js` | `~/.config/opencode/plugins/architecture-diff-context.js` |
+| `home/opencode/plugins/worktrunk.ts` | `~/.config/opencode/plugins/worktrunk.ts`（worktrunk公式アクティビティ追跡プラグイン） |
 
-この 3 つの配置は `home/home.nix` に定義されています。OpenCode の生成設定自体は `programs.opencode.settings` として構成され、エージェント定義は `home/opencode/agents.nix` から読み込まれます。
+この 4 つの配置は `home/home.nix` に定義されています。OpenCode の生成設定自体は `programs.opencode.settings` として構成され、エージェント定義は `home/opencode/agents.nix` から読み込まれます。
 
 ## 5. スキルの管理
 
