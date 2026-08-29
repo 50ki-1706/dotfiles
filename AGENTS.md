@@ -6,7 +6,7 @@ nix run home-manager -- switch --flake .#koki
 - コードベースは無駄がない実装を心がけて下さい。
 - ディレクトリ構造は複雑にならないよう意識して下さい。
 - 必ず将来性、拡張性を意識した実装計画を立てて下さい。
-- nixコードベースを変更した場合は必ず`nix-verify`スキルに従ってください。
+- nixコードベースを変更した場合は必ず`nix-verify`スキル（`.agents/skills/nix-verify/SKILL.md`）に従ってください。
 
 - このリポジトリには、各ディレクトに`AGENTS.md`があり、そこにそのディレクトリの目的や構成、EDRタイムラインの記録方法が書いてあります。変更を加えるときは、必ずそのディレクトリの`AGENTS.md`を確認してから作業してください。
 
@@ -31,3 +31,4 @@ nix run home-manager -- switch --flake .#koki
 20260827 15:58:29 +0900 - OpenCodeのプロンプトをRole、Process、Rulesの固定スキーマへ統一し、共通OutputFormatに全エージェント共通の検証条項を追加しました。
 20260827 21:04:57 +0900 - OpenCodeの全エージェントプロンプトを日本語から英語へ変換し、日本語での返信・報告指示は英語本文内に保持しました。
 20260828 12:07:35 +0900 - vite-plusをHomebrew/Brewfile管理からNix管理へ移行しました（flake.nixにコミュニティflake ryoppippi/nix-vite-plusをoverlay経由で追加、Brewfileからvite-plusを削除）。
+20260829 23:24:57 +0900 - nix-verifyスキルの実配置（.agents/skills/）とドキュメント（skills/AGENTS.md、docs/USER_GUIDE.md）のズレを解消しました。skills/AGENTS.mdとUSER_GUIDEのスキル一覧を実態に合わせ、nix-verifyの所在を明記しました。
