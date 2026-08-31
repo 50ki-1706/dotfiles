@@ -100,7 +100,7 @@
   programs.opencode = {
     enable = true;
     package = pkgs.opencode;
-    settings = import ./opencode/opencode.nix { };
+    settings = import ./opencode/opencode.nix { inherit lib pkgs; };
   };
 
   # https://github.com/nix-community/home-manager/pull/6242

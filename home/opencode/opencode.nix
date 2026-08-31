@@ -1,4 +1,14 @@
-{ ... }:
+{ lib, pkgs, ... }:
+let
+  npx = lib.getExe' pkgs.nodejs "npx";
+  nodeEnvironment.PATH = "${
+    lib.makeBinPath [
+      pkgs.nodejs
+      pkgs.bash
+    ]
+  }:/usr/bin:/bin:/usr/sbin:/sbin";
+  uv = lib.getExe' pkgs.uv "uv";
+in
 {
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
@@ -35,30 +45,32 @@
     chrome-devtools = {
       type = "local";
       command = [
-        "npx"
+        npx
         "-y"
         "chrome-devtools-mcp"
         "--headless"
       ];
+      environment = nodeEnvironment;
       enabled = true;
     };
     playwright = {
       type = "local";
       command = [
-        "npx"
+        npx
         "-y"
         "@playwright/mcp@latest"
         "--headless"
       ];
+      environment = nodeEnvironment;
       enabled = true;
     };
     graphify = {
       type = "local";
       command = [
-        "uv"
+        uv
         "run"
         "--with"
-        "graphifyy"
+        "graphifyy[mcp]"
         "python3"
         "-m"
         "graphify.serve"
