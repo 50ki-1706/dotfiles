@@ -149,7 +149,7 @@ in
 | `deep_explore` | read-only | deny | graphify |
 | `executer` | edit: all | default | chrome-devtools, playwright |
 | `internet_search` | all deny | deny | websearch, webfetch |
-| `plan_review` | all deny | deny | none |
+| `plan_review` | read allow (sensitive deny) | deny | graphify |
 
 `permissions.nix` では、権限を Nix の属性として定義し、`permissionValue` ヘルパーでプリセット名と個別の属性設定を扱います。権限の形を一箇所に揃えることで、エージェントごとの設定を型安全に管理できます。調査・計画レビュー・外部調査のエージェントには拒否を基本とした設定を適用し、`executer` には実装に必要な編集・読み取り・スキル利用の設定を適用します。権限の詳細を変更する場合は、エージェント定義と `permissions.nix` の両方を確認してください。
 
@@ -242,6 +242,10 @@ EDR は Git のコミット履歴の代替ではありません。目的は、�
 | `home/opencode/plugins/architecture-diff-context.js` | `~/.config/opencode/plugins/architecture-diff-context.js` |
 
 この 3 つの配置は `home/home.nix` に定義されています。OpenCode の生成設定自体は `programs.opencode.settings` として構成され、エージェント定義は `home/opencode/agents.nix` から読み込まれます。
+
+`plan_review` へ計画を渡すときは、最初の user メッセージに、ルートキー `impact_scope` を持つ YAML サブセットを一つだけ含めます。空行、`impact_scope:`、および 2 個の空白に続く `- ` と相対パスの項目を使い、項目は 1 個以上必要です。キーはインデント 0、項目はインデント 2 に限定し、引用符、コメント、ほかのキー、ほかのインデント、絶対パス、`.` / `..` のセグメント、空項目、重複項目は使いません。YAML フェンスは行頭の小文字の ```yaml で開始し、行頭の ``` で閉じるものを正確に一つだけ指定します。
+
+`plan_review` は機密ファイルの deny（`.env`、`*.key` など）を除く全ファイルの read allow を持ち、プラグインによるアクセス制限はありません。`impact_scope` はレビューの開始点を示す規約であり、`plan_review` は指定されたパスを起点に、そのパスが影響する領域を追加調査できます。
 
 ## 5. スキルの管理
 
