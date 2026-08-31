@@ -74,8 +74,13 @@ let
     )
     // (if builtins.hasAttr "tools" filtered then { tools = removeDenyOnly filtered.tools; } else { });
 in
-config:
-let
-  filtered = filterConfig config;
-in
-"---\n" + toYamlMap "" filtered + "\n---"
+{
+  inherit removeDenyOnly;
+
+  toYamlFrontmatter =
+    config:
+    let
+      filtered = filterConfig config;
+    in
+    "---\n" + toYamlMap "" filtered + "\n---";
+}

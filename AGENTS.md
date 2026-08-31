@@ -33,4 +33,5 @@ nix run home-manager -- switch --flake .#koki
 20260828 12:07:35 +0900 - vite-plusをHomebrew/Brewfile管理からNix管理へ移行しました（flake.nixにコミュニティflake ryoppippi/nix-vite-plusをoverlay経由で追加、Brewfileからvite-plusを削除）。
 20260829 22:11:15 +0900 - OpenCodeのdeep_exploreエージェントにread/grep/glob/listとユーザー承認済みのexternal_directoryの許可を追加し、タイポしたarchtectureのedit許可2行を削除しました。mkPermissionのデフォルトdenyによるファイル読み取り不能を解消し、spec.mdのread-only記述と設定を一致させました。
 20260829 23:10:46 +0900 - OpenCodeのdeep_exploreを純粋なread-onlyに統一しました。promptからGit historyの言及を削除し(bash拒否との不整合解消)、agents.nixで.agents/architecture.mdへのedit権限を廃止しました。architecture-diff-contextプラグインのarchitecture.md初期化ガイダンスをdeep_exploreからexecuter経由へ変更しました。
+20260830 02:41:04 +0900 - OpenCode生成設定にもdeny-onlyのagent permissionカテゴリを省略する処理を適用しました。
 20260831 22:01:29 +0900 - OpenCode V2を廃止してnixpkgs製V1へ戻し、plan_reviewの動的readスコーププラグインを削除して全read allowに変更し、Graphify MCPを有効化しました。plan_reviewリクエスト規約はreview_targetsからimpact_scope（影響範囲）へ改名しました。

@@ -181,4 +181,5 @@
 20260828 11:55:15 +0900 - OpenCodeのグローバル`/create-pr`コマンドを追加しました（PRテンプレートの検索とConventional Commits形式のタイトル生成に対応し、opencode.nixへ登録）。
 20260829 22:11:15 +0900 - OpenCodeのdeep_exploreエージェントにread/grep/glob/listとユーザー承認済みのexternal_directoryの許可を追加し、タイポしたarchtectureのedit許可2行を削除しました。mkPermissionのデフォルトdenyによるファイル読み取り不能を解消し、spec.mdのread-only記述と設定を一致させました。
 20260829 23:10:46 +0900 - OpenCodeのdeep_exploreを純粋なread-onlyに統一しました。promptからGit historyの言及を削除し(bash拒否との不整合解消)、agents.nixで.agents/architecture.mdへのedit権限を廃止しました。architecture-diff-contextプラグインのarchitecture.md初期化ガイダンスをdeep_exploreからexecuter経由へ変更しました。
+20260830 02:41:04 +0900 - OpenCode生成設定にもdeny-onlyのagent permissionカテゴリを省略する処理を適用しました。
 20260831 22:01:29 +0900 - OpenCode V2を廃止し、programs.opencodeをnixpkgsのpkgs.opencodeへ復元しました。opencode2互換ラッパーとV2サービス再起動hookを削除し、plan-review-read-scope.jsの配置を廃止しました。

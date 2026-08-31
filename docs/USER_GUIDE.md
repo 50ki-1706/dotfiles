@@ -114,15 +114,18 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 ```nix
 let
   mkPermission = import ./permissions.nix;
-  toYamlFrontmatter = import ./yaml.nix;
+  yaml = import ./yaml.nix;
 
   commonOutputFormat = builtins.readFile ./prompts/output-format.md;
   readPrompt = name: builtins.readFile (./prompts + "/${name}.md");
   mkAgent =
     name: config:
-    config
+    let
+      filteredConfig = config // { permission = yaml.removeDenyOnly config.permission; };
+    in
+    filteredConfig
     // {
-      prompt = toYamlFrontmatter config + "\n" + readPrompt name + "\n" + commonOutputFormat;
+      prompt = yaml.toYamlFrontmatter config + "\n" + readPrompt name + "\n" + commonOutputFormat;
     };
 in
 ```
