@@ -34,3 +34,4 @@ nix run home-manager -- switch --flake .#koki
 20260829 23:24:57 +0900 - nix-verifyスキルの実配置（.agents/skills/）とドキュメント（skills/AGENTS.md、docs/USER_GUIDE.md）のズレを解消しました。skills/AGENTS.mdとUSER_GUIDEのスキル一覧を実態に合わせ、nix-verifyの所在を明記しました。
 20260829 22:11:15 +0900 - OpenCodeのdeep_exploreエージェントにread/grep/glob/listとユーザー承認済みのexternal_directoryの許可を追加し、タイポしたarchtectureのedit許可2行を削除しました。mkPermissionのデフォルトdenyによるファイル読み取り不能を解消し、spec.mdのread-only記述と設定を一致させました。
 20260829 23:10:46 +0900 - OpenCodeのdeep_exploreを純粋なread-onlyに統一しました。promptからGit historyの言及を削除し(bash拒否との不整合解消)、agents.nixで.agents/architecture.mdへのedit権限を廃止しました。architecture-diff-contextプラグインのarchitecture.md初期化ガイダンスをdeep_exploreからexecuter経由へ変更しました。
+20260901 02:28:40 +0900 - plan_reviewにread/grep/glob/list/external_directoryとGraphify MCPの利用を許可し、spec→plan_reviewの委譲要求フォーマット（goal、計画全文、調査対象ファイル、required evidence、agent-specific content）をspec.mdとplan_review.mdに定義しました。エージェント権限の記述をspec.md、plan_review.md、USER_GUIDEと同期しました。
