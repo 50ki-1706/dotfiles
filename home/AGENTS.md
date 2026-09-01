@@ -21,6 +21,7 @@
 | `pkgs.fzf` | コマンドラインでの曖昧検索ツール |
 | `pkgs.git` | Gitのコマンドラインツール |
 | `pkgs.lazygit` | GitリポジトリをターミナルUIで操作するツール |
+| `pkgs.worktrunk` | Git worktreeを管理するCLIツール |
 | `pkgs.bitwarden-cli` | Bitwardenのコマンドラインツール |
 | `pkgs.devbox` | プロジェクトごとの開発環境を扱うツール |
 | `pkgs.claude-code` | Claude CodeのCLIツール |
@@ -63,7 +64,9 @@
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/layouts/split.kdl"` | 1:1縦分割のZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/config.kdl"` | Zellijのキーバインド設定を配置します。macOSのOption+RightArrow衝突を避けるため`Alt f`を削除しています。 |
+| `home.file.".config/worktrunk/config.toml"` | `home/dotfiles/worktrunk/config.toml`（worktrunkユーザー設定）を配置します。 |
 | `home.file.".config/opencode/AGENTS.md"` | `home/opencode/AGENTS.md`をOpenCode用の`~/.config/opencode/AGENTS.md`として配置します。 |
+| `home.file.".config/opencode/plugins/worktrunk.ts"` | `home/opencode/plugins/worktrunk.ts`（worktrunk公式アクティビティ追跡プラグイン）を配置します。 |
 | `home.file.".config/helix/yazi-picker.sh"` | HelixからYaziを開き、選択ファイルをHelixで開く補助スクリプトを配置します。 |
 | `home.activation.installPackages` | Home Managerのパッケージ導入処理を、現在のNix CLIに合わせて`nix profile add`へ調整します。 |
 
@@ -177,6 +180,7 @@
 20260827 14:53:15 +0900 - OpenCodeのspec agentにarchitecture-updateスキル権限を追加し、セッション開始時の差分確認と完了後の更新委譲フローへpromptを更新しました。
 20260827 15:50:00 +0900 - OpenCodeの`/commit`コマンドを行レベルのステージングに対応させました。
 20260827 16:10:00 +0900 - OpenCodeの`/commit`コマンドを`git apply --cached`ベースの非インタラクティブな行レベルステージングに変更しました。
+20260828 11:45:47 +0900 - Worktrunk CLIとユーザー設定をhome-managerで導入し、gitignoredファイルを新規worktreeへコピーするグローバルhookとZsh連携を追加しました。
 20260828 12:07:35 +0900 - vite-plus（vp）をHomebrew管理からNix管理へ移行しました（home/packages.nixにpkgs.vite-plusを追加）。
 20260828 11:55:15 +0900 - OpenCodeのグローバル`/create-pr`コマンドを追加しました（PRテンプレートの検索とConventional Commits形式のタイトル生成に対応し、opencode.nixへ登録）。
 20260829 22:11:15 +0900 - OpenCodeのdeep_exploreエージェントにread/grep/glob/listとユーザー承認済みのexternal_directoryの許可を追加し、タイポしたarchtectureのedit許可2行を削除しました。mkPermissionのデフォルトdenyによるファイル読み取り不能を解消し、spec.mdのread-only記述と設定を一致させました。

@@ -80,6 +80,7 @@
     }
   '';
   home.file.".config/zellij/config.kdl".source = ./zellij/config.kdl;
+  home.file.".config/worktrunk/config.toml".source = ./dotfiles/worktrunk/config.toml;
   home.file.".config/opencode/AGENTS.md" = {
     source = ./opencode/AGENTS.md;
     force = true;
@@ -90,6 +91,10 @@
   };
   home.file.".config/opencode/plugins/architecture-diff-context.js" = {
     source = ./opencode/plugins/architecture-diff-context.js;
+    force = true;
+  };
+  home.file.".config/opencode/plugins/worktrunk.ts" = {
+    source = ./opencode/plugins/worktrunk.ts;
     force = true;
   };
   home.file.".agents/skills" = {

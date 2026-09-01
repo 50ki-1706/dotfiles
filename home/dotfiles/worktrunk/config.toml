@@ -1,0 +1,2 @@
+# Copy gitignored files (e.g. .env) into newly created worktrees
+post-start = "wt step copy-ignored"
