@@ -82,11 +82,18 @@ in
     model = "openai/gpt-5.6-sol-fast";
     reasoningEffort = "high";
     description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
-    permission = mkPermission { };
+    permission = mkPermission {
+      read = "allow";
+      grep = "allow";
+      glob = "allow";
+      list = "allow";
+      external_directory = "allow";
+    };
     tools = {
       question = false;
       websearch = false;
       webfetch = false;
+      "graphify*" = true;
     };
   };
   spec = mkAgent "spec" {

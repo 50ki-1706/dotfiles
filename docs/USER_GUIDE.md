@@ -149,7 +149,7 @@ in
 | `deep_explore` | read-only | deny | graphify |
 | `executer` | edit: all | default | chrome-devtools, playwright |
 | `internet_search` | all deny | deny | websearch, webfetch |
-| `plan_review` | all deny | deny | none |
+| `plan_review` | read-only (+ external_directory) | deny | graphify |
 
 `permissions.nix` では、権限を Nix の属性として定義し、`permissionValue` ヘルパーでプリセット名と個別の属性設定を扱います。権限の形を一箇所に揃えることで、エージェントごとの設定を型安全に管理できます。調査・計画レビュー・外部調査のエージェントには拒否を基本とした設定を適用し、`executer` には実装に必要な編集・読み取り・スキル利用の設定を適用します。権限の詳細を変更する場合は、エージェント定義と `permissions.nix` の両方を確認してください。
 
