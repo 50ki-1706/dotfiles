@@ -36,7 +36,7 @@ in
     mode = "subagent";
     model = "openai/gpt-5.6-luna-fast";
     reasoningEffort = "max";
-    description = "Implementation and verification subagent. Performs delegated tasks from spec, or from deep_explore only for architecture document sync, and reports changes plus validation results.";
+    description = "Implementation and verification subagent. Performs the delegated task and reports changes plus validation results.";
     permission = mkPermission {
       bash = "allow";
       read = "allow";
