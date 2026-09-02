@@ -15,8 +15,9 @@ in
   deep_explore = mkAgent "deep_explore" {
     mode = "subagent";
     model = "opencode-go/minimax-m3";
-    description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse.";
+    description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse. Delegates an architecture.md refresh to executer when .agents/architecture-diff.md is not CURRENT.";
     permission = mkPermission {
+      task = [ "executer" ];
       bash = "deny";
       read = "allow";
       grep = "allow";
@@ -35,7 +36,7 @@ in
     mode = "subagent";
     model = "openai/gpt-5.6-luna-fast";
     reasoningEffort = "max";
-    description = "Implementation and verification subagent. Performs delegated tasks from spec and reports changes plus validation results.";
+    description = "Implementation and verification subagent. Performs delegated tasks from spec, or from deep_explore only for architecture document sync, and reports changes plus validation results.";
     permission = mkPermission {
       bash = "allow";
       read = "allow";
@@ -111,7 +112,6 @@ in
       skill = {
         "*" = "deny";
         "gh-cli" = "allow";
-        "architecture-update" = "allow";
       };
     };
     tools = {
