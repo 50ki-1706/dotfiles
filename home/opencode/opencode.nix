@@ -1,4 +1,7 @@
 { ... }:
+let
+  mcpPath = "/Users/koki/.nix-profile/bin:/Users/koki/.vite-plus/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+in
 {
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
@@ -38,9 +41,14 @@
       command = [
         "npx"
         "-y"
-        "chrome-devtools-mcp"
+        "chrome-devtools-mcp@1.8.0"
         "--headless"
       ];
+      environment = {
+        PATH = mcpPath;
+        CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS = "1";
+      };
+      timeout = 60000;
       enabled = true;
     };
     playwright = {
@@ -48,9 +56,13 @@
       command = [
         "npx"
         "-y"
-        "@playwright/mcp@latest"
+        "@playwright/mcp@0.0.80"
         "--headless"
       ];
+      environment = {
+        PATH = mcpPath;
+      };
+      timeout = 60000;
       enabled = true;
     };
     graphify = {
@@ -59,12 +71,16 @@
         "uv"
         "run"
         "--with"
-        "graphifyy"
+        "graphifyy[mcp]"
         "python3"
         "-m"
         "graphify.serve"
         "./graphify-out/graph.json"
       ];
+      environment = {
+        PATH = mcpPath;
+      };
+      timeout = 60000;
       enabled = true;
     };
   };
