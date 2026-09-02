@@ -134,7 +134,7 @@ in
 各エージェントは、自分がプライマリーエージェントなのか、サブエージェントなのかを明示的に認識します。役割を `<Role>` セクションへ書くことで、エージェントがユーザーとの対話を担うのか、委譲された作業だけを実行するのかを区別できます。
 
 - `spec.md` は `Primary orchestration and user-interface agent` と定義され、ユーザーインターフェースとオーケストレーションを担当します。
-- `execute.md` は `Implementation subagent. Performs the task delegated by \`spec\`` と定義され、`spec` から委譲された実装を担当します。
+- `execute.md` は caller から委譲された実装・検証を担当し、`deep_explore` からは architecture document sync の場合だけ呼び出されます。
 - その他のエージェントも、調査、外部調査、計画レビューなど、自分の責務を `<Role>` で明記します。
 
 この役割分担により、サブエージェントがユーザー確認や範囲外の変更を勝手に担当することを防ぎます。
@@ -146,7 +146,7 @@ in
 | Agent | Read/Edit | Bash | Tools |
 | --- | --- | --- | --- |
 | `explore` | read-only (+ external_directory) | deny | graphify |
-| `deep_explore` | read-only | deny | graphify |
+| `deep_explore` | read-only (+ external_directory) | deny | graphify, task: `executer`（architecture sync） |
 | `executer` | edit: all | default | chrome-devtools, playwright |
 | `internet_search` | all deny | deny | websearch, webfetch |
 | `plan_review` | read-only (+ external_directory) | deny | graphify |
@@ -163,18 +163,18 @@ in
 
 ### 4.2 エージェント構成
 
-エージェントは、ユーザーとの対話を行うプライマリーと、特定の作業を担うサブエージェントに分かれています。`spec` が必要な役割へ作業を委譲し、各サブエージェントは自分の責務に集中します。
+エージェントは、ユーザーとの対話を行うプライマリーと、特定の作業を担うサブエージェントに分かれています。`spec` が必要な役割へ作業を委譲し、`deep_explore` は調査開始時の architecture.md 同期に限って `executer` へネスト委譲できます。各サブエージェントは自分の責務に集中します。
 
 | エージェント | 区分 | 役割 |
 | --- | --- | --- |
 | `spec` | primary | ユーザーインターフェース、計画策定、ユーザー確認、サブエージェントへの委譲を担当します。 |
 | `explore` | subagent | 特定のファイルや機能を読み取り専用で調査します。 |
-| `deep_explore` | subagent | ディレクトリ全体を広範に探索し、構造や依存関係をまとめます。 |
-| `executer` | subagent | 委譲された実装を行い、検証結果と変更内容を報告します。 |
+| `deep_explore` | subagent | ディレクトリ全体を広範に探索し、構造や依存関係をまとめます。調査開始時に差分がCURRENTでなければ、architecture.mdの同期だけを`executer`へ委譲します。 |
+| `executer` | subagent | `spec`からの実装・検証、または`deep_explore`からのarchitecture document syncを行い、検証結果と変更内容をcallerへ報告します。 |
 | `internet_search` | subagent | ローカルのコンテキストだけでは不十分な場合に、外部情報を調査します。 |
 | `plan_review` | subagent | ユーザー確認前に実装計画をレビューします。 |
 
-`spec` のデフォルトエージェント設定から、これら 5 つのサブエージェントを必要に応じて呼び出します。計画レビューを先に行い、ユーザー確認後に `executer` へ実装を委譲する流れが基本です。
+`spec` のデフォルトエージェント設定から、これら 5 つのサブエージェントを必要に応じて呼び出します。計画レビューを先に行い、ユーザー確認後に `executer` へ実装を委譲する流れが基本です。例外として、`deep_explore` は調査開始時の architecture.md 同期だけを `executer` へ一度だけ委譲でき、`spec → deep_explore → executer` のネストを形成します。
 
 ### 4.3 プロンプト構成
 
@@ -251,11 +251,10 @@ EDR は Git のコミット履歴の代替ではありません。目的は、�
 skills/<skill-name>/SKILL.md
 ```
 
-現在 `skills/` にあるグローバルスキルは次の 8 個です。
+現在 `skills/` にあるグローバルスキルは次の 7 個です。
 
 | スキルディレクトリ | 定義ファイル |
 | --- | --- |
-| `skills/architecture-update/` | `skills/architecture-update/SKILL.md` |
 | `skills/computer-use/` | `skills/computer-use/SKILL.md` |
 | `skills/find-skills/` | `skills/find-skills/SKILL.md` |
 | `skills/gh-cli/` | `skills/gh-cli/SKILL.md` |
