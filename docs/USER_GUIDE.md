@@ -134,7 +134,7 @@ in
 各エージェントは、自分がプライマリーエージェントなのか、サブエージェントなのかを明示的に認識します。役割を `<Role>` セクションへ書くことで、エージェントがユーザーとの対話を担うのか、委譲された作業だけを実行するのかを区別できます。
 
 - `spec.md` は `Primary orchestration and user-interface agent` と定義され、ユーザーインターフェースとオーケストレーションを担当します。
-- `execute.md` は caller から委譲された実装・検証を担当し、`deep_explore` からは architecture document sync の場合だけ呼び出されます。
+- `execute.md` は委譲されたタスクの実装・検証を担当します。
 - その他のエージェントも、調査、外部調査、計画レビューなど、自分の責務を `<Role>` で明記します。
 
 この役割分担により、サブエージェントがユーザー確認や範囲外の変更を勝手に担当することを防ぎます。
@@ -170,7 +170,7 @@ in
 | `spec` | primary | ユーザーインターフェース、計画策定、ユーザー確認、サブエージェントへの委譲を担当します。 |
 | `explore` | subagent | 特定のファイルや機能を読み取り専用で調査します。 |
 | `deep_explore` | subagent | ディレクトリ全体を広範に探索し、構造や依存関係をまとめます。調査開始時に差分がCURRENTでなければ、architecture.mdの同期だけを`executer`へ委譲します。 |
-| `executer` | subagent | `spec`からの実装・検証、または`deep_explore`からのarchitecture document syncを行い、検証結果と変更内容をcallerへ報告します。 |
+| `executer` | subagent | 委譲された実装・検証を行い、検証結果と変更内容を報告します。 |
 | `internet_search` | subagent | ローカルのコンテキストだけでは不十分な場合に、外部情報を調査します。 |
 | `plan_review` | subagent | ユーザー確認前に実装計画をレビューします。 |
 
