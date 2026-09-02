@@ -37,3 +37,5 @@ nix run home-manager -- switch --flake .#koki
 20260901 02:28:40 +0900 - plan_reviewにread/grep/glob/list/external_directoryとGraphify MCPの利用を許可し、spec→plan_reviewの委譲要求フォーマット（goal、計画全文、調査対象ファイル、required evidence、agent-specific content）をspec.mdとplan_review.mdに定義しました。エージェント権限の記述をspec.md、plan_review.md、USER_GUIDEと同期しました。
 20260902 20:59:44 +0900 - architecture.md同期トリガーをspecからdeep_exploreへ移管し、spec→deep_explore→executerのネスト委譲（subagent_depth=2）を有効化しました。spec.md/deep_explore.mdを最小化し、architecture-updateスキルを廃止してプラグインのupdate_guidanceへ指示を集約しました。プラグインのstatus計算にプレースホルダ検出を追加しました。subagent_depthのキーは将来のOpenCodeアップグレード時に要再確認です。
 20260902 21:34:57 +0900 - executerプロンプトを親エージェント非依存（関数型）にし、委譲元の変化に影響されない実行専用エージェントとして調整しました。
+20260902 22:12:15 +0900 - OpenCodeの全サブエージェントプロンプトとagents.nixのdescriptionから親エージェント（spec）への依存記述を除去し、execute.mdと同様の純粋関数型プロンプトに統一しました。規約をdocs/USER_GUIDE.mdに記録しました。
+20260903 00:12:47 +0900 - OpenCodeの各エージェントプロンプトの重複（Role・Process・Rules間の反復）を整理し、制約を保持したままコンテキストを圧縮しました。plan_review.mdとoutput-format.mdは重複がないため無変更です。

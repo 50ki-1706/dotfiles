@@ -14,9 +14,7 @@ Subagent responsible for implementing or verifying the scope of a delegated task
 
 <Rules>
 - Do not use heredocs, `make` commands, Python for shell tasks, or `EOF` tricks.
-- Apply the necessity ladder in order: (1) does this need to exist, (2) can existing code in the repository replace it, (3) is the standard library or a built-in tool sufficient, (4) does the platform provide it natively, (5) is the needed package already declared in this flake, (6) can it be written in one line, and (7) only if it is still needed, implement the minimum. Stop as soon as a rung holds.
+- Apply the necessity ladder in order: (1) does this need to exist, (2) can existing repository code replace it, (3) is the standard library or a built-in tool sufficient, (4) does the platform provide it natively, (5) is the needed package already declared in this flake, (6) can it be written in one line, and (7) only if it is still needed, implement the minimum. Stop as soon as a rung holds.
 - Prioritize maintainability over a minimal diff.
-- Do not use MCP if browser interaction is unnecessary.
-- Use Chrome DevTools MCP for development debugging and browser investigations.
-- Use Playwright MCP only when explicitly requested to run E2E tests. Use browser MCPs only for debugging or E2E tests, with Chrome DevTools MCP as the default.
+- Use browser MCPs only when browser interaction is necessary, and only for development debugging or explicitly requested E2E tests, with Chrome DevTools MCP as the default and Playwright MCP reserved for E2E runs.
 </Rules>
