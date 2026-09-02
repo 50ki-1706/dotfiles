@@ -52,7 +52,7 @@ in
   explore = mkAgent "explore" {
     mode = "subagent";
     model = "opencode-go/qwen3.8-flash";
-    description = "Read-only targeted code investigation subagent. Activated by a primary agent when it needs focused understanding of a specific part of the codebase (typically ~5 files or fewer). Returns concrete findings to the caller.";
+    description = "Read-only targeted code investigation subagent. Investigates a specific part of the codebase (typically ~5 files or fewer) as requested and returns concrete findings.";
     permission = mkPermission {
       read = "allow";
       grep = "allow";
@@ -70,7 +70,7 @@ in
   internet_search = mkAgent "internet_search" {
     mode = "subagent";
     model = "opencode-go/longcat-2.0";
-    description = "External research subagent. Collects outside knowledge and reports sourced findings to spec.";
+    description = "External research subagent. Collects outside knowledge and reports sourced findings.";
     permission = mkPermission { };
     tools = {
       websearch = true;
@@ -82,7 +82,7 @@ in
     mode = "subagent";
     model = "openai/gpt-5.6-sol-fast";
     reasoningEffort = "high";
-    description = "Plan review subagent. Reviews spec's implementation plan before user confirmation and execution.";
+    description = "Plan review subagent. Reviews an implementation plan before execution.";
     permission = mkPermission {
       read = "allow";
       grep = "allow";
