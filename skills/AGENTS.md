@@ -8,7 +8,6 @@ OpenCodeおよび各agentが利用するグローバルスキルを、リポジ�
 
 - `skills/<skill-name>/SKILL.md`: 各スキルの定義と実行方針
 - OpenCode由来の`gh-cli`、`owasp-top10`、`owasp-llm-top10`
-- `architecture-update`（タスク完了後のアーキテクチャ文書更新用）
 - 既存のグローバルスキルから統合した`computer-use`、`find-skills`、`orca-cli`、`orchestration`
 - リポジトリ固有スキル（`nix-verify`、`minimal-repository`）は`.agents/skills/`配下に配置し、グローバル配備（`~/.agents/skills`へのリンク）の対象外とします。`.gitignore`の例外設定でバージョン管理します。
 
@@ -22,3 +21,4 @@ OpenCodeおよび各agentが利用するグローバルスキルを、リポジ�
 20260827 14:22:35 +0900 - minimal-repositoryスキルをskills/から.agents/skills/へ移動し、リポジトリ固有のスキルとしました。
 20260827 14:53:15 +0900 - `architecture-update`スキルをセッション開始時の差分確認と対象セクション限定更新の委譲フローへ更新しました。
 20260829 23:24:57 +0900 - ドキュメントを実態に合わせました。nix-verifyは現在リポジトリ固有スキルとして.agents/skills/に配置されているため、構成から削除し、リポジトリ固有スキルの配置方針を追記しました。
+20260902 20:59:44 +0900 - architecture.md同期トリガーをspecからdeep_exploreへ移管し、spec→deep_explore→executerのネスト委譲（subagent_depth=2）を有効化しました。spec.md/deep_explore.mdを最小化し、architecture-updateスキルを廃止してプラグインのupdate_guidanceへ指示を集約しました。プラグインのstatus計算にプレースホルダ検出を追加しました。subagent_depthのキーは将来のOpenCodeアップグレード時に要再確認です。

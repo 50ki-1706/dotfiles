@@ -15,6 +15,16 @@ const METADATA_DELIMITER = /^-----$/
 const MAX_FILES = 120
 const MAX_COMMITS = 20
 const REFRESH_EVENTS = new Set(["session.created", "session.idle"])
+const TEMPLATE_MARKERS = [
+  "date: YYYY-MM-DD",
+  "(will be filled by agent)",
+  "簡潔に要約してください",
+  "中心に書いてください",
+  "列挙してください",
+  "例: フロントエンド / バックエンド / UI / API / テスト / インフラ。",
+  "補足してください",
+  "並べてください",
+]
 
 export const ArchitectureDiffContext = async ({ client, directory, worktree }) => {
   const startDir = typeof worktree === "string" && worktree.length > 0 ? worktree : directory
@@ -77,6 +87,7 @@ async function writeDiffContext(startDir) {
     // Mode normalization failed — continue without interrupting the refresh.
   }
   const architectureText = await readText(archPath)
+  const hasTemplatePlaceholders = TEMPLATE_MARKERS.some((marker) => architectureText.includes(marker))
   const metadata = parseMetadata(architectureText)
   const agentsDirExists = await isDirectory(agentsDir)
 
@@ -94,12 +105,13 @@ async function writeDiffContext(startDir) {
     ? await recentCommitsSince(repoRoot, `${base.head}..HEAD`)
     : await recentCommitsSince(repoRoot, "HEAD")
   const status = architectureText
-    ? committedChanges.length > 0 || worktreeChanges.length > 0
-      ? "STALE"
-      : base.head
-        ? "CURRENT"
-        : "UNKNOWN_BASE"
+    ? !base.head
+      ? "UNKNOWN_BASE"
+      : hasTemplatePlaceholders || committedChanges.length > 0 || worktreeChanges.length > 0
+        ? "STALE"
+        : "CURRENT"
     : "MISSING"
+  const needsFullPopulation = !base.head || hasTemplatePlaceholders
   let metadataNote = ""
   if (metadata?.["commit-hash"] && base.source !== "metadata_commit_hash") {
     const shortHash = metadata["commit-hash"].slice(0, 12)
@@ -117,6 +129,7 @@ async function writeDiffContext(startDir) {
     worktreeChanges,
     hasMetadataBlock,
     metadataNote,
+    needsFullPopulation,
   })
   const previous = await readText(diffFile)
 
@@ -211,20 +224,19 @@ async function recentCommitsSince(repoRoot, revision) {
   return splitLines(await gitText(repoRoot, args, true))
 }
 
-function render({ status, base, committedChanges, currentHead, recentCommits, worktreeChanges, hasMetadataBlock, metadataNote }) {
+function render({ status, base, committedChanges, currentHead, recentCommits, worktreeChanges, hasMetadataBlock, metadataNote, needsFullPopulation }) {
   const shortBase = base.head ? base.head.slice(0, 12) : "(none)"
   const shortHead = currentHead.slice(0, 12)
   const marker = `<!-- opencode-architecture-head: ${currentHead} -->`
   const refreshInstruction = hasMetadataBlock
     ? `- After refreshing ${ARCHITECTURE_PATH}, set \`commit-hash\` to \`suggested_metadata_commit_hash\` and set \`date\` to today in the metadata block.`
     : `- After refreshing ${ARCHITECTURE_PATH}, replace or add the current_head_marker.`
-  const guidance =
-    status === "MISSING" || status === "UNKNOWN_BASE"
-      ? `- Ask executer to create or populate ${ARCHITECTURE_PATH}, replacing all placeholder/template content with real project information.
+  const populationInstruction = needsFullPopulation
+    ? `- Delegate to executer: create or fully populate ${ARCHITECTURE_PATH}, replacing all placeholder/template content with real project information (deep_explore triggers this at the start of an investigation).`
+    : `- If status is STALE, delegate to executer: update only the sections of ${ARCHITECTURE_PATH} matching the changed files (deep_explore triggers this at the start of an investigation).`
+  const guidance = `${populationInstruction}
 ${refreshInstruction}
-- Treat this file as a change detector, not as evidence; confirm findings by reading source files.`
-      : `- If status is STALE, ask deep_explore to inspect the listed files first.
-${refreshInstruction}
+- ${ARCHITECTURE_PATH} is personal and untracked — never commit it.
 - Treat this file as a change detector, not as evidence; confirm findings by reading source files.`
 
   return `# Architecture Diff Context
