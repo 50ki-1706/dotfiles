@@ -8,7 +8,6 @@ OpenCodeおよび各agentが利用するグローバルスキルを、リポジ�
 
 - `skills/<skill-name>/SKILL.md`: 各スキルの定義と実行方針
 - OpenCode由来の`gh-cli`、`owasp-top10`、`owasp-llm-top10`
-- `architecture-update`（タスク完了後のアーキテクチャ文書更新用）
 - 既存のグローバルスキルから統合した`computer-use`、`find-skills`、`orca-cli`、`orchestration`
 - リポジトリ固有スキル（`nix-verify`、`minimal-repository`）は`.agents/skills/`配下に配置し、グローバル配備（`~/.agents/skills`へのリンク）の対象外とします。`.gitignore`の例外設定でバージョン管理します。
 
