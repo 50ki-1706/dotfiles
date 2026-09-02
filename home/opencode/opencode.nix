@@ -1,6 +1,6 @@
 { ... }:
 let
-  mcpPath = "/Users/koki/.nix-profile/bin:/Users/koki/.vite-plus/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  mcpPath = "/Users/koki/.nix-profile/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 in
 {
   "$schema" = "https://opencode.ai/config.json";
