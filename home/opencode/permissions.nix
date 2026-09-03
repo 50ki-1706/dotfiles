@@ -42,6 +42,9 @@ let
   skillAllow = {
     "*" = "deny";
     "gh-cli" = "allow";
+    "computer-use" = "allow";
+    "orca-cli" = "allow";
+    "orchestration" = "allow";
   };
   permissionValue =
     value: allowValue:
