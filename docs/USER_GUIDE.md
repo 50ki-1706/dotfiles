@@ -73,7 +73,7 @@ nix run home-manager -- switch --flake .#koki
 
 - `programs.opencode` を有効にし、`pkgs.opencode` と `home/opencode/opencode.nix` の設定を Home Manager から適用します。
 - `home.file.".agents/skills"` と `mkOutOfStoreSymlink` を使い、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。
-- `home.file` を使い、OpenCode 用のファイルを `~/.config/opencode/` 以下へ配置します。具体的な配置は [4.5 ファイル配置](#45-ファイル配置) に示します。
+- `home.file` を使い、OpenCode 用のファイルを `~/.config/opencode/` 以下へ配置します。具体的な配置は [4.4 ファイル配置](#44-ファイル配置) に示します。
 
 `mkOutOfStoreSymlink` は Nix store 内のコピーではなく、リポジトリを直接参照するリンクを作るための仕組みです。そのため、`skills/` 内の編集は、構築済みのリンクを通じてグローバルスキル側へ反映されます。
 
@@ -89,7 +89,6 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 - エージェントは、作業対象のディレクトリにある `AGENTS.md` を、必要になった時だけ読み込みます。
 - ディレクトリごとの目的、境界、運用ルールを局所化し、無関係な設定をコンテキストへ混ぜません。
-- 各 `AGENTS.md` には EDR（Event-Driven Record）タイムラインを置き、変更履歴を短い記録として残します。
 - ルートの `AGENTS.md` にはディレクトリ一覧の表を置き、対象ディレクトリの `AGENTS.md` へ誘導します。エージェントは、最初から全ファイルを読むのではなく、ポインターを辿って必要な情報だけを取得できます。
 
 この方法は、プロンプトの長さを抑えるだけでなく、変更の影響範囲をディレクトリ単位で理解しやすくするための設計でもあります。
@@ -217,24 +216,7 @@ in
 
 `home/opencode/AGENTS.md` の共通ルールは、可読性と保守性を優先する Principal Policy と、委譲されたタスクの範囲と付与されたツールだけを扱う Common Agent Rules で構成されています。プロンプトは原則として英語で記述し、日本語で返信・報告する明示的な指示がある場合のみ、その指示を英語の本文内に記述します。
 
-### 4.4 EDR タイムライン
-
-EDR は Event-Driven Record の略です。各 `AGENTS.md` に、ディレクトリやエージェント設定に関する変更履歴を簡潔に記録します。形式は次のとおりです。
-
-```text
-YYYYMMDD HH:MM:SS +0900 - 説明
-```
-
-記録の例です。
-
-```text
-20260825 09:23:06 +0900 - Nix dotfilesの構成を整理し、home-managerのモジュールと配置用生設定をhome/配下へ集約しました。旧シンボリックリンクの移行処理をinstall.shのswitch前に追加しました。
-20260826 11:43:45 +0900 - Ponytailのエッセンス（必要性ラダー）をAGENTS.mdに統合し、全エージェントプロンプトからRole/Objectiveの冗長を解消しました。
-```
-
-EDR は Git のコミット履歴の代替ではありません。目的は、エージェントが Git history を最初から読み込まなくても、なぜ構成が変わったのかをディレクトリ単位で理解できるようにすることです。新しい変更を加えた場合は、対象ディレクトリの `AGENTS.md` に同じ形式で短い記録を追加します。
-
-### 4.5 ファイル配置
+### 4.4 ファイル配置
 
 `home/home.nix` の `home.file` 定義で、リポジトリ内の OpenCode 用ファイルをユーザー環境へ配置します。
 
