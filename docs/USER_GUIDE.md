@@ -253,17 +253,14 @@ EDR は Git のコミット履歴の代替ではありません。目的は、�
 skills/<skill-name>/SKILL.md
 ```
 
-現在 `skills/` にあるグローバルスキルは次の 7 個です。
+現在 `skills/` にあるグローバルスキルは次の 4 個です。
 
 | スキルディレクトリ | 定義ファイル |
 | --- | --- |
 | `skills/computer-use/` | `skills/computer-use/SKILL.md` |
-| `skills/find-skills/` | `skills/find-skills/SKILL.md` |
 | `skills/gh-cli/` | `skills/gh-cli/SKILL.md` |
 | `skills/orca-cli/` | `skills/orca-cli/SKILL.md` |
 | `skills/orchestration/` | `skills/orchestration/SKILL.md` |
-| `skills/owasp-llm-top10/` | `skills/owasp-llm-top10/SKILL.md` |
-| `skills/owasp-top10/` | `skills/owasp-top10/SKILL.md` |
 
 Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。リンクが作成済みであれば、リポジトリ内の `SKILL.md` を編集した内容がグローバルスキルへ即時反映されます。リンク自体の作成や再配置を変更した場合は、Home Manager の switch を再実行してください。
 
