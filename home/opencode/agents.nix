@@ -109,10 +109,7 @@ in
         "internet_search"
         "plan_review"
       ];
-      skill = {
-        "*" = "deny";
-        "gh-cli" = "allow";
-      };
+      skill = "allow";
     };
     tools = {
       websearch = false;

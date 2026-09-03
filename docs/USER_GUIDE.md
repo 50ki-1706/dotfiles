@@ -154,6 +154,8 @@ in
 
 `permissions.nix` では、権限を Nix の属性として定義し、`permissionValue` ヘルパーでプリセット名と個別の属性設定を扱います。権限の形を一箇所に揃えることで、エージェントごとの設定を型安全に管理できます。調査・計画レビュー・外部調査のエージェントには拒否を基本とした設定を適用し、`executer` には実装に必要な編集・読み取り・スキル利用の設定を適用します。権限の詳細を変更する場合は、エージェント定義と `permissions.nix` の両方を確認してください。
 
+`skillAllow` プリセットで許可するスキルは `gh-cli`、`computer-use`、`orca-cli`、`orchestration` です。`spec` と `executer` がこのプリセットを共有し、その他のエージェントは既定で拒否します。
+
 #### スキルの必要性吟味
 
 モデルの性能が高いほど、スキルを追加する前に「そのスキルは本当に必要か」を問い直します。OpenCode Principal Policy の方針は次の一文に集約されています。
@@ -252,17 +254,14 @@ EDR は Git のコミット履歴の代替ではありません。目的は、�
 skills/<skill-name>/SKILL.md
 ```
 
-現在 `skills/` にあるグローバルスキルは次の 7 個です。
+現在 `skills/` にあるグローバルスキルは次の 4 個です。
 
 | スキルディレクトリ | 定義ファイル |
 | --- | --- |
 | `skills/computer-use/` | `skills/computer-use/SKILL.md` |
-| `skills/find-skills/` | `skills/find-skills/SKILL.md` |
 | `skills/gh-cli/` | `skills/gh-cli/SKILL.md` |
 | `skills/orca-cli/` | `skills/orca-cli/SKILL.md` |
 | `skills/orchestration/` | `skills/orchestration/SKILL.md` |
-| `skills/owasp-llm-top10/` | `skills/owasp-llm-top10/SKILL.md` |
-| `skills/owasp-top10/` | `skills/owasp-top10/SKILL.md` |
 
 Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。リンクが作成済みであれば、リポジトリ内の `SKILL.md` を編集した内容がグローバルスキルへ即時反映されます。リンク自体の作成や再配置を変更した場合は、Home Manager の switch を再実行してください。
 
