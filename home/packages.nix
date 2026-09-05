@@ -12,8 +12,6 @@
     pkgs.yq-go
     pkgs.zellij
     pkgs.claude-code
-    pkgs.uv
-    pkgs.nodejs
     pkgs.vite-plus
     ollamaPkgs.ollama
   ];
