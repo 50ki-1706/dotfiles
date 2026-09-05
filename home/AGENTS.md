@@ -24,7 +24,7 @@
 | `pkgs.bitwarden-cli` | Bitwardenのコマンドラインツール |
 | `pkgs.devbox` | プロジェクトごとの開発環境を扱うツール |
 | `pkgs.claude-code` | Claude CodeのCLIツール |
-| `pkgs.nodejs` | Node.js実行環境。MCPサーバー起動(npx)に使用 |
+| `pkgs.vite-plus` | Vite+の開発ツール |
 | `pkgs.nixfmt` | Nixコードのフォーマッタ |
 | `pkgs.ripgrep` | 高速なテキスト検索ツール |
 | `pkgs.yazi` | ターミナル上のファイルマネージャ |
@@ -43,8 +43,8 @@
 
 | 定義 | 用途 |
 | --- | --- |
-| `programs.zsh` | Zshを有効化し、`~/.config/shell/aliases`と`~/.zshrc.local`を読み込みます。 |
-| `programs.mise` | miseを有効化し、Zsh連携も有効化します。 |
+| `programs.zsh` | Zshを有効化し、aliases → `~/.zshrc.local` → mise activateの順に初期化します。mise activationが後続のPATH変更より優先されます。 |
+| `programs.mise` | miseを有効化し、Zsh連携をこの設定で管理します。グローバルなツール設定は管理外の`~/.config/mise/config.toml`にあり、Node.js/uvはNixではなくmiseから提供されます。MCPサーバーのnpx/uvはmise shims（`/Users/koki/.local/share/mise/shims`）経由で解決します。 |
 | `programs.starship` | Starshipプロンプトを有効化し、Zsh連携も有効化します。 |
 | `programs.git` | Gitを有効化し、SSH署名形式、グローバルignore、アカウント別includeを設定します。 |
 | `programs.gh` | GitHub CLIを有効化し、GitプロトコルをSSHに設定します。 |
