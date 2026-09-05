@@ -3,12 +3,12 @@
   programs.zsh = {
     enable = true;
     initContent = lib.mkMerge [
-      (lib.mkOrder 1000 ''
+      (lib.mkOrder 980 ''
         if [[ -f ~/.config/shell/aliases ]]; then
           source ~/.config/shell/aliases
         fi
       '')
-      (lib.mkOrder 1500 ''
+      (lib.mkOrder 990 ''
         if [[ -f ~/.zshrc.local ]]; then
           source ~/.zshrc.local
         fi
