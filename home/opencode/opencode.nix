@@ -38,6 +38,7 @@ in
   mcp = {
     chrome-devtools = {
       type = "local";
+      cwd = "/Users/koki/.config/opencode";
       command = [
         "npx"
         "-y"
@@ -53,6 +54,7 @@ in
     };
     playwright = {
       type = "local";
+      cwd = "/Users/koki/.config/opencode";
       command = [
         "npx"
         "-y"
