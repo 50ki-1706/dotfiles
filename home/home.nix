@@ -95,7 +95,6 @@
   home.file.".agents/skills" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/skills";
   };
-  home.file.".npmrc".source = ./dotfiles/npm/npmrc;
 
   programs.opencode = {
     enable = true;
