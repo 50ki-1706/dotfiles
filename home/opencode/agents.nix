@@ -14,7 +14,8 @@ in
 {
   deep_explore = mkAgent "deep_explore" {
     mode = "subagent";
-    model = "opencode-go/minimax-m3";
+    model = "openai/gpt-5.6-sol";
+    reasoningEffort = "high";
     description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse. Delegates an architecture.md refresh to executer when .agents/architecture-diff.md is not CURRENT.";
     permission = mkPermission {
       task = [ "executer" ];
@@ -34,8 +35,7 @@ in
   };
   executer = mkAgent "execute" {
     mode = "subagent";
-    model = "openai/gpt-5.6-luna-fast";
-    reasoningEffort = "max";
+    model = "opencode-go/glm-5.3-flash";
     description = "Implementation and verification subagent. Performs the delegated task and reports changes plus validation results.";
     permission = mkPermission {
       bash = "allow";
@@ -51,7 +51,7 @@ in
   };
   explore = mkAgent "explore" {
     mode = "subagent";
-    model = "opencode-go/qwen3.8-flash";
+    model = "opencode-go/omen-alpha";
     description = "Read-only targeted code investigation subagent. Investigates a specific part of the codebase (typically ~5 files or fewer) as requested and returns concrete findings.";
     permission = mkPermission {
       read = "allow";
@@ -80,7 +80,7 @@ in
   };
   plan_review = mkAgent "plan_review" {
     mode = "subagent";
-    model = "openai/gpt-5.6-sol-fast";
+    model = "openai/gpt-5.6-sol";
     reasoningEffort = "high";
     description = "Plan review subagent. Reviews an implementation plan before execution.";
     permission = mkPermission {
@@ -99,7 +99,7 @@ in
   };
   spec = mkAgent "spec" {
     mode = "primary";
-    model = "opencode-go/glm-5.3-flash";
+    model = "opencode-go/omen-alpha";
     description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
     permission = mkPermission {
       task = [
