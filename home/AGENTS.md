@@ -60,7 +60,6 @@
 | `fonts.fontconfig.enable` | fontconfigベースのアプリでHome Manager管理フォントを利用できるようにします。 |
 | `home.activation.installFonts` | macOSネイティブアプリ向けにNerd Fontを`~/Library/Fonts/HomeManager`へコピーします。 |
 | `home.file.".config/shell/aliases"` | `home/dotfiles/shell/aliases`を`~/.config/shell/aliases`としてstore-backedに配置します。 |
-| `home.file.".npmrc"` | `home/dotfiles/npm/npmrc`を`~/.npmrc`として配置します。 |
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/layouts/split.kdl"` | 1:1縦分割のZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/config.kdl"` | Zellijのキーバインド設定を配置します。macOSのOption+RightArrow衝突を避けるため`Alt f`を削除しています。 |

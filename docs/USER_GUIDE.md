@@ -18,7 +18,7 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 | --- | --- |
 | `home/` | Home Manager モジュールと、Home Manager から配置する設定ファイルを管理します。 |
 | `home/opencode/` | OpenCode のエージェント設定、プロンプト、プラグイン、サンプルを管理します。 |
-| `home/dotfiles/` | Nix 式とは分離して管理する、生の設定ファイルを管理します。Git、npm、シェル、VS Code などの設定が含まれます。 |
+| `home/dotfiles/` | Nix 式とは分離して管理する、生の設定ファイルを管理します。Git、シェル、VS Code などの設定が含まれます。 |
 | `hosts/` | ホストやプラットフォーム固有の設定を管理します。 |
 | `packages/` | Nix パッケージ定義と SSH キー管理用の定義を管理します。 |
 | `scripts/` | Nix の導入、初期セットアップ、旧シンボリックリンクの移行などのセットアップスクリプトを管理します。 |
