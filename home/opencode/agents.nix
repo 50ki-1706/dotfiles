@@ -14,9 +14,8 @@ in
 {
   deep_explore = mkAgent "deep_explore" {
     mode = "subagent";
-    model = "openai/gpt-5.6-sol";
-    reasoningEffort = "high";
-    description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse. Delegates an architecture.md refresh to executer when .agents/architecture-diff.md is not CURRENT.";
+    model = "opencode-go/deepseek-flash";
+    description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse. May delegate an architecture.md refresh to executer only when explicitly included in its approved scope.";
     permission = mkPermission {
       task = [ "executer" ];
       bash = "deny";
@@ -35,11 +34,15 @@ in
   };
   executer = mkAgent "execute" {
     mode = "subagent";
-    model = "opencode-go/glm-5.3-flash";
+    # Go handles routine implementation; Sol reviews consequential decisions and changes.
+    model = "opencode-go/minimax-m3";
     description = "Implementation and verification subagent. Performs the delegated task and reports changes plus validation results.";
     permission = mkPermission {
       bash = "allow";
       read = "allow";
+      grep = "allow";
+      glob = "allow";
+      list = "allow";
       edit = "allow";
       skill = "allow";
     };
@@ -51,7 +54,7 @@ in
   };
   explore = mkAgent "explore" {
     mode = "subagent";
-    model = "opencode-go/omen-alpha";
+    model = "opencode-go/mimo-v2.5";
     description = "Read-only targeted code investigation subagent. Investigates a specific part of the codebase (typically ~5 files or fewer) as requested and returns concrete findings.";
     permission = mkPermission {
       read = "allow";
@@ -82,7 +85,7 @@ in
     mode = "subagent";
     model = "openai/gpt-5.6-sol";
     reasoningEffort = "high";
-    description = "Plan review subagent. Reviews an implementation plan before execution.";
+    description = "Read-only review subagent. Reviews plans, resolves difficult design questions, and checks consequential implementations against requirements.";
     permission = mkPermission {
       read = "allow";
       grep = "allow";
@@ -99,7 +102,7 @@ in
   };
   spec = mkAgent "spec" {
     mode = "primary";
-    model = "opencode-go/omen-alpha";
+    model = "opencode-go/glm-5.3-flash";
     description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
     permission = mkPermission {
       task = [

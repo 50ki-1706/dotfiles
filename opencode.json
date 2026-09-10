@@ -6,5 +6,23 @@
       "nix-verify": "allow",
       "minimal-repository": "allow"
     }
+  },
+  "agent": {
+    "spec": {
+      "permission": {
+        "skill": {
+          "nix-verify": "allow",
+          "minimal-repository": "allow"
+        }
+      }
+    },
+    "executer": {
+      "permission": {
+        "skill": {
+          "nix-verify": "allow",
+          "minimal-repository": "allow"
+        }
+      }
+    }
   }
 }

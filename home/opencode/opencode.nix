@@ -1,12 +1,13 @@
 { ... }:
 let
   mcpPath = "/Users/koki/.local/share/mise/shims:/Users/koki/.nix-profile/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  agents = import ./agents.nix;
 in
 {
   "$schema" = "https://opencode.ai/config.json";
   autoupdate = false;
-  model = "opencode-go/omen-alpha";
-  small_model = "opencode-go/omen-alpha";
+  model = agents.spec.model;
+  small_model = agents.explore.model;
   default_agent = "spec";
   subagent_depth = 2;
   command = {
@@ -87,5 +88,5 @@ in
     "chrome-devtools*" = false;
     "playwright*" = false;
   };
-  agent = import ./agents.nix;
+  agent = agents;
 }
