@@ -14,7 +14,7 @@ in
 {
   deep_explore = mkAgent "deep_explore" {
     mode = "subagent";
-    model = "opencode-go/deepseek-flash";
+    model = "opencode-go/minimax-m3";
     description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse. May delegate an architecture.md refresh to executer only when explicitly included in its approved scope.";
     permission = mkPermission {
       task = [ "executer" ];
@@ -35,7 +35,7 @@ in
   executer = mkAgent "execute" {
     mode = "subagent";
     # Go handles routine implementation; Sol reviews consequential decisions and changes.
-    model = "opencode-go/minimax-m3";
+    model = "opencode-go/deepseek-v4.1-flash";
     description = "Implementation and verification subagent. Performs the delegated task and reports changes plus validation results.";
     permission = mkPermission {
       bash = "allow";
@@ -54,7 +54,7 @@ in
   };
   explore = mkAgent "explore" {
     mode = "subagent";
-    model = "opencode-go/mimo-v2.5";
+    model = "opencode-go/minimax-m3";
     description = "Read-only targeted code investigation subagent. Investigates a specific part of the codebase (typically ~5 files or fewer) as requested and returns concrete findings.";
     permission = mkPermission {
       read = "allow";
