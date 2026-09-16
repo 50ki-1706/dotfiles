@@ -26,25 +26,42 @@ const TEMPLATE_MARKERS = [
   "並べてください",
 ]
 
-export const ArchitectureDiffContext = async ({ client, directory, worktree }) => {
-  const startDir = typeof worktree === "string" && worktree.length > 0 ? worktree : directory
-
-  const refresh = async () => {
-    try {
-      await writeDiffContext(startDir)
-    } catch (error) {
-      await log(client, "warn", `architecture diff refresh failed: ${errorMessage(error)}`)
+export default {
+  id: "architecture-diff-context",
+  async setup(ctx) {
+    const startDir = ctx.location.directory
+    const controller = new AbortController()
+    const refresh = async () => {
+      try {
+        await writeDiffContext(startDir)
+      } catch (error) {
+        console.warn(`architecture diff refresh failed: ${errorMessage(error)}`)
+      }
     }
-  }
 
-  await refresh()
+    await refresh()
 
-  return {
-    event: async ({ event }) => {
-      if (!REFRESH_EVENTS.has(event.type)) return
-      await refresh()
-    },
-  }
+    const listening = (async () => {
+      try {
+        for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+          if (!REFRESH_EVENTS.has(event.type)) continue
+          // V2 shares a server across projects; only refresh this plugin's location.
+          const location = event.location ?? event.data?.location
+          if (location?.directory !== startDir) continue
+          await refresh()
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.warn(`architecture diff event stream failed: ${errorMessage(error)}`)
+        }
+      }
+    })()
+
+    return async () => {
+      controller.abort()
+      await listening
+    }
+  },
 }
 
 async function writeDiffContext(startDir) {
@@ -371,17 +388,6 @@ async function isDirectory(file) {
   } catch {
     return false
   }
-}
-
-async function log(client, level, message) {
-  if (!client?.app?.log) return
-  await client.app.log({
-    body: {
-      service: "architecture-diff-context",
-      level,
-      message,
-    },
-  })
 }
 
 function errorMessage(error) {

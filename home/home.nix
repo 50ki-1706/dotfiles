@@ -98,7 +98,7 @@
 
   programs.opencode = {
     enable = true;
-    package = pkgs.opencode;
+    package = pkgs.callPackage ../packages/opencode.nix { };
     settings = import ./opencode/opencode.nix { };
   };
 

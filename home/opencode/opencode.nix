@@ -9,7 +9,7 @@ in
   model = agents.spec.model;
   small_model = agents.explore.model;
   default_agent = "spec";
-  subagent_depth = 2;
+  experimental.subagent_depth = 2;
   command = {
     commit = {
       template = builtins.readFile ./commands/commit.md;

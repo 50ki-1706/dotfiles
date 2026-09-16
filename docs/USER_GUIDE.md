@@ -71,7 +71,7 @@ nix run home-manager -- switch --flake .#koki
 
 ### 3.3 主な機能
 
-- `programs.opencode` を有効にし、`pkgs.opencode` と `home/opencode/opencode.nix` の設定を Home Manager から適用します。
+- `programs.opencode` を有効にし、`packages/opencode.nix` で固定した公式npm配布のOpenCode v2（Apple Silicon向け）と `home/opencode/opencode.nix` の設定を Home Manager から適用します。本体の更新は、このパッケージ定義のバージョンとハッシュを変更します。
 - `home.file.".agents/skills"` と `mkOutOfStoreSymlink` を使い、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。
 - `home.file` を使い、OpenCode 用のファイルを `~/.config/opencode/` 以下へ配置します。具体的な配置は [4.4 ファイル配置](#44-ファイル配置) に示します。
 
@@ -227,6 +227,8 @@ in
 | `home/opencode/plugins/architecture-diff-context.js` | `~/.config/opencode/plugins/architecture-diff-context.js` |
 
 この 3 つの配置は `home/home.nix` に定義されています。OpenCode の生成設定自体は `programs.opencode.settings` として構成され、エージェント定義は `home/opencode/agents.nix` から読み込まれます。
+
+OpenCode v2でも既存のv1形式のエージェント・権限・MCP設定は互換機能で読み込まれます。`architecture-diff-context.js` はv2のプラグインAPIを使い、対象ディレクトリのセッション作成・待機イベントで差分を更新します。端末UI設定はOpenCodeが管理する `~/.config/opencode/cli.json` に保存します。移行の詳細は[公式ガイド](https://opencode.ai/v2/docs/migrate-v1/)を参照してください。
 
 ## 5. スキルの管理
 
