@@ -23,7 +23,7 @@
 | `pkgs.nixfmt` | Nixコードのフォーマッタ（Nixツールチェーンのため継続） |
 | `ollamaPkgs.ollama` | ローカルLLM実行ツール |
 
-fzf、lazygit、ripgrep、yazi、yq、zellij、gh、bitwarden-cli、vite-plusなどの汎用CLIはNixでは導入せず、`mise use -g`で管理外の`~/.config/mise/config.toml`へ手動で追加します。`git`は`programs.git`が導入します。
+fzf、lazygit、ripgrep、yazi、yq、zellij、gh、bitwarden-cli、vite-plusなどの汎用CLIはNixでは導入せず、`modules/mise/config.toml`で管理し、`xdg.configFile`で`~/.config/mise/config.toml`へ読み取り専用（store-backed）で配置します。変更はリポジトリ編集 → switch → `mise install`の順で行います。`git`は`programs.git`が導入します。
 
 ### `fonts.nix`で明示的に導入しているもの
 
@@ -37,7 +37,7 @@ fzf、lazygit、ripgrep、yazi、yq、zellij、gh、bitwarden-cli、vite-plusな
 | 定義 | 用途 |
 | --- | --- |
 | `programs.zsh` | Zshを有効化し、aliases → `~/.zshrc.local` → mise activateの順に初期化します。mise activationが後続のPATH変更より優先されます。 |
-| `programs.mise` | miseを有効化し、Zsh連携をこの設定で管理します。グローバルなツール設定は管理外の`~/.config/mise/config.toml`にあり、Node.js/uv/汎用CLIはNixではなくmiseから提供されます。MCPサーバーのnpx/uvはmise shims（`/Users/koki/.local/share/mise/shims`）経由で解決します。 |
+| `programs.mise` | miseを有効化し、Zsh連携をこの設定で管理します。グローバルなツール設定は`modules/mise/config.toml`で管理し、`xdg.configFile`で`~/.config/mise/config.toml`へ読み取り専用（store-backed）で配置します。グローバルファイルへの`mise use -g`はサポートせず、変更はリポジトリ編集 → switch → `mise install`の順で行います。プロジェクト単位の`mise.toml`は対象外です。Node.js/uv/汎用CLIはNixではなくmiseから提供されます。MCPサーバーのnpx/uvはmise shims（`/Users/koki/.local/share/mise/shims`）経由で解決します。 |
 | `programs.starship` | Starshipプロンプトを有効化し、Zsh連携も有効化します。 |
 | `programs.git` | Gitを有効化し、SSH署名形式、グローバルignore、アカウント別includeを設定します。 |
 | `programs.ssh` | SSH設定を有効化し、GitHub用の鍵とmacOS Keychain連携を`settings`で設定します。 |

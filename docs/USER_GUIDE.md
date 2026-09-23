@@ -4,7 +4,7 @@
 
 ## 1. はじめに
 
-このリポジトリは、Nix で管理される dotfiles リポジトリです。シェル、エディタ、ターミナル、Git、SSH などの設定を、Nix の宣言的な構成として管理します。汎用 CLI は Nix では導入せず、mise の管理外グローバル設定（`~/.config/mise/config.toml`）で管理します。
+このリポジトリは、Nix で管理される dotfiles リポジトリです。シェル、エディタ、ターミナル、Git、SSH などの設定を、Nix の宣言的な構成として管理します。汎用 CLI は Nix では導入せず、mise のグローバル設定（`modules/mise/config.toml`）で管理します。
 
 Home Manager を設定の中心に置き、`home/home.nix` を入口として各モジュールを読み込みます。設定を一元管理することで、同じ構成を再適用しやすくし、設定ファイルの配置とパッケージの導入を同じワークフローで扱えます。
 
@@ -20,6 +20,7 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 | `home/opencode/` | OpenCode のエージェント設定、プロンプト、プラグイン、サンプルを管理します。 |
 | `home/dotfiles/` | Nix 式とは分離して管理する、生の設定ファイルを管理します。Git、シェル、VS Code などの設定が含まれます。 |
 | `hosts/` | ホストやプラットフォーム固有の設定を管理します。 |
+| `modules/` | トップレベルで管理する Home Manager モジュールと、その配置対象ファイル（mise のグローバル設定など）を管理します。 |
 | `packages/` | Nix パッケージ定義と SSH キー管理用の定義を管理します。 |
 | `scripts/` | Nix の導入、初期セットアップ、旧シンボリックリンクの移行などのセットアップスクリプトを管理します。 |
 | `skills/` | OpenCode およびエージェントが利用するスキル定義を集約します（リポジトリ固有スキルは `.agents/skills/` 配下）。 |
@@ -42,6 +43,7 @@ imports = [
   ./shell.nix
   ./vscode.nix
   ../hosts
+  ../modules/mise
 ];
 ```
 
@@ -58,6 +60,7 @@ imports = [
 | `home/shell.nix` | Zsh とシェルエイリアスの設定を定義します。 |
 | `home/vscode.nix` | VS Code の設定ファイルの配置を定義します。 |
 | `hosts/` | `isDarwin` などの条件に応じて、ホスト固有のモジュールを選択します。 |
+| `modules/mise/default.nix` | mise のグローバルツール設定を `~/.config/mise/config.toml` へ配置する設定を定義します。 |
 
 ### 3.2 設定の適用
 
@@ -195,10 +198,15 @@ Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills
 
 `playwright-cli` は、Playwright 公式エージェント CLI によるブラウザ自動化と E2E テストのためのスキルです。npm パッケージ `@playwright/cli@0.1.21`（`playwright-core 1.64.0-alpha-1789764292000` を固定）に同梱されるスキルを、改変せずそのまま `skills/playwright-cli/` に配置しています。ライセンスは Apache-2.0 で、正文を `skills/playwright-cli/LICENSE` に同梱します（上流に NOTICE はありません）。
 
-利用前提として、実行する CLI を vendored スキルと同じバージョンに固定します。
+利用前提として、実行する CLI を vendored スキルと同じバージョンに固定します。`modules/mise/config.toml` の `[tools]` に次のエントリを追加し、リポジトリのルートで適用してからインストールします。
+
+```toml
+"npm:@playwright/cli" = "0.1.21"
+```
 
 ```sh
-mise use -g npm:@playwright/cli@0.1.21
+nix run home-manager -- switch --flake .#koki
+mise install
 playwright-cli install-browser
 ```
 
@@ -207,7 +215,7 @@ playwright-cli install-browser
 1. リポジトリ外のスクラッチディレクトリで `npx -y @playwright/cli@<新バージョン> install --skills=agents` を実行します。
 2. 生成された `.agents/skills/playwright-cli/` を `skills/playwright-cli/` へコピーし、`LICENSE`（上流に `NOTICE` があればそれも）を維持します。
 3. `diff -r <スクラッチ>/.agents/skills/playwright-cli skills/playwright-cli` で差分がないことを確認します。
-4. このドキュメントの固定バージョンを更新し、`mise use -g npm:@playwright/cli@<新バージョン>` を実行します。
+4. このドキュメントの固定バージョンと `modules/mise/config.toml` の `"npm:@playwright/cli"` を更新し、switch 後に `mise install` を実行します。
 
 `@latest` の導入や実行時のみの更新は、vendored スキルと CLI のバージョンを乖離させます。CLI のスキル整合チェックは実行ディレクトリ配下（`./.agents/skills/` など）だけを対象とするため、`~/.agents/skills` 経由で参照されるこのグローバル配備はチェックの対象外です。インストーラーは `--global` 付き、またはこのリポジトリ内で実行しないでください。`--global` は `~/.agents/skills` のリンクを通じて、リポジトリ内での実行は `.agents/skills/` と `.gitignore` への書き込みを通じて、それぞれ未追跡ファイルや意図しない差分を作業ツリーへ混入させます。
 
@@ -237,7 +245,7 @@ nix run home-manager -- switch --flake .#koki
 
 `packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。`home/packages.nix` の `home.packages` には OS レベル・承認済みのツールだけを定義し、`home/home.nix` の import を通じて Home Manager に読み込ませます。
 
-汎用 CLI（fzf、lazygit、ripgrep、yazi、yq、zellij、gh、bitwarden-cli、vite-plus）は Nix では導入せず、`mise use -g` で管理外の `~/.config/mise/config.toml` へ手動で追加します。mise activation により、これらのツールは `~/.local/share/mise/shims` 経由でシェルの PATH に反映されます。nixfmt は Nix ツールチェーンのため Nix での導入を継続します。GitHub CLI の設定は `gh config` でユーザーが維持します。`git` は `programs.git` が導入します。
+汎用 CLI（fzf、lazygit、ripgrep、yazi、yq、zellij、gh、bitwarden-cli、vite-plus）は Nix では導入せず、`modules/mise/config.toml` で管理します。このファイルは `xdg.configFile` により `~/.config/mise/config.toml` へ読み取り専用（store-backed）で配置されます。ツールを変更する場合はこのファイルを編集し、switch 後に `mise install` を実行します。mise activation により、これらのツールは `~/.local/share/mise/shims` 経由でシェルの PATH に反映されます。nixfmt は Nix ツールチェーンのため Nix での導入を継続します。GitHub CLI の設定は `gh config` でユーザーが維持します。`git` は `programs.git` が導入します。
 
 | ファイル | 役割 |
 | --- | --- |

@@ -15,6 +15,7 @@
     ./shell.nix
     ./vscode.nix
     ../hosts
+    ../modules/mise
   ];
 
   programs.mise = {
