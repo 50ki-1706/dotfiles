@@ -1,100 +1,400 @@
 profile:
 let
-  rule = effect: action: resource: { inherit action resource effect; };
-  allow = rule "allow";
-  deny = rule "deny";
-  ask = rule "ask";
-
-  readPermissions = [
-    (deny "read" ".env")
-    (deny "read" ".env.*")
-    (deny "read" "**/.env")
-    (deny "read" "**/.env.*")
-    (allow "read" ".env.example")
-    (allow "read" "**/.env.example")
-    (deny "read" "*.key")
-    (deny "read" "*.pem")
-    (deny "read" "id_rsa*")
-    (deny "read" "**/id_rsa*")
-  ];
-  skillPermissions = [
-    (allow "skill" "gh-cli")
-    (allow "skill" "computer-use")
-    (allow "skill" "orca-cli")
-    (allow "skill" "orchestration")
-  ];
-
   # Preserve list order: the last matching permission rule wins.
   profiles = {
     global = [
-      (deny "shell" "sudo *")
-      (deny "shell" "rm -rf *")
-      (deny "shell" "chmod 777 *")
-      (deny "shell" "chmod -R 777 *")
-      (deny "shell" "chown -R *")
-      (deny "shell" "dd *")
-      (deny "shell" "shutdown *")
-      (deny "shell" "reboot *")
-      (deny "shell" "halt *")
-      (deny "shell" "curl * | sh")
-      (deny "shell" "curl * | bash")
-      (deny "shell" "wget * | sh")
-      (deny "shell" "wget * | bash")
-      (deny "shell" "git reset --hard *")
-      (deny "shell" "git clean *")
-      (ask "shell" "git push*")
-      (ask "shell" "brew install *")
-      (ask "shell" "brew uninstall *")
-      (ask "shell" "nix run home-manager -- switch *")
-    ]
-    ++ readPermissions
-    ++ [ (deny "skill" "*") ]
-    ++ skillPermissions
-    ++ [
-      (deny "graphify*" "*")
-      (deny "chrome-devtools*" "*")
-      (deny "playwright*" "*")
+      {
+        action = "shell";
+        resource = "sudo *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "rm -rf *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "chmod 777 *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "chmod -R 777 *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "chown -R *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "dd *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "shutdown *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "reboot *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "halt *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "curl * | sh";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "curl * | bash";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "wget * | sh";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "wget * | bash";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "git reset --hard *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "git clean *";
+        effect = "deny";
+      }
+      {
+        action = "shell";
+        resource = "git push*";
+        effect = "ask";
+      }
+      {
+        action = "shell";
+        resource = "brew install *";
+        effect = "ask";
+      }
+      {
+        action = "shell";
+        resource = "brew uninstall *";
+        effect = "ask";
+      }
+      {
+        action = "shell";
+        resource = "nix run home-manager -- switch *";
+        effect = "ask";
+      }
+      {
+        action = "read";
+        resource = ".env";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = ".env.*";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "**/.env";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "**/.env.*";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = ".env.example";
+        effect = "allow";
+      }
+      {
+        action = "read";
+        resource = "**/.env.example";
+        effect = "allow";
+      }
+      {
+        action = "read";
+        resource = "*.key";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "*.pem";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "id_rsa*";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "**/id_rsa*";
+        effect = "deny";
+      }
+      {
+        action = "skill";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "skill";
+        resource = "gh-cli";
+        effect = "allow";
+      }
+      {
+        action = "skill";
+        resource = "computer-use";
+        effect = "allow";
+      }
+      {
+        action = "skill";
+        resource = "orca-cli";
+        effect = "allow";
+      }
+      {
+        action = "skill";
+        resource = "orchestration";
+        effect = "allow";
+      }
+      {
+        action = "graphify*";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "chrome-devtools*";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "playwright*";
+        resource = "*";
+        effect = "deny";
+      }
     ];
 
     spec = [
-      (deny "*" "*")
-      (allow "subagent" "explore")
-      (allow "subagent" "general")
-      (allow "subagent" "plan_review")
-      (allow "question" "*")
-    ]
-    ++ skillPermissions;
+      {
+        action = "*";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "subagent";
+        resource = "explore";
+        effect = "allow";
+      }
+      {
+        action = "subagent";
+        resource = "general";
+        effect = "allow";
+      }
+      {
+        action = "subagent";
+        resource = "plan_review";
+        effect = "allow";
+      }
+      {
+        action = "question";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "skill";
+        resource = "gh-cli";
+        effect = "allow";
+      }
+      {
+        action = "skill";
+        resource = "computer-use";
+        effect = "allow";
+      }
+      {
+        action = "skill";
+        resource = "orca-cli";
+        effect = "allow";
+      }
+      {
+        action = "skill";
+        resource = "orchestration";
+        effect = "allow";
+      }
+    ];
 
     general = [
-      (deny "subagent" "*")
-      (deny "question" "*")
-      (deny "external_directory" "*")
-      (allow "chrome-devtools*" "*")
-      (allow "playwright*" "*")
+      {
+        action = "subagent";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "question";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "external_directory";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "chrome-devtools*";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "playwright*";
+        resource = "*";
+        effect = "allow";
+      }
     ];
 
     explore = [
-      (deny "shell" "*")
-      (deny "edit" "*")
-      (deny "subagent" "*")
-      (deny "question" "*")
-      (deny "skill" "*")
-      (allow "external_directory" "*")
-      (allow "execute" "*")
-      (allow "graphify*" "*")
+      {
+        action = "shell";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "edit";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "subagent";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "question";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "skill";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "external_directory";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "execute";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "graphify*";
+        resource = "*";
+        effect = "allow";
+      }
     ];
 
     plan_review = [
-      (deny "*" "*")
-      (allow "read" "*")
-    ]
-    ++ readPermissions
-    ++ [
-      (allow "glob" "*")
-      (allow "grep" "*")
-      (allow "external_directory" "*")
-      (allow "execute" "*")
-      (allow "graphify*" "*")
+      {
+        action = "*";
+        resource = "*";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "read";
+        resource = ".env";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = ".env.*";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "**/.env";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "**/.env.*";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = ".env.example";
+        effect = "allow";
+      }
+      {
+        action = "read";
+        resource = "**/.env.example";
+        effect = "allow";
+      }
+      {
+        action = "read";
+        resource = "*.key";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "*.pem";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "id_rsa*";
+        effect = "deny";
+      }
+      {
+        action = "read";
+        resource = "**/id_rsa*";
+        effect = "deny";
+      }
+      {
+        action = "glob";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "grep";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "external_directory";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "execute";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "graphify*";
+        resource = "*";
+        effect = "allow";
+      }
     ];
   };
 in
