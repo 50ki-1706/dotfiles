@@ -103,6 +103,8 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後に一致したルールが優先されます。組み込みの既定値、共通ルール、エージェントごとのルールの順に適用されます。シェル操作は `shell`、委譲は `subagent` です。
 
+権限定義は `home/opencode/permissions.nix` の関数に集約し、`agents.nix` では `mkPermissions "global"` や `mkPermissions "spec"` のように名前を指定します。共通の読み取り制限・スキル許可を再利用し、各ルールは `allow`、`deny`、`ask` で記述します。優先順位を保つため、ルールは配列の順序どおりに生成します。
+
 共通ルールで機密ファイルの読み取りを制限し、危険なコマンドの拒否、push や環境切り替え時の確認を維持します。シェルの拒否パターンは完全なサンドボックスではありません。調査・レビュー役ではシェルと編集を拒否します。
 
 | エージェント | ファイル・シェル | MCP | 委譲 |
@@ -131,7 +133,8 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 
 | ファイル | 役割 |
 | --- | --- |
-| `home/opencode/agents.nix` | v2 のエージェント宣言、利用モデル、共通権限、プロンプトとプロバイダー設定の読み込み |
+| `home/opencode/agents.nix` | v2 のエージェント宣言、利用モデル、権限・プロンプト・プロバイダー設定の読み込み |
+| `home/opencode/permissions.nix` | 共通・役割別の順序付き権限を生成する関数 |
 | `home/opencode/providers.nix` | プロバイダーごとのモデル設定・推論設定・variant |
 | `home/opencode/opencode.nix` | Nix 宣言の import、コマンド、MCP、監視対象などの設定 |
 | `home/opencode/AGENTS.md` | 可読性・保守性と作業範囲に関する共通ルール |
