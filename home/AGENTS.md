@@ -9,7 +9,7 @@
 - `packages.nix`、`ssh.nix`、`fonts.nix`、`helix.nix`、`ghostty.nix`: 各ツール、SSH、フォント、エディタ、ターミナルのモジュールです。
 - `zellij/`: Zellij設定です。
 - `dotfiles/`: 配置対象のgit/ignore、vscode/、shell/aliasesと、未リンクのcodex/スナップショットを管理します。
-- `opencode/`: OpenCode設定、プロンプト、プラグイン、サンプルを管理します。
+- `opencode/`: OpenCode設定、プロンプトを管理します。
 - `docs/`: home-manager関連ドキュメントを管理します。
 
 ## home-managerで管理されているツール、ライブラリについて
