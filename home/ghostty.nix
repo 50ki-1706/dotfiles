@@ -1,7 +1,7 @@
 { pkgs, config, ... }:
 let
   ghosttyZellij = pkgs.writeShellScript "ghostty-zellij" ''
-    exec ${pkgs.zellij}/bin/zellij attach -c ghostty
+    exec ${config.home.homeDirectory}/.local/share/mise/shims/zellij attach -c ghostty
   '';
 in
 {

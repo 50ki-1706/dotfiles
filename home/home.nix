@@ -27,12 +27,6 @@
     enableZshIntegration = true;
   };
 
-  programs.gh = {
-    enable = true;
-
-    settings.git_protocol = "ssh";
-  };
-
   home.file.".config/zellij/layouts/ide.kdl".text = ''
     layout {
         default_tab_template {
@@ -53,7 +47,7 @@
                 }
                 pane split_direction="horizontal" {
                     pane
-                    pane command="${lib.getExe pkgs.lazygit}"
+                    pane command="${config.home.homeDirectory}/.local/share/mise/shims/lazygit"
                 }
             }
         }
