@@ -110,11 +110,11 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | エージェント | ファイル・シェル | MCP | 委譲 |
 | --- | --- | --- | --- |
 | `spec` | 読み取り・編集・シェルを拒否 | 拒否 | `explore`、`general`、`plan_review` のみ |
-| `general` | 組み込みの実装権限と共通制限。外部ディレクトリは拒否 | Chrome DevTools、Playwright | 拒否 |
+| `general` | 組み込みの実装権限と共通制限。外部ディレクトリは拒否 | Chrome DevTools | 拒否 |
 | `explore` | 読み取り専用。コード・Web 調査、外部ディレクトリの読み取りを許可 | Graphify | 拒否 |
 | `plan_review` | 読み取り専用。Web とシェルを拒否 | Graphify | 拒否 |
 
-グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration` です。`explore` と `plan_review` ではスキルを拒否します。このリポジトリの `opencode.json` は `nix-verify` と `minimal-repository` を許可し、`spec` と `general` がリポジトリ固有の手順を利用できます。
+グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration`、`playwright-cli` です。`explore` と `plan_review` ではスキルを拒否します。このリポジトリの `opencode.json` は `nix-verify` と `minimal-repository` を許可し、`spec` と `general` がリポジトリ固有の手順を利用できます。
 
 ### 4.2 エージェント構成
 
@@ -175,7 +175,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 skills/<skill-name>/SKILL.md
 ```
 
-現在 `skills/` にあるグローバルスキルは次の 4 個です。
+現在 `skills/` にあるグローバルスキルは次の 5 個です。
 
 | スキルディレクトリ | 定義ファイル |
 | --- | --- |
@@ -183,12 +183,33 @@ skills/<skill-name>/SKILL.md
 | `skills/gh-cli/` | `skills/gh-cli/SKILL.md` |
 | `skills/orca-cli/` | `skills/orca-cli/SKILL.md` |
 | `skills/orchestration/` | `skills/orchestration/SKILL.md` |
+| `skills/playwright-cli/` | `skills/playwright-cli/SKILL.md` |
 
 Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。リンクが作成済みであれば、リポジトリ内の `SKILL.md` を編集した内容がグローバルスキルへ即時反映されます。リンク自体の作成や再配置を変更した場合は、Home Manager の switch を再実行してください。
 
 リポジトリ固有のスキルは `.agents/skills/<skill-name>/SKILL.md` に配置します（現在は `nix-verify` と `minimal-repository` の 2 つ）。これらは `.gitignore` の例外設定でバージョン管理しますが、`~/.agents/skills` へのリンク対象外で、グローバルには配備されません。リポジトリ固有のスキルを追加する場合も同じ場所に配置します。
 
 グローバルに配備する新しいスキルを追加するときも、まずモデルや既存のエージェント設定で代替できないかを確認します。追加する場合は `skills/<skill-name>/SKILL.md` に、目的と実行方針を必要最小限で記述します。
+
+### `playwright-cli` の vendoring と更新
+
+`playwright-cli` は、Playwright 公式エージェント CLI によるブラウザ自動化と E2E テストのためのスキルです。npm パッケージ `@playwright/cli@0.1.21`（`playwright-core 1.64.0-alpha-1789764292000` を固定）に同梱されるスキルを、改変せずそのまま `skills/playwright-cli/` に配置しています。ライセンスは Apache-2.0 で、正文を `skills/playwright-cli/LICENSE` に同梱します（上流に NOTICE はありません）。
+
+利用前提として、実行する CLI を vendored スキルと同じバージョンに固定します。
+
+```sh
+mise use -g npm:@playwright/cli@0.1.21
+playwright-cli install-browser
+```
+
+更新は vendored スキルと CLI を必ずペアで行います。
+
+1. リポジトリ外のスクラッチディレクトリで `npx -y @playwright/cli@<新バージョン> install --skills=agents` を実行します。
+2. 生成された `.agents/skills/playwright-cli/` を `skills/playwright-cli/` へコピーし、`LICENSE`（上流に `NOTICE` があればそれも）を維持します。
+3. `diff -r <スクラッチ>/.agents/skills/playwright-cli skills/playwright-cli` で差分がないことを確認します。
+4. このドキュメントの固定バージョンを更新し、`mise use -g npm:@playwright/cli@<新バージョン>` を実行します。
+
+`@latest` の導入や実行時のみの更新は、vendored スキルと CLI のバージョンを乖離させます。CLI のスキル整合チェックは実行ディレクトリ配下（`./.agents/skills/` など）だけを対象とするため、`~/.agents/skills` 経由で参照されるこのグローバル配備はチェックの対象外です。インストーラーは `--global` 付き、またはこのリポジトリ内で実行しないでください。`--global` は `~/.agents/skills` のリンクを通じて、リポジトリ内での実行は `.agents/skills/` と `.gitignore` への書き込みを通じて、それぞれ未追跡ファイルや意図しない差分を作業ツリーへ混入させます。
 
 ## 6. スクリプト
 

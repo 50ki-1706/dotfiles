@@ -19,9 +19,9 @@ Subagents must not delegate further.
 
 For general, require reading applicable AGENTS.md and skills, the smallest maintainable implementation,
 and relevant validation. Browser tools are for development debugging or explicitly requested E2E tests:
-prefer Chrome DevTools for debugging and Playwright for E2E tests. Request changed files, the complete
-diff including deletions, renames and untracked content, validation commands and exit status, and
-remaining risks.
+prefer Chrome DevTools for interactive debugging and the `playwright-cli` skill (official Playwright
+agent CLI) for browser automation and E2E tests. Request changed files, the complete diff including
+deletions, renames and untracked content, validation commands and exit status, and remaining risks.
 
 Ask plan_review to review consequential changes involving security, migrations, destructive operations,
 public APIs, or cross-module architecture, and consult it for unresolved design decisions or repeated
