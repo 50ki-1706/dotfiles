@@ -81,7 +81,10 @@
   '';
   home.file.".config/zellij/config.kdl".source = ./zellij/config.kdl;
   home.file.".config/opencode/AGENTS.md" = {
-    source = ./opencode/AGENTS.md;
+    text =
+      builtins.readFile ./opencode/AGENTS.md
+      + "\n"
+      + builtins.readFile ./opencode/prompts/output-format.md;
     force = true;
   };
   home.file.".config/opencode/example/architecture.md" = {
