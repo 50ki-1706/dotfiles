@@ -1,0 +1,46 @@
+unsetopt PROMPT_SUBST
+
+__prompt_unsafe='[\[$`\\"]'
+
+__prompt_git() {
+  local porcelain line x y branch
+  porcelain=$(command git status --porcelain 2>/dev/null) || return 1
+  branch=$(command git symbolic-ref --short HEAD 2>/dev/null) ||
+    branch=$(command git rev-parse --short HEAD 2>/dev/null) ||
+    return 1
+  branch=${branch//${~__prompt_unsafe}/}
+  branch=${branch//[%]/%%}
+
+  local n_untracked=0 n_staged=0 n_modified=0 n_deleted=0 n_conflicted=0
+  for line in ${(f)porcelain}; do
+    [[ -z $line ]] && continue
+    x=${line[1]} y=${line[2]}
+    if [[ $x == '?' ]]; then
+      (( n_untracked += 1 ))
+    elif [[ $x == 'U' || $y == 'U' || ($x == 'A' && $y == 'A') || ($x == 'D' && $y == 'D') ]]; then
+      (( n_conflicted += 1 ))
+    else
+      [[ $x != ' ' ]] && (( n_staged += 1 ))
+      case $y in
+        M|T|R) (( n_modified += 1 )) ;;
+        D) (( n_deleted += 1 )) ;;
+      esac
+    fi
+  done
+
+  local git_stat=''
+  (( n_conflicted )) && git_stat+="%F{red}×${n_conflicted}%f"
+  (( n_staged )) && git_stat+="%F{green}+${n_staged}%f"
+  (( n_deleted )) && git_stat+="%F{red}✖${n_deleted}%f"
+  (( n_modified )) && git_stat+="%F{yellow}!${n_modified}%f"
+  (( n_untracked )) && git_stat+="%F{cyan}?${n_untracked}%f"
+
+  REPLY="%F{magenta}${branch}%f${git_stat:+ }${git_stat}"
+}
+
+precmd() {
+  unsetopt PROMPT_SUBST
+  local git_seg=''
+  __prompt_git && git_seg=" on ${REPLY}"
+  PROMPT="%~${git_seg}"$'\n❯ '
+}
