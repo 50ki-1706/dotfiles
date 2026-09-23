@@ -46,23 +46,6 @@ in
         catalog = 60000;
       };
     };
-    playwright = {
-      type = "local";
-      cwd = "/Users/koki/.config/opencode";
-      command = [
-        "npx"
-        "-y"
-        "@playwright/mcp@0.0.80"
-        "--headless"
-      ];
-      environment = {
-        PATH = mcpPath;
-      };
-      timeout = {
-        startup = 60000;
-        catalog = 60000;
-      };
-    };
     graphify = {
       type = "local";
       command = [

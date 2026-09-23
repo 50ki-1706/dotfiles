@@ -174,17 +174,17 @@ let
         effect = "allow";
       }
       {
+        action = "skill";
+        resource = "playwright-cli";
+        effect = "allow";
+      }
+      {
         action = "graphify*";
         resource = "*";
         effect = "deny";
       }
       {
         action = "chrome-devtools*";
-        resource = "*";
-        effect = "deny";
-      }
-      {
-        action = "playwright*";
         resource = "*";
         effect = "deny";
       }
@@ -236,6 +236,11 @@ let
         resource = "orchestration";
         effect = "allow";
       }
+      {
+        action = "skill";
+        resource = "playwright-cli";
+        effect = "allow";
+      }
     ];
 
     general = [
@@ -256,11 +261,6 @@ let
       }
       {
         action = "chrome-devtools*";
-        resource = "*";
-        effect = "allow";
-      }
-      {
-        action = "playwright*";
         resource = "*";
         effect = "allow";
       }
