@@ -93,142 +93,79 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 この方法は、プロンプトの長さを抑えるだけでなく、変更の影響範囲をディレクトリ単位で理解しやすくするための設計でもあります。
 
-#### Nix 関数による重複排除
+#### 組み込み機能と Nix 宣言
 
-エージェント設定の共通処理は、Nix の `let/in` 構文でヘルパー関数へ切り出しています。設定の形式が変わった場合も、個々のエージェント定義を繰り返し修正せず、共通関数を修正できます。
+エージェントは `home/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は Nix の共通定義を再利用します。
 
-- `mkAgent`: エージェント定義を共通化します。プロンプトを `prompts/` から読み込み、YAML フロントマターと結合します。
-- `mkPermission`: 権限設定のプリセットを利用するための関数です。`denyAll`、`allowAll`、`bashAllow`、`readAllow`、`skillAllow` を組み合わせます。
-- `readPrompt`: 次の式でエージェント名に対応する Markdown プロンプトを読み込みます。
+組み込みの `general` と `explore` はモデルと権限だけを調整します。`system`、`description`、`mode` を再定義しないため、OpenCode の標準動作を引き継ぎます。作業固有の制約、調査の深さ、成果物、検証方法は `spec` が委譲時に渡します。拡張が必要なときも、まず既存の組み込みエージェントで対応できるかを確認します。
 
-  ```nix
-  readPrompt = name: builtins.readFile (./prompts + "/${name}.md");
-  ```
+#### 権限の管理
 
-- `toYamlValue`、`toYamlMap` などの純粋関数で、Nix の属性を YAML へ変換する処理を共通化します。
-- `agents.nix` では、6 つのエージェントを `mkAgent` で定義し、`permissions.nix` と `yaml.nix` を import します。
+v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後に一致したルールが優先されます。組み込みの既定値、共通ルール、エージェントごとのルールの順に適用されます。シェル操作は `shell`、委譲は `subagent` です。
 
-`agents.nix` の中心部分は次の形です。
+権限定義は `home/opencode/permissions.nix` の関数に集約し、`agents.nix` では `mkPermissions "global"` や `mkPermissions "spec"` のように名前を指定します。各プロファイルは、OpenCode V2 の JSONC と同じ `{action, resource, effect}` リテラルの順序付き配列として直接記述します。最後に一致したルールが優先されるため、記述した順序がそのまま適用順序になります。
 
-```nix
-let
-  mkPermission = import ./permissions.nix;
-  toYamlFrontmatter = import ./yaml.nix;
+共通ルールで機密ファイルの読み取りを制限し、危険なコマンドの拒否、push や環境切り替え時の確認を維持します。シェルの拒否パターンは完全なサンドボックスではありません。調査・レビュー役ではシェルと編集を拒否します。
 
-  commonOutputFormat = builtins.readFile ./prompts/output-format.md;
-  readPrompt = name: builtins.readFile (./prompts + "/${name}.md");
-  mkAgent =
-    name: config:
-    config
-    // {
-      prompt = toYamlFrontmatter config + "\n" + readPrompt name + "\n" + commonOutputFormat;
-    };
-in
-```
-
-これにより、エージェントのメタデータ、プロンプト本体、共通出力形式をそれぞれ別に保ちながら、OpenCode が読む一つの prompt へ生成できます。
-
-#### サブエージェントプロンプトの親エージェント非依存
-
-サブエージェントのプロンプトは、親エージェント（委譲元）の存在を前提とせず、与えられたタスクを完了する純粋関数として記述します。runtime prompt の本文に加え、`agents.nix` の `description` も frontmatter として prompt に連結されるため、どちらにも委譲元エージェントの名前や存在を書きません。
-
-- プロンプト内では「委譲されたタスク」「リクエストで指定された検証」のように、入力として与えられた内容だけを参照します。
-- 委譲関係やオーケストレーションの全体像は、エージェントプロンプトの内容としては `spec.md` だけが保持します。docs がハーネス全体を記述することは妨げません。
-- この規約により、委譲元側の構成変更（エージェント名の変更、委譲フローの見直し）がサブエージェントプロンプトへ波及しなくなります。
-- 例外として、`deep_explore.md` が architecture.md 同期のために `executer` へ一度だけ委譲する記述は、親子関係ではなく自身のタスクの一部であるため許容します。
-
-`<Role>` セクションは、委譲元との関係ではなく、委譲されたタスクに対する責務を記述します。
-
-#### パーミッションの個別管理（最小権限の原則）
-
-エージェントごとに、必要な権限だけを付与します。調査エージェントには書き込みやシェル実行を与えず、実装エージェントには実装と検証に必要な権限を与える、という分離です。
-
-| Agent | Read/Edit | Bash | Tools |
+| エージェント | ファイル・シェル | MCP | 委譲 |
 | --- | --- | --- | --- |
-| `explore` | read-only (+ external_directory) | deny | graphify |
-| `deep_explore` | read-only (+ external_directory) | deny | graphify, task: `executer`（architecture sync） |
-| `executer` | edit: all | default | chrome-devtools, playwright |
-| `internet_search` | all deny | deny | websearch, webfetch |
-| `plan_review` | read-only (+ external_directory) | deny | graphify |
+| `spec` | 読み取り・編集・シェルを拒否 | 拒否 | `explore`、`general`、`plan_review` のみ |
+| `general` | 組み込みの実装権限と共通制限。外部ディレクトリは拒否 | Chrome DevTools、Playwright | 拒否 |
+| `explore` | 読み取り専用。コード・Web 調査、外部ディレクトリの読み取りを許可 | Graphify | 拒否 |
+| `plan_review` | 読み取り専用。Web とシェルを拒否 | Graphify | 拒否 |
 
-`permissions.nix` では、権限を Nix の属性として定義し、`permissionValue` ヘルパーでプリセット名と個別の属性設定を扱います。権限の形を一箇所に揃えることで、エージェントごとの設定を型安全に管理できます。調査・計画レビュー・外部調査のエージェントには拒否を基本とした設定を適用し、`executer` には実装に必要な編集・読み取り・スキル利用の設定を適用します。権限の詳細を変更する場合は、エージェント定義と `permissions.nix` の両方を確認してください。
-
-`skillAllow` プリセットで許可するスキルは `gh-cli`、`computer-use`、`orca-cli`、`orchestration` です。`spec` と `executer` がこのプリセットを共有し、その他のエージェントは既定で拒否します。
-
-#### スキルの必要性吟味
-
-モデルの性能が高いほど、スキルを追加する前に「そのスキルは本当に必要か」を問い直します。OpenCode Principal Policy の方針は次の一文に集約されています。
-
-> Implement by subtraction: reduce before adding
-
-スキルは、モデルが毎回推測するよりも明確な手順や安全上の境界が必要な場合に限り、必要最小限に保ちます。重複する説明や、既存のエージェント・Nix 設定で代替できる内容を増やさないことが重要です。
+グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration` です。`explore` と `plan_review` ではスキルを拒否します。このリポジトリの `opencode.json` は `nix-verify` と `minimal-repository` を許可し、`spec` と `general` がリポジトリ固有の手順を利用できます。
 
 ### 4.2 エージェント構成
 
-エージェントは、ユーザーとの対話を行うプライマリーと、特定の作業を担うサブエージェントに分かれています。`spec` が必要な役割へ作業を委譲し、`deep_explore` は調査開始時の architecture.md 同期に限って `executer` へネスト委譲できます。各サブエージェントは自分の責務に集中します。
+| エージェント | 区分 | モデル | 役割 |
+| --- | --- | --- | --- |
+| `spec` | 独自 primary（既定） | `opencode-go/qwen3.8-flash#medium` | 日本語での対話、計画、ユーザー確認、委譲 |
+| `general` | 組み込み subagent | `opencode-go/deepseek-v4.1-flash#max` | 実装・検証・承認済みのアーキテクチャ文書更新 |
+| `explore` | 組み込み subagent | `opencode/mimo-v2.6-flash-free` | 対象を絞った調査、広範なコード調査、外部の一次情報調査 |
+| `plan_review` | 独自 subagent | `openai/gpt-6-luna#max` | 計画・設計相談・重要な実装変更のレビュー |
 
-| エージェント | 区分 | 役割 |
-| --- | --- | --- |
-| `spec` | primary | ユーザーインターフェース、計画策定、ユーザー確認、サブエージェントへの委譲を担当します。 |
-| `explore` | subagent | 特定のファイルや機能を読み取り専用で調査します。 |
-| `deep_explore` | subagent | ディレクトリ全体を広範に探索し、構造や依存関係をまとめます。調査開始時に差分がCURRENTでなければ、architecture.mdの同期だけを`executer`へ委譲します。 |
-| `executer` | subagent | 委譲された実装・検証を行い、検証結果と変更内容を報告します。 |
-| `internet_search` | subagent | ローカルのコンテキストだけでは不十分な場合に、外部情報を調査します。 |
-| `plan_review` | subagent | ユーザー確認前に実装計画をレビューします。 |
+`spec → explore / plan_review → ユーザー確認 → general` を基本とし、重要な変更は実装後にも `plan_review` で確認します。組み込みの `build` と `plan` はそのまま利用できます。旧 `executer` は `general`、旧 `deep_explore` と `internet_search` は `explore` に統合しました。
 
-`spec` のデフォルトエージェント設定から、これら 5 つのサブエージェントを必要に応じて呼び出します。計画レビューを先に行い、ユーザー確認後に `executer` へ実装を委譲する流れが基本です。例外として、`deep_explore` は調査開始時の architecture.md 同期だけを `executer` へ一度だけ委譲でき、`spec → deep_explore → executer` のネストを形成します。
+サブエージェントからの再委譲は行いません。`.agents/architecture-diff.md` の差分は調査の手掛かりであり、編集の許可や事実の根拠にはなりません。文書更新を計画に含めて承認された場合にのみ、`spec` が `general` へ直接依頼します。
 
-### 4.3 プロンプト構成
-
-各エージェントの Markdown プロンプトは `home/opencode/prompts/` にあります。
-
-| ファイル | 内容 |
-| --- | --- |
-| `home/opencode/prompts/spec.md` | primary エージェントのオーケストレーション、確認、委譲のルールを定義します。 |
-| `home/opencode/prompts/execute.md` | `executer` が実装と検証を行うためのルールを定義します。 |
-| `home/opencode/prompts/explore.md` | 対象を絞った読み取り専用調査のルールを定義します。 |
-| `home/opencode/prompts/deep_explore.md` | 広範なディレクトリ探索のルールを定義します。 |
-| `home/opencode/prompts/internet_search.md` | 外部調査と情報源の扱いを定義します。 |
-| `home/opencode/prompts/plan_review.md` | 実装計画のレビュー基準を定義します。 |
-| `home/opencode/prompts/output-format.md` | 全エージェントに共通する出力形式を定義します。 |
-
-#### プロンプトの固定スキーマ
-
-許可されるプロンプトセクションは `<Role>`、`<Process>`、`<Rules>`、`<OutputFormat>` です。エージェント本体ファイルは `H1 + <Role> + <Process> + <Rules>` だけをこの順序で持ち、ほかのセクションを追加しません。新しいセクションも禁止します。
-
-`output-format.md` は H1 を持たない単一の `<OutputFormat>` フラグメントです。status-token、`summary`、`findings`、`validation`、`impact` の契約と、共通の検証条項を含みます。`agents.nix` がこのフラグメントを本体へ付加するため、各本体ファイルへ手動で埋め込んではいけません。
-
-組み立て後の runtime prompt は、YAML frontmatter → H1 → `<Role>` → `<Process>` → `<Rules>` → `<OutputFormat>` の順序になります。検証条項は全エージェント共通で適用される。
-
-ファイル名 `execute.md` とエージェント名 `executer` は意図的に異なります。`agents.nix` の `executer = mkAgent "execute" { ... };` が、`executer` に `execute.md` を対応付けます。
-
-構成を組み立てるファイルの責務は次のとおりです。
+### 4.3 設定ファイル
 
 | ファイル | 役割 |
 | --- | --- |
-| `home/opencode/agents.nix` | `mkAgent` で 6 エージェントを定義し、プロンプトと共通出力形式を結合します。 |
-| `home/opencode/permissions.nix` | 権限プリセットと `permissionValue` ヘルパーを定義します。 |
-| `home/opencode/yaml.nix` | Nix の設定から YAML フロントマターを生成する純粋関数を定義します。 |
-| `home/opencode/AGENTS.md` | Principal Policy と Common Agent Rules だけを持つ、最小限の共通ルールです。 |
-| `home/opencode/opencode.nix` | OpenCode 本体の設定と `agents.nix` の読み込みを定義します。 |
+| `home/opencode/agents.nix` | v2 のエージェント宣言、利用モデル、権限・プロンプト・プロバイダー設定の読み込み |
+| `home/opencode/permissions.nix` | 共通・役割別の順序付き権限を生成する関数 |
+| `home/opencode/providers.nix` | プロバイダーごとのモデル設定・推論設定・variant |
+| `home/opencode/opencode.nix` | Nix 宣言の import、コマンド、MCP、監視対象などの設定 |
+| `home/opencode/AGENTS.md` | 可読性・保守性と作業範囲に関する共通ルール |
+| `home/opencode/prompts/spec.md` | 対話・計画・確認・委譲を担当する `spec` のプロンプト |
+| `home/opencode/prompts/plan_review.md` | 計画・設計・重要な実装変更を確認する `plan_review` のプロンプト |
+| `home/opencode/prompts/output-format.md` | 共通の STATUS、summary、findings、validation、impact と証拠の報告規則 |
+| `opencode.json` | このリポジトリで使うスキルの許可 |
 
-`agents.nix` は各エージェントの設定から `prompt` を除いた値を YAML フロントマターへ変換し、対応するプロンプトと `output-format.md` を連結します。`yaml.nix` は文字列、真偽値、整数、属性集合を扱い、拒否だけで構成される権限カテゴリや無効なツール設定を生成結果から省略します。
+`spec` と `plan_review` の指示は英語で記述します。ユーザー向けの計画・質問・報告は `spec` が日本語で行います。組み込みサブエージェントへは委譲時に必要な証拠と報告内容を指定します。
 
-`home/opencode/AGENTS.md` の共通ルールは、可読性と保守性を優先する Principal Policy と、委譲されたタスクの範囲と付与されたツールだけを扱う Common Agent Rules で構成されています。プロンプトは原則として英語で記述し、日本語で返信・報告する明示的な指示がある場合のみ、その指示を英語の本文内に記述します。
+共通出力形式は `output-format.md` の一箇所で管理し、`home/home.nix` が配置先の `AGENTS.md` に結合します。v2 はグローバルな `AGENTS.md` をシステムプロンプトに追加するため、組み込みの `general` と `explore` の標準プロンプトを保ちながら、同じ出力形式を共有できます。独自エージェントの `system` へ出力形式を重複して埋め込みません。
+
+推論設定は `providers.nix` の `<provider>.models.<model>.variants` に揃え、各 variant の `id` と `settings.reasoningEffort` を同じ値にします。モデル一覧の対応値に合わせて、GLM と DeepSeek V4.1 Flash は `low`、`high`、`max`、Qwen3.8 Flash は `low`、`medium`、`xhigh`、Luna は `none`、`low`、`medium`、`high`、`xhigh`、`max` を定義します。DeepSeek と Qwen のモデル ID はそれぞれ `opencode-go/deepseek-v4.1-flash` と `opencode-go/qwen3.8-flash` です。`spec` は `#medium`、`general` と `plan_review` は `#max` を明示して選択します。別の強度を選ぶ場合はエージェントのモデル指定を `#low` などに変更します。agent の旧 `reasoningEffort` や、実行時に送信されない `request.body` には置きません。
+
+[OpenCode Go](https://opencode.ai/docs/go/#how-it-works) の `opencode-go/mimo-v2.6-flash` と `opencode-go/mimo-v2.6-pro` も `providers.nix` に登録します。現時点の Go のモデル一覧では両モデルの `reasoning_options` が空のため、`variants = [ ];` としてカタログの既定設定を使用します。選択時は `#max` などを付けずにモデル ID を指定します。
 
 ### 4.4 ファイル配置
 
-`home/home.nix` の `home.file` 定義で、リポジトリ内の OpenCode 用ファイルをユーザー環境へ配置します。
+`programs.opencode.settings` から `~/.config/opencode/opencode.json` を生成します。Nix のソースや Markdown エージェントを別途配置する必要はありません。
 
 | リポジトリ内の source | 配置先 |
 | --- | --- |
-| `home/opencode/AGENTS.md` | `~/.config/opencode/AGENTS.md` |
+| `home/opencode/AGENTS.md` + `home/opencode/prompts/output-format.md` | `~/.config/opencode/AGENTS.md` |
 | `home/opencode/example/architecture.md` | `~/.config/opencode/example/architecture.md` |
 | `home/opencode/plugins/architecture-diff-context.js` | `~/.config/opencode/plugins/architecture-diff-context.js` |
 
-この 3 つの配置は `home/home.nix` に定義されています。OpenCode の生成設定自体は `programs.opencode.settings` として構成され、エージェント定義は `home/opencode/agents.nix` から読み込まれます。
+この 3 つの配置は `home/home.nix` に定義されています。`architecture-diff-context.js` は v2 のプラグイン API を使い、対象ディレクトリのセッション作成・待機イベントで差分を更新します。端末 UI 設定は OpenCode が管理する `~/.config/opencode/cli.json` に保存します。
 
-OpenCode v2でも既存のv1形式のエージェント・権限・MCP設定は互換機能で読み込まれます。`architecture-diff-context.js` はv2のプラグインAPIを使い、対象ディレクトリのセッション作成・待機イベントで差分を更新します。端末UI設定はOpenCodeが管理する `~/.config/opencode/cli.json` に保存します。移行の詳細は[公式ガイド](https://opencode.ai/v2/docs/migrate-v1/)を参照してください。
+設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json` と `AGENTS.md` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
+
+公式仕様: [エージェント](https://opencode.ai/v2/docs/agents/)、[権限](https://opencode.ai/v2/docs/permissions/)、[共通指示](https://opencode.ai/v2/docs/instructions/)、[モデル](https://opencode.ai/v2/docs/models/)、[v1 からの移行](https://opencode.ai/v2/docs/migrate-v1/)。
 
 ## 5. スキルの管理
 

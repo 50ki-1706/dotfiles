@@ -1,124 +1,34 @@
 let
-  mkPermission = import ./permissions.nix;
-  toYamlFrontmatter = import ./yaml.nix;
-
-  commonOutputFormat = builtins.readFile ./prompts/output-format.md;
-  readPrompt = name: builtins.readFile (./prompts + "/${name}.md");
-  mkAgent =
-    name: config:
-    config
-    // {
-      prompt = toYamlFrontmatter config + "\n" + readPrompt name + "\n" + commonOutputFormat;
-    };
+  mkPermissions = import ./permissions.nix;
 in
 {
-  deep_explore = mkAgent "deep_explore" {
-    mode = "subagent";
-    model = "opencode-go/minimax-m3";
-    description = "Broad codebase exploration subagent. Scans directories and summarizes architecture for reuse. May delegate an architecture.md refresh to executer only when explicitly included in its approved scope.";
-    permission = mkPermission {
-      task = [ "executer" ];
-      bash = "deny";
-      read = "allow";
-      grep = "allow";
-      glob = "allow";
-      list = "allow";
-      external_directory = "allow";
+  "$schema" = "https://opencode.ai/config.json";
+  default_agent = "spec";
+  model = "opencode-go/qwen3.8-flash#medium";
+  providers = import ./providers.nix;
+  permissions = mkPermissions "global";
+  agents = {
+    spec = {
+      mode = "primary";
+      model = "opencode-go/qwen3.8-flash#medium";
+      description = "Plans work, confirms the plan in Japanese, and delegates to built-in subagents.";
+      system = builtins.readFile ./prompts/spec.md;
+      permissions = mkPermissions "spec";
     };
-    tools = {
-      question = false;
-      websearch = false;
-      webfetch = false;
-      "graphify*" = true;
+    general = {
+      model = "opencode-go/deepseek-v4.1-flash#max";
+      permissions = mkPermissions "general";
     };
-  };
-  executer = mkAgent "execute" {
-    mode = "subagent";
-    # Go handles routine implementation; Sol reviews consequential decisions and changes.
-    model = "opencode-go/deepseek-v4.1-flash";
-    description = "Implementation and verification subagent. Performs the delegated task and reports changes plus validation results.";
-    permission = mkPermission {
-      bash = "allow";
-      read = "allow";
-      grep = "allow";
-      glob = "allow";
-      list = "allow";
-      edit = "allow";
-      skill = "allow";
+    explore = {
+      model = "opencode/mimo-v2.6-flash-free";
+      permissions = mkPermissions "explore";
     };
-    tools = {
-      question = false;
-      "chrome-devtools*" = true;
-      "playwright*" = true;
-    };
-  };
-  explore = mkAgent "explore" {
-    mode = "subagent";
-    model = "opencode-go/minimax-m3";
-    description = "Read-only targeted code investigation subagent. Investigates a specific part of the codebase (typically ~5 files or fewer) as requested and returns concrete findings.";
-    permission = mkPermission {
-      read = "allow";
-      grep = "allow";
-      glob = "allow";
-      list = "allow";
-      external_directory = "allow";
-    };
-    tools = {
-      question = false;
-      websearch = false;
-      webfetch = false;
-      "graphify*" = true;
-    };
-  };
-  internet_search = mkAgent "internet_search" {
-    mode = "subagent";
-    model = "opencode-go/longcat-2.0";
-    description = "External research subagent. Collects outside knowledge and reports sourced findings.";
-    permission = mkPermission { };
-    tools = {
-      websearch = true;
-      webfetch = true;
-      question = false;
-    };
-  };
-  plan_review = mkAgent "plan_review" {
-    mode = "subagent";
-    model = "openai/gpt-5.6-sol";
-    reasoningEffort = "high";
-    description = "Read-only review subagent. Reviews plans, resolves difficult design questions, and checks consequential implementations against requirements.";
-    permission = mkPermission {
-      read = "allow";
-      grep = "allow";
-      glob = "allow";
-      list = "allow";
-      external_directory = "allow";
-    };
-    tools = {
-      question = false;
-      websearch = false;
-      webfetch = false;
-      "graphify*" = true;
-    };
-  };
-  spec = mkAgent "spec" {
-    mode = "primary";
-    model = "opencode-go/glm-5.3-flash";
-    description = "Primary orchestration and user-interface agent. Plans with subagents, gets user confirmation in Japanese, then delegates execution.";
-    permission = mkPermission {
-      task = [
-        "explore"
-        "deep_explore"
-        "executer"
-        "internet_search"
-        "plan_review"
-      ];
-      skill = "allow";
-    };
-    tools = {
-      websearch = false;
-      webfetch = false;
-      question = true;
-      todowrite = true;
+    plan_review = {
+      mode = "subagent";
+      model = "openai/gpt-6-luna#max";
+      description = "Reviews plans, difficult design decisions, and consequential changes using read-only evidence.";
+      system = builtins.readFile ./prompts/plan_review.md;
+      permissions = mkPermissions "plan_review";
     };
   };
 }

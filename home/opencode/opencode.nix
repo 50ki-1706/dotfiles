@@ -1,16 +1,11 @@
 { ... }:
 let
   mcpPath = "/Users/koki/.local/share/mise/shims:/Users/koki/.nix-profile/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
-  agents = import ./agents.nix;
 in
-{
-  "$schema" = "https://opencode.ai/config.json";
-  autoupdate = false;
-  model = agents.spec.model;
-  small_model = agents.explore.model;
-  default_agent = "spec";
-  experimental.subagent_depth = 2;
-  command = {
+(import ./agents.nix)
+// {
+  update = "disable";
+  commands = {
     commit = {
       template = builtins.readFile ./commands/commit.md;
       description = "セッションの変更をConventional Commitsでコミット";
@@ -32,7 +27,7 @@ in
       "venv/**"
     ];
   };
-  mcp = {
+  mcp.servers = {
     chrome-devtools = {
       type = "local";
       cwd = "/Users/koki/.config/opencode";
@@ -46,8 +41,10 @@ in
         PATH = mcpPath;
         CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS = "1";
       };
-      timeout = 60000;
-      enabled = true;
+      timeout = {
+        startup = 60000;
+        catalog = 60000;
+      };
     };
     playwright = {
       type = "local";
@@ -61,8 +58,10 @@ in
       environment = {
         PATH = mcpPath;
       };
-      timeout = 60000;
-      enabled = true;
+      timeout = {
+        startup = 60000;
+        catalog = 60000;
+      };
     };
     graphify = {
       type = "local";
@@ -79,14 +78,10 @@ in
       environment = {
         PATH = mcpPath;
       };
-      timeout = 60000;
-      enabled = true;
+      timeout = {
+        startup = 60000;
+        catalog = 60000;
+      };
     };
   };
-  tools = {
-    "graphify*" = false;
-    "chrome-devtools*" = false;
-    "playwright*" = false;
-  };
-  agent = agents;
 }

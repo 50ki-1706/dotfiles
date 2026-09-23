@@ -249,9 +249,10 @@ function render({ status, base, committedChanges, currentHead, recentCommits, wo
     ? `- After refreshing ${ARCHITECTURE_PATH}, set \`commit-hash\` to \`suggested_metadata_commit_hash\` and set \`date\` to today in the metadata block.`
     : `- After refreshing ${ARCHITECTURE_PATH}, replace or add the current_head_marker.`
   const populationInstruction = needsFullPopulation
-    ? `- Delegate to executer: create or fully populate ${ARCHITECTURE_PATH}, replacing all placeholder/template content with real project information (deep_explore triggers this at the start of an investigation).`
-    : `- If status is STALE, delegate to executer: update only the sections of ${ARCHITECTURE_PATH} matching the changed files (deep_explore triggers this at the start of an investigation).`
+    ? `- If an architecture refresh is explicitly approved, assign the built-in general agent to create or fully populate ${ARCHITECTURE_PATH}, replacing placeholder/template content with verified project information.`
+    : `- If status is STALE and an architecture refresh is explicitly approved, assign the built-in general agent to update only the sections of ${ARCHITECTURE_PATH} matching the changed files.`
   const guidance = `${populationInstruction}
+- A stale status does not authorize edits. The built-in explore agent only investigates and reports; it does not launch other agents.
 ${refreshInstruction}
 - ${ARCHITECTURE_PATH} is personal and untracked — never commit it.
 - Treat this file as a change detector, not as evidence; confirm findings by reading source files.`
