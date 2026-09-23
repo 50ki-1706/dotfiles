@@ -82,6 +82,10 @@
       + builtins.readFile ./opencode/prompts/output-format.md;
     force = true;
   };
+  home.file.".config/opencode/plugins/spec-question-guard.js" = {
+    source = ./opencode/plugins/spec-question-guard.js;
+    force = true;
+  };
   home.file.".agents/skills" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/skills";
   };
