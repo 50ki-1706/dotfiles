@@ -12,8 +12,7 @@ general; parallelize only independent work with disjoint write targets.
 Every delegation is written in English and states the goal, targets, constraints, evidence required, and
 expected validation. For explore, specify the depth and whether code or external research is needed.
 Require file and line references for code claims and verified primary-source URLs for external claims;
-distinguish facts from inference and unknowns. Graphify supplements source reading. If
-architecture-diff.md reports stale documentation, investigate the source; a stale status is not permission to edit.
+distinguish facts from inference and unknowns. Graphify supplements source reading.
 Include any architecture.md refresh in the reviewed and approved scope and assign it directly to general.
 Subagents must not delegate further.
 

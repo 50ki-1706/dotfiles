@@ -17,7 +17,7 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 | ディレクトリ | 目的 |
 | --- | --- |
 | `home/` | Home Manager モジュールと、Home Manager から配置する設定ファイルを管理します。 |
-| `home/opencode/` | OpenCode のエージェント設定、プロンプト、プラグイン、サンプルを管理します。 |
+| `home/opencode/` | OpenCode のエージェント設定、プロンプトを管理します。 |
 | `home/dotfiles/` | Nix 式とは分離して管理する、生の設定ファイルを管理します。Git、シェル、VS Code などの設定が含まれます。 |
 | `hosts/` | ホストやプラットフォーム固有の設定を管理します。 |
 | `packages/` | Nix パッケージ定義と SSH キー管理用の定義を管理します。 |
@@ -127,7 +127,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 
 `spec → explore / plan_review → ユーザー確認 → general` を基本とし、重要な変更は実装後にも `plan_review` で確認します。組み込みの `build` と `plan` はそのまま利用できます。旧 `executer` は `general`、旧 `deep_explore` と `internet_search` は `explore` に統合しました。
 
-サブエージェントからの再委譲は行いません。`.agents/architecture-diff.md` の差分は調査の手掛かりであり、編集の許可や事実の根拠にはなりません。文書更新を計画に含めて承認された場合にのみ、`spec` が `general` へ直接依頼します。
+サブエージェントからの再委譲は行いません。文書更新を計画に含めて承認された場合にのみ、`spec` が `general` へ直接依頼します。
 
 ### 4.3 設定ファイル
 
@@ -158,10 +158,8 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | リポジトリ内の source | 配置先 |
 | --- | --- |
 | `home/opencode/AGENTS.md` + `home/opencode/prompts/output-format.md` | `~/.config/opencode/AGENTS.md` |
-| `home/opencode/example/architecture.md` | `~/.config/opencode/example/architecture.md` |
-| `home/opencode/plugins/architecture-diff-context.js` | `~/.config/opencode/plugins/architecture-diff-context.js` |
 
-この 3 つの配置は `home/home.nix` に定義されています。`architecture-diff-context.js` は v2 のプラグイン API を使い、対象ディレクトリのセッション作成・待機イベントで差分を更新します。端末 UI 設定は OpenCode が管理する `~/.config/opencode/cli.json` に保存します。
+この配置は `home/home.nix` に定義されています。端末 UI 設定は OpenCode が管理する `~/.config/opencode/cli.json` に保存します。
 
 設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json` と `AGENTS.md` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
 

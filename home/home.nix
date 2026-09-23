@@ -87,14 +87,6 @@
       + builtins.readFile ./opencode/prompts/output-format.md;
     force = true;
   };
-  home.file.".config/opencode/example/architecture.md" = {
-    source = ./opencode/example/architecture.md;
-    force = true;
-  };
-  home.file.".config/opencode/plugins/architecture-diff-context.js" = {
-    source = ./opencode/plugins/architecture-diff-context.js;
-    force = true;
-  };
   home.file.".agents/skills" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/skills";
   };
