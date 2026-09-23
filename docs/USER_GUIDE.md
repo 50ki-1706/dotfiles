@@ -158,8 +158,9 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | リポジトリ内の source | 配置先 |
 | --- | --- |
 | `home/opencode/AGENTS.md` + `home/opencode/prompts/output-format.md` | `~/.config/opencode/AGENTS.md` |
+| `home/opencode/plugins/spec-question-guard.js` | `~/.config/opencode/plugins/spec-question-guard.js` |
 
-この配置は `home/home.nix` に定義されています。端末 UI 設定は OpenCode が管理する `~/.config/opencode/cli.json` に保存します。
+この 2 つの配置は `home/home.nix` に定義されています。`spec-question-guard.js` は `spec` の `question` 呼び出しを監視し、`plan_review` が一度でも完了結果を返した後は最新の完了結果を権威として扱います。最新の完了結果が `STATUS: COMPLETE` の間のみ、日本語の実装計画（見出し契約に適合するテキストのみ・ツールなしのメッセージ）の提示を検出するまで `question` を拒否します。最新の完了結果が `COMPLETE` 以外の場合やレビュー未完了の段階は許可し、ガード内部エラーと解析不能な完了履歴のみフェイルクローズドになります。他のエージェントやツールには干渉しません。端末 UI 設定は OpenCode が管理する `~/.config/opencode/cli.json` に保存します。
 
 設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json` と `AGENTS.md` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
 
