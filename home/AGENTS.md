@@ -43,9 +43,8 @@
 
 | 定義 | 用途 |
 | --- | --- |
-| `programs.zsh` | Zshを有効化し、aliases → `~/.zshrc.local` → mise activateの順に初期化します。mise activationが後続のPATH変更より優先されます。 |
+| `programs.zsh` | Zshを有効化し、prompt(970) → aliases(980) → `~/.zshrc.local`(990) → mise activateの順に初期化します。プロンプトを変更する場合は`~/.zshrc.local`で`precmd` / `__prompt_git`を再定義して上書きします。mise activationが後続のPATH変更より優先されます。 |
 | `programs.mise` | miseを有効化し、Zsh連携をこの設定で管理します。グローバルなツール設定は管理外の`~/.config/mise/config.toml`にあり、Node.js/uvはNixではなくmiseから提供されます。MCPサーバーのnpx/uvはmise shims（`/Users/koki/.local/share/mise/shims`）経由で解決します。 |
-| `programs.starship` | Starshipプロンプトを有効化し、Zsh連携も有効化します。 |
 | `programs.git` | Gitを有効化し、SSH署名形式、グローバルignore、アカウント別includeを設定します。 |
 | `programs.gh` | GitHub CLIを有効化し、GitプロトコルをSSHに設定します。 |
 | `programs.ssh` | SSH設定を有効化し、GitHub用の鍵とmacOS Keychain連携を`settings`で設定します。 |
@@ -60,6 +59,7 @@
 | `fonts.fontconfig.enable` | fontconfigベースのアプリでHome Manager管理フォントを利用できるようにします。 |
 | `home.activation.installFonts` | macOSネイティブアプリ向けにNerd Fontを`~/Library/Fonts/HomeManager`へコピーします。 |
 | `home.file.".config/shell/aliases"` | `home/dotfiles/shell/aliases`を`~/.config/shell/aliases`としてstore-backedに配置します。 |
+| `home.file.".config/shell/prompt"` | `home/dotfiles/shell/prompt`を`~/.config/shell/prompt`としてstore-backedに配置します。カレントディレクトリ、gitブランチ、gitステータス記号（件数付き）を表示する最小プロンプトです。 |
 | `home.file.".config/zellij/layouts/ide.kdl"` | `ide`関数で開くZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/layouts/split.kdl"` | 1:1縦分割のZellijレイアウトを配置します。 |
 | `home.file.".config/zellij/config.kdl"` | Zellijのキーバインド設定を配置します。macOSのOption+RightArrow衝突を避けるため`Alt f`を削除しています。 |
