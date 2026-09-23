@@ -10,7 +10,7 @@
 - `zellij/`: Zellij設定です。
 - `dotfiles/`: 配置対象のgit/ignore、vscode/、shell/aliasesと、未リンクのcodex/スナップショットを管理します。
 - `opencode/`: OpenCode設定、プロンプト、プラグイン、サンプルを管理します。
-- `docs/`: home-manager関連ドキュメントを管理します。
+- `docs/`: home-manager関連ドキュメント（`docs/USER_GUIDE.md`）を管理します。
 
 ## home-managerで管理されているツール、ライブラリについて
 
@@ -18,19 +18,12 @@
 
 | 定義 | 用途 |
 | --- | --- |
-| `pkgs.fzf` | コマンドラインでの曖昧検索ツール |
-| `pkgs.git` | Gitのコマンドラインツール |
-| `pkgs.lazygit` | GitリポジトリをターミナルUIで操作するツール |
-| `pkgs.bitwarden-cli` | Bitwardenのコマンドラインツール |
 | `pkgs.devbox` | プロジェクトごとの開発環境を扱うツール |
 | `pkgs.claude-code` | Claude CodeのCLIツール |
-| `pkgs.vite-plus` | Vite+の開発ツール |
-| `pkgs.nixfmt` | Nixコードのフォーマッタ |
-| `pkgs.ripgrep` | 高速なテキスト検索ツール |
-| `pkgs.yazi` | ターミナル上のファイルマネージャ |
-| `pkgs.yq-go` | Go実装のyqコマンドラインツール |
-| `pkgs.zellij` | ターミナルマルチプレクサ |
+| `pkgs.nixfmt` | Nixコードのフォーマッタ（Nixツールチェーンのため継続） |
 | `ollamaPkgs.ollama` | ローカルLLM実行ツール |
+
+fzf、lazygit、ripgrep、yazi、yq、zellij、gh、bitwarden-cli、vite-plusなどの汎用CLIはNixでは導入せず、`mise use -g`で管理外の`~/.config/mise/config.toml`へ手動で追加します。`git`は`programs.git`が導入します。
 
 ### `fonts.nix`で明示的に導入しているもの
 
@@ -44,14 +37,15 @@
 | 定義 | 用途 |
 | --- | --- |
 | `programs.zsh` | Zshを有効化し、aliases → `~/.zshrc.local` → mise activateの順に初期化します。mise activationが後続のPATH変更より優先されます。 |
-| `programs.mise` | miseを有効化し、Zsh連携をこの設定で管理します。グローバルなツール設定は管理外の`~/.config/mise/config.toml`にあり、Node.js/uvはNixではなくmiseから提供されます。MCPサーバーのnpx/uvはmise shims（`/Users/koki/.local/share/mise/shims`）経由で解決します。 |
+| `programs.mise` | miseを有効化し、Zsh連携をこの設定で管理します。グローバルなツール設定は管理外の`~/.config/mise/config.toml`にあり、Node.js/uv/汎用CLIはNixではなくmiseから提供されます。MCPサーバーのnpx/uvはmise shims（`/Users/koki/.local/share/mise/shims`）経由で解決します。 |
 | `programs.starship` | Starshipプロンプトを有効化し、Zsh連携も有効化します。 |
 | `programs.git` | Gitを有効化し、SSH署名形式、グローバルignore、アカウント別includeを設定します。 |
-| `programs.gh` | GitHub CLIを有効化し、GitプロトコルをSSHに設定します。 |
 | `programs.ssh` | SSH設定を有効化し、GitHub用の鍵とmacOS Keychain連携を`settings`で設定します。 |
 | `programs.opencode` | OpenCode CLIを有効化し、`home/opencode/opencode.nix`の設定を適用します。 |
 | `programs.helix` | Helixエディタを有効化し、テーマ、キー設定、Nixの自動フォーマットを設定します。 |
 | `programs.ghostty` | Ghosttyを有効化し、起動時に`zellij attach -c ghostty`を実行するよう設定します。 |
+
+GitHub CLIの設定（`~/.config/gh/config.yml`）は`programs.gh`では管理せず、ユーザーが`gh config`で維持します（`git_protocol`は`ssh`）。
 
 ### その他の管理対象
 

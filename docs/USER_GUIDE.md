@@ -4,7 +4,7 @@
 
 ## 1. はじめに
 
-このリポジトリは、Nix で管理される dotfiles リポジトリです。シェル、エディタ、ターミナル、Git、SSH、CLI ツールなどの設定を、Nix の宣言的な構成として管理します。
+このリポジトリは、Nix で管理される dotfiles リポジトリです。シェル、エディタ、ターミナル、Git、SSH などの設定を、Nix の宣言的な構成として管理します。汎用 CLI は Nix では導入せず、mise の管理外グローバル設定（`~/.config/mise/config.toml`）で管理します。
 
 Home Manager を設定の中心に置き、`home/home.nix` を入口として各モジュールを読み込みます。設定を一元管理することで、同じ構成を再適用しやすくし、設定ファイルの配置とパッケージの導入を同じワークフローで扱えます。
 
@@ -49,7 +49,7 @@ imports = [
 
 | モジュール | 主な責務 |
 | --- | --- |
-| `home/packages.nix` | `home.packages` に導入する CLI ツールを定義します。 |
+| `home/packages.nix` | `home.packages` に導入する、OS レベル・承認済みのツールを定義します。 |
 | `home/ssh.nix` | SSH の設定を定義します。 |
 | `home/fonts.nix` | フォントと fontconfig の設定を定義します。 |
 | `home/helix.nix` | Helix エディタの設定を定義します。 |
@@ -235,12 +235,14 @@ nix run home-manager -- switch --flake .#koki
 
 ## 7. パッケージ管理
 
-`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。通常の CLI パッケージは `home/packages.nix` の `home.packages` で定義し、`home/home.nix` の import を通じて Home Manager に読み込ませます。
+`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。`home/packages.nix` の `home.packages` には OS レベル・承認済みのツールだけを定義し、`home/home.nix` の import を通じて Home Manager に読み込ませます。
+
+汎用 CLI（fzf、lazygit、ripgrep、yazi、yq、zellij、gh、bitwarden-cli、vite-plus）は Nix では導入せず、`mise use -g` で管理外の `~/.config/mise/config.toml` へ手動で追加します。mise activation により、これらのツールは `~/.local/share/mise/shims` 経由でシェルの PATH に反映されます。nixfmt は Nix ツールチェーンのため Nix での導入を継続します。GitHub CLI の設定は `gh config` でユーザーが維持します。`git` は `programs.git` が導入します。
 
 | ファイル | 役割 |
 | --- | --- |
 | `packages/ssh-bootstrap.nix` | SSH キーの生成と管理を行う `ssh-bootstrap` パッケージを定義します。 |
-| `home/packages.nix` | Home Manager の `home.packages` に導入する CLI ツールを定義します。 |
+| `home/packages.nix` | Home Manager の `home.packages` に導入する、OS レベル・承認済みのツールを定義します。 |
 
 `packages/ssh-bootstrap.nix` は `flake.nix` の package/app として公開され、セットアップ時に `install.sh` から利用されます。SSH キーそのものをリポジトリへ保存するのではなく、必要な環境でこの SSH キーのプロビジョニング処理を実行する設計です。
 
