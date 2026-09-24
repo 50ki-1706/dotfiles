@@ -4,3 +4,4 @@ packagesディレクトリは、home-managerとflakeから利用するNixパッ�
 
 - `ssh-bootstrap.nix`: SSHキーの管理と生成を行うパッケージ定義です。`flake.nix` の `packages` / `apps` として公開され、`scripts/install.sh` から `nix run <repo>#ssh-bootstrap` で利用されます。
 - `opencode.nix`: OpenCode CLI本体の固定バージョン定義です。`modules/opencode/default.nix` から `pkgs.callPackage` で読み込まれ、`programs.opencode.package` に設定されます。
+- `playwright-cli.nix`: `@playwright/cli` の固定バージョン定義です。`modules/cli.nix` から `pkgs.callPackage` で読み込まれます。
