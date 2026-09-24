@@ -6,7 +6,7 @@
 
 このリポジトリは、Nix で管理される dotfiles リポジトリです。シェル、エディタ、ターミナル、Git、SSH、CLI ツールなどの設定を、Nix の宣言的な構成として管理します。
 
-Home Manager を設定の中心に置き、`home/home.nix` を入口として各モジュールを読み込みます。設定を一元管理することで、同じ構成を再適用しやすくし、設定ファイルの配置とパッケージの導入を同じワークフローで扱えます。
+Home Manager を設定の中心に置き、`home.nix` を入口として各モジュールを読み込みます。設定を一元管理することで、同じ構成を再適用しやすくし、設定ファイルの配置とパッケージの導入を同じワークフローで扱えます。
 
 また、本リポジトリには OpenCode エージェントハーネスが含まれています。エージェントの役割、プロンプト、権限、スキルを分離し、Nix の関数で重複を減らしながら、調査・計画・実装・検証を安全に分担できるように設計されています。
 
@@ -16,7 +16,7 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 
 | ディレクトリ | 目的 |
 | --- | --- |
-| `home/` | Home Manager 設定の入口（`home.nix`）を管理します。 |
+| `home.nix` | Home Manager 設定の入口です。`modules/` と `hosts/` を明示的に読み込みます。 |
 | `modules/` | ツールごとの Home Manager モジュールと、配置する生の設定ファイルを管理します。OpenCode のエージェント設定、プロンプトも含みます。 |
 | `hosts/` | ホストやプラットフォーム固有の設定を管理します。 |
 | `packages/` | Nix パッケージ定義と SSH キー管理用の定義を管理します。 |
@@ -28,24 +28,24 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 
 ### 3.1 入口とモジュールの読み込み
 
-Home Manager の入口は `home/home.nix` です。主なモジュールを次のように読み込みます。
+Home Manager の入口は `home.nix` です。主なモジュールを次のように読み込みます。
 
 ```nix
 imports = [
-  ../modules/cli.nix
-  ../modules/mise.nix
-  ../modules/gh.nix
-  ../modules/ssh.nix
-  ../modules/fonts.nix
-  ../modules/helix.nix
-  ../modules/ghostty.nix
-  ../modules/zellij
-  ../modules/git
-  ../modules/shell
-  ../modules/vscode
-  ../modules/opencode
-  ../modules/skills.nix
-  ../hosts
+  ./modules/cli.nix
+  ./modules/mise.nix
+  ./modules/gh.nix
+  ./modules/ssh.nix
+  ./modules/fonts.nix
+  ./modules/helix.nix
+  ./modules/ghostty.nix
+  ./modules/zellij
+  ./modules/git
+  ./modules/shell
+  ./modules/vscode
+  ./modules/opencode
+  ./modules/skills.nix
+  ./hosts
 ];
 ```
 
@@ -243,7 +243,7 @@ nix run home-manager -- switch --flake .#koki
 
 ## 7. パッケージ管理
 
-`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。通常の CLI パッケージは `modules/cli.nix` の `home.packages` で定義し、`home/home.nix` の import を通じて Home Manager に読み込ませます。
+`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。通常の CLI パッケージは `modules/cli.nix` の `home.packages` で定義し、`home.nix` の import を通じて Home Manager に読み込ませます。
 
 | ファイル | 役割 |
 | --- | --- |

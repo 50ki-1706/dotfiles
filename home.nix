@@ -5,20 +5,20 @@
 }:
 {
   imports = [
-    ../modules/cli.nix
-    ../modules/mise.nix
-    ../modules/gh.nix
-    ../modules/ssh.nix
-    ../modules/fonts.nix
-    ../modules/helix.nix
-    ../modules/ghostty.nix
-    ../modules/zellij
-    ../modules/git
-    ../modules/shell
-    ../modules/vscode
-    ../modules/opencode
-    ../modules/skills.nix
-    ../hosts
+    ./modules/cli.nix
+    ./modules/mise.nix
+    ./modules/gh.nix
+    ./modules/ssh.nix
+    ./modules/fonts.nix
+    ./modules/helix.nix
+    ./modules/ghostty.nix
+    ./modules/zellij
+    ./modules/git
+    ./modules/shell
+    ./modules/vscode
+    ./modules/opencode
+    ./modules/skills.nix
+    ./hosts
   ];
 
   # https://github.com/nix-community/home-manager/pull/6242
