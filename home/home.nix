@@ -1,100 +1,25 @@
 {
   lib,
   config,
-  pkgs,
   ...
 }:
 {
   imports = [
-    ./packages.nix
-    ./ssh.nix
-    ./fonts.nix
-    ./helix.nix
-    ./ghostty.nix
-    ./git.nix
-    ./shell.nix
-    ./vscode.nix
+    ../modules/cli.nix
+    ../modules/mise.nix
+    ../modules/gh.nix
+    ../modules/ssh.nix
+    ../modules/fonts.nix
+    ../modules/helix.nix
+    ../modules/ghostty.nix
+    ../modules/zellij
+    ../modules/git
+    ../modules/shell
+    ../modules/vscode
+    ../modules/opencode
+    ../modules/skills.nix
     ../hosts
   ];
-
-  programs.mise = {
-    enable = true;
-    enableZshIntegration = true;
-  };
-
-  programs.gh = {
-    enable = true;
-
-    settings.git_protocol = "ssh";
-  };
-
-  home.file.".config/zellij/layouts/ide.kdl".text = ''
-    layout {
-        default_tab_template {
-            pane size=1 borderless=true {
-                plugin location="tab-bar"
-            }
-            children
-            pane size=1 borderless=true {
-                plugin location="status-bar"
-            }
-        }
-
-        tab name="ide" {
-            pane split_direction="vertical" {
-                pane split_direction="horizontal" size="70%" {
-                    pane focus=true size="75%"
-                    pane
-                }
-                pane split_direction="horizontal" {
-                    pane
-                    pane command="${lib.getExe pkgs.lazygit}"
-                }
-            }
-        }
-    }
-  '';
-  home.file.".config/zellij/layouts/split.kdl".text = ''
-    layout {
-        default_tab_template {
-            pane size=1 borderless=true {
-                plugin location="tab-bar"
-            }
-            children
-            pane size=1 borderless=true {
-                plugin location="status-bar"
-            }
-        }
-
-        tab name="split" {
-            pane split_direction="vertical" {
-                pane focus=true
-                pane
-            }
-        }
-    }
-  '';
-  home.file.".config/zellij/config.kdl".source = ./zellij/config.kdl;
-  home.file.".config/opencode/AGENTS.md" = {
-    text =
-      builtins.readFile ./opencode/AGENTS.md
-      + "\n"
-      + builtins.readFile ./opencode/prompts/output-format.md;
-    force = true;
-  };
-  home.file.".config/opencode/plugins/spec-question-guard.js" = {
-    source = ./opencode/plugins/spec-question-guard.js;
-    force = true;
-  };
-  home.file.".agents/skills" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/skills";
-  };
-
-  programs.opencode = {
-    enable = true;
-    package = pkgs.callPackage ../packages/opencode.nix { };
-    settings = import ./opencode/opencode.nix { };
-  };
 
   # https://github.com/nix-community/home-manager/pull/6242
   # HM 内部で nix profile install を使っているが、Nix は install を add に改名済み。

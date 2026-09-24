@@ -123,27 +123,32 @@ resolve_chain() {
   printf '%s\n' "$link"
 }
 
+# 1 リンクあたり 4 要素: 対象リンク、手動管理時代の旧パス、home-manager 時代の旧パス、現在の正しいパス。
 MAPPINGS=(
   "$HOME/.config/git/ignore"
   "$REPO_ROOT/git/ignore"
   "$REPO_ROOT/home/dotfiles/git/ignore"
+  "$REPO_ROOT/modules/git/ignore"
   "$HOME/Library/Application Support/Code/User/settings.json"
   "$REPO_ROOT/config/Code/User/settings.json"
   "$REPO_ROOT/home/dotfiles/vscode/settings.json"
+  "$REPO_ROOT/modules/vscode/settings.json"
   "$HOME/Library/Application Support/Code/User/keybindings.json"
   "$REPO_ROOT/config/Code/User/keybindings.json"
   "$REPO_ROOT/home/dotfiles/vscode/keybindings.json"
+  "$REPO_ROOT/modules/vscode/keybindings.json"
 )
 
 main() {
   local target
   local legacy
+  local previous
   local new
   local final
   local diagnostic
   local -i i=0
   local -i offset=0
-  local -i mapping_count=$(( ${#MAPPINGS[@]} / 3 ))
+  local -i mapping_count=$(( ${#MAPPINGS[@]} / 4 ))
   local -i abort=0
   local -i removed=0
   local -a states=()
@@ -152,10 +157,11 @@ main() {
   printf '%s\n' '== 旧シンボリックリンクの移行事前確認 =='
 
   while (( i < mapping_count )); do
-    offset=$((i * 3))
+    offset=$((i * 4))
     target="${MAPPINGS[offset]}"
     legacy="${MAPPINGS[offset + 1]}"
-    new="${MAPPINGS[offset + 2]}"
+    previous="${MAPPINGS[offset + 2]}"
+    new="${MAPPINGS[offset + 3]}"
 
     if [[ -L "$target" ]]; then
       if ! final="$(resolve_chain "$target")"; then
@@ -165,9 +171,9 @@ main() {
       elif [[ "$final" == "$new" ]]; then
         states[i]='SKIP'
         diagnostics[i]="already points to $new"
-      elif [[ "$final" == "$legacy" ]]; then
+      elif [[ "$final" == "$legacy" || "$final" == "$previous" ]]; then
         states[i]='REMOVE'
-        diagnostics[i]="legacy target resolves to $legacy"
+        diagnostics[i]="legacy target resolves to $final"
       else
         states[i]='ABORT'
         diagnostics[i]="foreign symlink resolves to $final"
@@ -189,7 +195,7 @@ main() {
     printf '%s\n' '事前確認を中止しました。旧シンボリックリンクは削除していません。' >&2
     i=0
     while (( i < mapping_count )); do
-      offset=$((i * 3))
+      offset=$((i * 4))
       target="${MAPPINGS[offset]}"
       printf '%s: %s — %s\n' "${states[i]}" "$target" "${diagnostics[i]}" >&2
       i=$((i + 1))
@@ -199,7 +205,7 @@ main() {
 
   i=0
   while (( i < mapping_count )); do
-    offset=$((i * 3))
+    offset=$((i * 4))
     target="${MAPPINGS[offset]}"
     diagnostic="${diagnostics[i]}"
     printf '%s: %s — %s\n' "${states[i]}" "$target" "$diagnostic"
@@ -209,7 +215,7 @@ main() {
   i=0
   while (( i < mapping_count )); do
     if [[ "${states[i]}" == 'REMOVE' ]]; then
-      offset=$((i * 3))
+      offset=$((i * 4))
       target="${MAPPINGS[offset]}"
       rm "$target"
       printf 'REMOVED: %s\n' "$target"
