@@ -6,7 +6,7 @@
 
 このリポジトリは、Nix で管理される dotfiles リポジトリです。シェル、エディタ、ターミナル、Git、SSH、CLI ツールなどの設定を、Nix の宣言的な構成として管理します。
 
-Home Manager を設定の中心に置き、`home/home.nix` を入口として各モジュールを読み込みます。設定を一元管理することで、同じ構成を再適用しやすくし、設定ファイルの配置とパッケージの導入を同じワークフローで扱えます。
+Home Manager を設定の中心に置き、`home.nix` を入口として各モジュールを読み込みます。設定を一元管理することで、同じ構成を再適用しやすくし、設定ファイルの配置とパッケージの導入を同じワークフローで扱えます。
 
 また、本リポジトリには OpenCode エージェントハーネスが含まれています。エージェントの役割、プロンプト、権限、スキルを分離し、Nix の関数で重複を減らしながら、調査・計画・実装・検証を安全に分担できるように設計されています。
 
@@ -16,9 +16,8 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 
 | ディレクトリ | 目的 |
 | --- | --- |
-| `home/` | Home Manager モジュールと、Home Manager から配置する設定ファイルを管理します。 |
-| `home/opencode/` | OpenCode のエージェント設定、プロンプトを管理します。 |
-| `home/dotfiles/` | Nix 式とは分離して管理する、生の設定ファイルを管理します。Git、シェル、VS Code などの設定が含まれます。 |
+| `home.nix` | Home Manager 設定の入口です。`modules/` と `hosts/` を明示的に読み込みます。 |
+| `modules/` | ツールごとの Home Manager モジュールと、配置する生の設定ファイルを管理します。OpenCode のエージェント設定、プロンプトも含みます。 |
 | `hosts/` | ホストやプラットフォーム固有の設定を管理します。 |
 | `packages/` | Nix パッケージ定義と SSH キー管理用の定義を管理します。 |
 | `scripts/` | Nix の導入、初期セットアップ、旧シンボリックリンクの移行などのセットアップスクリプトを管理します。 |
@@ -29,19 +28,24 @@ Home Manager を設定の中心に置き、`home/home.nix` を入口として各
 
 ### 3.1 入口とモジュールの読み込み
 
-Home Manager の入口は `home/home.nix` です。主なモジュールを次のように読み込みます。
+Home Manager の入口は `home.nix` です。主なモジュールを次のように読み込みます。
 
 ```nix
 imports = [
-  ./packages.nix
-  ./ssh.nix
-  ./fonts.nix
-  ./helix.nix
-  ./ghostty.nix
-  ./git.nix
-  ./shell.nix
-  ./vscode.nix
-  ../hosts
+  ./modules/cli.nix
+  ./modules/mise.nix
+  ./modules/gh.nix
+  ./modules/ssh.nix
+  ./modules/fonts.nix
+  ./modules/helix.nix
+  ./modules/ghostty.nix
+  ./modules/zellij
+  ./modules/git
+  ./modules/shell
+  ./modules/vscode
+  ./modules/opencode
+  ./modules/skills.nix
+  ./hosts
 ];
 ```
 
@@ -49,14 +53,19 @@ imports = [
 
 | モジュール | 主な責務 |
 | --- | --- |
-| `home/packages.nix` | `home.packages` に導入する CLI ツールを定義します。 |
-| `home/ssh.nix` | SSH の設定を定義します。 |
-| `home/fonts.nix` | フォントと fontconfig の設定を定義します。 |
-| `home/helix.nix` | Helix エディタの設定を定義します。 |
-| `home/ghostty.nix` | Ghostty の設定を定義します。 |
-| `home/git.nix` | Git の設定と Git 用の生設定ファイルの配置を定義します。 |
-| `home/shell.nix` | Zsh とシェルエイリアスの設定を定義します。 |
-| `home/vscode.nix` | VS Code の設定ファイルの配置を定義します。 |
+| `modules/cli.nix` | `home.packages` に導入する CLI ツールを定義します。 |
+| `modules/mise.nix` | mise の有効化と Zsh 連携のみを定義します。グローバル設定 `~/.config/mise/config.toml` は廃止済みで、グローバル CLI ツールは Nix 管理です。プロジェクト単位の `.mise.toml` によるピン留めは可能です。 |
+| `modules/gh.nix` | GitHub CLI の有効化と SSH プロトコル設定を定義します。 |
+| `modules/ssh.nix` | SSH の設定を定義します。 |
+| `modules/fonts.nix` | フォントと fontconfig の設定を定義します。 |
+| `modules/helix.nix` | Helix エディタの設定を定義します。 |
+| `modules/ghostty.nix` | Ghostty の設定を定義します。 |
+| `modules/zellij/` | Zellij のパッケージ、レイアウト、キーバインド設定を定義します。 |
+| `modules/git/` | Git の設定と Git 用の生設定ファイルの配置を定義します。 |
+| `modules/shell/` | Zsh とシェルエイリアスの設定を定義します。 |
+| `modules/vscode/` | VS Code の設定ファイルの配置を定義します。 |
+| `modules/opencode/` | OpenCode のパッケージ、エージェント設定、プロンプト、プラグイン配置を定義します。 |
+| `modules/skills.nix` | グローバルスキルの配置を定義します。 |
 | `hosts/` | `isDarwin` などの条件に応じて、ホスト固有のモジュールを選択します。 |
 
 ### 3.2 設定の適用
@@ -71,7 +80,7 @@ nix run home-manager -- switch --flake .#koki
 
 ### 3.3 主な機能
 
-- `programs.opencode` を有効にし、`packages/opencode.nix` で固定した公式npm配布のOpenCode v2（Apple Silicon向け）と `home/opencode/opencode.nix` の設定を Home Manager から適用します。本体の更新は、このパッケージ定義のバージョンとハッシュを変更します。
+- `programs.opencode` を有効にし、`packages/opencode.nix` で固定した公式npm配布のOpenCode v2（Apple Silicon向け）と `modules/opencode/opencode.nix` の設定を Home Manager から適用します。本体の更新は、このパッケージ定義のバージョンとハッシュを変更します。
 - `home.file.".agents/skills"` と `mkOutOfStoreSymlink` を使い、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。
 - `home.file` を使い、OpenCode 用のファイルを `~/.config/opencode/` 以下へ配置します。具体的な配置は [4.4 ファイル配置](#44-ファイル配置) に示します。
 
@@ -95,7 +104,7 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 #### 組み込み機能と Nix 宣言
 
-エージェントは `home/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は Nix の共通定義を再利用します。
+エージェントは `modules/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は Nix の共通定義を再利用します。
 
 組み込みの `general` と `explore` はモデルと権限だけを調整します。`system`、`description`、`mode` を再定義しないため、OpenCode の標準動作を引き継ぎます。作業固有の制約、調査の深さ、成果物、検証方法は `spec` が委譲時に渡します。拡張が必要なときも、まず既存の組み込みエージェントで対応できるかを確認します。
 
@@ -103,7 +112,7 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後に一致したルールが優先されます。組み込みの既定値、共通ルール、エージェントごとのルールの順に適用されます。シェル操作は `shell`、委譲は `subagent` です。
 
-権限定義は `home/opencode/permissions.nix` の関数に集約し、`agents.nix` では `mkPermissions "global"` や `mkPermissions "spec"` のように名前を指定します。各プロファイルは、OpenCode V2 の JSONC と同じ `{action, resource, effect}` リテラルの順序付き配列として直接記述します。最後に一致したルールが優先されるため、記述した順序がそのまま適用順序になります。
+権限定義は `modules/opencode/permissions.nix` の関数に集約し、`agents.nix` では `mkPermissions "global"` や `mkPermissions "spec"` のように名前を指定します。各プロファイルは、OpenCode V2 の JSONC と同じ `{action, resource, effect}` リテラルの順序付き配列として直接記述します。最後に一致したルールが優先されるため、記述した順序がそのまま適用順序になります。
 
 共通ルールで機密ファイルの読み取りを制限し、危険なコマンドの拒否、push や環境切り替え時の確認を維持します。シェルの拒否パターンは完全なサンドボックスではありません。調査・レビュー役ではシェルと編集を拒否します。
 
@@ -133,19 +142,19 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 
 | ファイル | 役割 |
 | --- | --- |
-| `home/opencode/agents.nix` | v2 のエージェント宣言、利用モデル、権限・プロンプト・プロバイダー設定の読み込み |
-| `home/opencode/permissions.nix` | 共通・役割別の順序付き権限を生成する関数 |
-| `home/opencode/providers.nix` | プロバイダーごとのモデル設定・推論設定・variant |
-| `home/opencode/opencode.nix` | Nix 宣言の import、コマンド、MCP、監視対象などの設定 |
-| `home/opencode/AGENTS.md` | 可読性・保守性と作業範囲に関する共通ルール |
-| `home/opencode/prompts/spec.md` | 対話・計画・確認・委譲を担当する `spec` のプロンプト |
-| `home/opencode/prompts/plan_review.md` | 計画・設計・重要な実装変更を確認する `plan_review` のプロンプト |
-| `home/opencode/prompts/output-format.md` | 共通の STATUS、summary、findings、validation、impact と証拠の報告規則 |
+| `modules/opencode/agents.nix` | v2 のエージェント宣言、利用モデル、権限・プロンプト・プロバイダー設定の読み込み |
+| `modules/opencode/permissions.nix` | 共通・役割別の順序付き権限を生成する関数 |
+| `modules/opencode/providers.nix` | プロバイダーごとのモデル設定・推論設定・variant |
+| `modules/opencode/opencode.nix` | Nix 宣言の import、コマンド、MCP、監視対象などの設定 |
+| `modules/opencode/AGENTS.md` | 可読性・保守性と作業範囲に関する共通ルール |
+| `modules/opencode/prompts/spec.md` | 対話・計画・確認・委譲を担当する `spec` のプロンプト |
+| `modules/opencode/prompts/plan_review.md` | 計画・設計・重要な実装変更を確認する `plan_review` のプロンプト |
+| `modules/opencode/prompts/output-format.md` | 共通の STATUS、summary、findings、validation、impact と証拠の報告規則 |
 | `opencode.json` | このリポジトリで使うスキルの許可 |
 
 `spec` と `plan_review` の指示は英語で記述します。ユーザー向けの計画・質問・報告は `spec` が日本語で行います。組み込みサブエージェントへは委譲時に必要な証拠と報告内容を指定します。
 
-共通出力形式は `output-format.md` の一箇所で管理し、`home/home.nix` が配置先の `AGENTS.md` に結合します。v2 はグローバルな `AGENTS.md` をシステムプロンプトに追加するため、組み込みの `general` と `explore` の標準プロンプトを保ちながら、同じ出力形式を共有できます。独自エージェントの `system` へ出力形式を重複して埋め込みません。
+共通出力形式は `output-format.md` の一箇所で管理し、`modules/opencode/default.nix` が配置先の `AGENTS.md` に結合します。v2 はグローバルな `AGENTS.md` をシステムプロンプトに追加するため、組み込みの `general` と `explore` の標準プロンプトを保ちながら、同じ出力形式を共有できます。独自エージェントの `system` へ出力形式を重複して埋め込みません。
 
 推論設定は `providers.nix` の `<provider>.models.<model>.variants` に揃え、各 variant の `id` と `settings.reasoningEffort` を同じ値にします。モデル一覧の対応値に合わせて、GLM と DeepSeek V4.1 Flash は `low`、`high`、`max`、Qwen3.8 Flash は `low`、`medium`、`xhigh`、Luna は `none`、`low`、`medium`、`high`、`xhigh`、`max` を定義します。DeepSeek と Qwen のモデル ID はそれぞれ `opencode-go/deepseek-v4.1-flash` と `opencode-go/qwen3.8-flash` です。`spec` は `#medium`、`general` と `plan_review` は `#max` を明示して選択します。別の強度を選ぶ場合はエージェントのモデル指定を `#low` などに変更します。agent の旧 `reasoningEffort` や、実行時に送信されない `request.body` には置きません。
 
@@ -157,10 +166,10 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 
 | リポジトリ内の source | 配置先 |
 | --- | --- |
-| `home/opencode/AGENTS.md` + `home/opencode/prompts/output-format.md` | `~/.config/opencode/AGENTS.md` |
-| `home/opencode/plugins/spec-question-guard.js` | `~/.config/opencode/plugins/spec-question-guard.js` |
+| `modules/opencode/AGENTS.md` + `modules/opencode/prompts/output-format.md` | `~/.config/opencode/AGENTS.md` |
+| `modules/opencode/plugins/spec-question-guard.js` | `~/.config/opencode/plugins/spec-question-guard.js` |
 
-この 2 つの配置は `home/home.nix` に定義されています。`spec-question-guard.js` は `spec` の `question` 呼び出しを監視し、`plan_review` が一度でも完了結果を返した後は最新の完了結果を権威として扱います。最新の完了結果が `STATUS: COMPLETE` の間のみ、日本語の実装計画（見出し契約に適合するテキストのみ・ツールなしのメッセージ）の提示を検出するまで `question` を拒否します。最新の完了結果が `COMPLETE` 以外の場合やレビュー未完了の段階は許可し、ガード内部エラーと解析不能な完了履歴のみフェイルクローズドになります。他のエージェントやツールには干渉しません。端末 UI 設定は OpenCode が管理する `~/.config/opencode/cli.json` に保存します。
+この 2 つの配置は `modules/opencode/default.nix` に定義されています。`spec-question-guard.js` は `spec` の `question` 呼び出しを監視し、`plan_review` が一度でも完了結果を返した後は最新の完了結果を権威として扱います。最新の完了結果が `STATUS: COMPLETE` の間のみ、日本語の実装計画（見出し契約に適合するテキストのみ・ツールなしのメッセージ）の提示を検出するまで `question` を拒否します。最新の完了結果が `COMPLETE` 以外の場合やレビュー未完了の段階は許可し、ガード内部エラーと解析不能な完了履歴のみフェイルクローズドになります。他のエージェントやツールには干渉しません。端末 UI 設定は OpenCode が管理する `~/.config/opencode/cli.json` に保存します。
 
 設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json` と `AGENTS.md` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
 
@@ -192,21 +201,25 @@ Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills
 
 ### `playwright-cli` の vendoring と更新
 
-`playwright-cli` は、Playwright 公式エージェント CLI によるブラウザ自動化と E2E テストのためのスキルです。npm パッケージ `@playwright/cli@0.1.21`（`playwright-core 1.64.0-alpha-1789764292000` を固定）に同梱されるスキルを、改変せずそのまま `skills/playwright-cli/` に配置しています。ライセンスは Apache-2.0 で、正文を `skills/playwright-cli/LICENSE` に同梱します（上流に NOTICE はありません）。
+`playwright-cli` は、Playwright 公式エージェント CLI によるブラウザ自動化と E2E テストのためのスキルです。npm パッケージ `@playwright/cli@0.1.21`（`playwright` / `playwright-core 1.64.0-alpha-1789764292000` を固定）に同梱されるスキルを、改変せずそのまま `skills/playwright-cli/` に配置しています。ライセンスは Apache-2.0 で、正文を `skills/playwright-cli/LICENSE` に同梱します（上流に NOTICE はありません）。
 
-利用前提として、実行する CLI を vendored スキルと同じバージョンに固定します。
+利用前提として、CLI 本体を vendored スキルと同じバージョンで Nix 管理します。バージョンと 3 つの tarball URL・SRI ハッシュは `packages/playwright-cli.nix` に定義し、次のコマンドで導入します。
 
 ```sh
-mise use -g npm:@playwright/cli@0.1.21
+nix run home-manager -- switch --flake .#koki
 playwright-cli install-browser
 ```
+
+`install-browser` は初回のみ必要です。ブラウザは `~/Library/Caches/ms-playwright` にダウンロードされます。
 
 更新は vendored スキルと CLI を必ずペアで行います。
 
 1. リポジトリ外のスクラッチディレクトリで `npx -y @playwright/cli@<新バージョン> install --skills=agents` を実行します。
 2. 生成された `.agents/skills/playwright-cli/` を `skills/playwright-cli/` へコピーし、`LICENSE`（上流に `NOTICE` があればそれも）を維持します。
 3. `diff -r <スクラッチ>/.agents/skills/playwright-cli skills/playwright-cli` で差分がないことを確認します。
-4. このドキュメントの固定バージョンを更新し、`mise use -g npm:@playwright/cli@<新バージョン>` を実行します。
+4. `packages/playwright-cli.nix` の `version` を新バージョンへ更新します。`playwright` と `playwright-core` の URL は、新バージョンの `@playwright/cli` のレジストリメタデータ（`dependencies`）に記載されたバージョンへ更新します。
+5. 3 つの URL の SRI ハッシュを `nix hash file <tarball>` などで取得して更新し、`nix run home-manager -- switch --flake .#koki` を実行します。
+6. ブラウザのリビジョンが変わった場合は `playwright-cli install-browser` を再実行します。
 
 `@latest` の導入や実行時のみの更新は、vendored スキルと CLI のバージョンを乖離させます。CLI のスキル整合チェックは実行ディレクトリ配下（`./.agents/skills/` など）だけを対象とするため、`~/.agents/skills` 経由で参照されるこのグローバル配備はチェックの対象外です。インストーラーは `--global` 付き、またはこのリポジトリ内で実行しないでください。`--global` は `~/.agents/skills` のリンクを通じて、リポジトリ内での実行は `.agents/skills/` と `.gitignore` への書き込みを通じて、それぞれ未追跡ファイルや意図しない差分を作業ツリーへ混入させます。
 
@@ -234,12 +247,14 @@ nix run home-manager -- switch --flake .#koki
 
 ## 7. パッケージ管理
 
-`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。通常の CLI パッケージは `home/packages.nix` の `home.packages` で定義し、`home/home.nix` の import を通じて Home Manager に読み込ませます。
+`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。通常の CLI パッケージは `modules/cli.nix` の `home.packages` で定義し、`home.nix` の import を通じて Home Manager に読み込ませます。
 
 | ファイル | 役割 |
 | --- | --- |
 | `packages/ssh-bootstrap.nix` | SSH キーの生成と管理を行う `ssh-bootstrap` パッケージを定義します。 |
-| `home/packages.nix` | Home Manager の `home.packages` に導入する CLI ツールを定義します。 |
+| `packages/opencode.nix` | OpenCode CLI 本体の固定バージョンを定義し、`modules/opencode/default.nix` から読み込みます。 |
+| `packages/playwright-cli.nix` | `@playwright/cli` の固定バージョンを定義し、`modules/cli.nix` から読み込みます。 |
+| `modules/cli.nix` | Home Manager の `home.packages` に導入する CLI ツールを定義します。 |
 
 `packages/ssh-bootstrap.nix` は `flake.nix` の package/app として公開され、セットアップ時に `install.sh` から利用されます。SSH キーそのものをリポジトリへ保存するのではなく、必要な環境でこの SSH キーのプロビジョニング処理を実行する設計です。
 

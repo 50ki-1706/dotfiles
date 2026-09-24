@@ -5,7 +5,7 @@ description: Use after modifying Nix, flake, Home Manager, package, module, or N
 
 # Nix Verify
 
-Use this skill whenever a task changes Nix code or files consumed by Nix in this repository (`/Users/koki/.dotfiles`), including `flake.nix`, `flake.lock`, `home/*.nix`, package modules, Home Manager settings, and Nix-managed config sources.
+Use this skill whenever a task changes Nix code or files consumed by Nix in this repository (`/Users/koki/.dotfiles`), including `flake.nix`, `flake.lock`, `home.nix`, package modules, Home Manager settings, and Nix-managed config sources.
 
 ## Required Policy
 

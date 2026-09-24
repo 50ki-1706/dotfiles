@@ -19,6 +19,6 @@
     ];
   };
 
-  home.file.".config/shell/aliases".source = ./dotfiles/shell/aliases;
-  home.file.".config/shell/prompt".source = ./dotfiles/shell/prompt;
+  home.file.".config/shell/aliases".source = ./aliases;
+  home.file.".config/shell/prompt".source = ./prompt;
 }

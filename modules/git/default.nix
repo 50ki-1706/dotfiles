@@ -19,5 +19,5 @@
   };
 
   home.file.".config/git/ignore".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home/dotfiles/git/ignore";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/git/ignore";
 }
