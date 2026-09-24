@@ -201,21 +201,25 @@ Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills
 
 ### `playwright-cli` の vendoring と更新
 
-`playwright-cli` は、Playwright 公式エージェント CLI によるブラウザ自動化と E2E テストのためのスキルです。npm パッケージ `@playwright/cli@0.1.21`（`playwright-core 1.64.0-alpha-1789764292000` を固定）に同梱されるスキルを、改変せずそのまま `skills/playwright-cli/` に配置しています。ライセンスは Apache-2.0 で、正文を `skills/playwright-cli/LICENSE` に同梱します（上流に NOTICE はありません）。
+`playwright-cli` は、Playwright 公式エージェント CLI によるブラウザ自動化と E2E テストのためのスキルです。npm パッケージ `@playwright/cli@0.1.21`（`playwright` / `playwright-core 1.64.0-alpha-1789764292000` を固定）に同梱されるスキルを、改変せずそのまま `skills/playwright-cli/` に配置しています。ライセンスは Apache-2.0 で、正文を `skills/playwright-cli/LICENSE` に同梱します（上流に NOTICE はありません）。
 
-利用前提として、実行する CLI を vendored スキルと同じバージョンに固定します。
+利用前提として、CLI 本体を vendored スキルと同じバージョンで Nix 管理します。バージョンと 3 つの tarball URL・SRI ハッシュは `packages/playwright-cli.nix` に定義し、次のコマンドで導入します。
 
 ```sh
-mise use -g npm:@playwright/cli@0.1.21
+nix run home-manager -- switch --flake .#koki
 playwright-cli install-browser
 ```
+
+`install-browser` は初回のみ必要です。ブラウザは `~/Library/Caches/ms-playwright` にダウンロードされます。
 
 更新は vendored スキルと CLI を必ずペアで行います。
 
 1. リポジトリ外のスクラッチディレクトリで `npx -y @playwright/cli@<新バージョン> install --skills=agents` を実行します。
 2. 生成された `.agents/skills/playwright-cli/` を `skills/playwright-cli/` へコピーし、`LICENSE`（上流に `NOTICE` があればそれも）を維持します。
 3. `diff -r <スクラッチ>/.agents/skills/playwright-cli skills/playwright-cli` で差分がないことを確認します。
-4. このドキュメントの固定バージョンを更新し、`mise use -g npm:@playwright/cli@<新バージョン>` を実行します。
+4. `packages/playwright-cli.nix` の `version` を新バージョンへ更新します。`playwright` と `playwright-core` の URL は、新バージョンの `@playwright/cli` のレジストリメタデータ（`dependencies`）に記載されたバージョンへ更新します。
+5. 3 つの URL の SRI ハッシュを `nix hash file <tarball>` などで取得して更新し、`nix run home-manager -- switch --flake .#koki` を実行します。
+6. ブラウザのリビジョンが変わった場合は `playwright-cli install-browser` を再実行します。
 
 `@latest` の導入や実行時のみの更新は、vendored スキルと CLI のバージョンを乖離させます。CLI のスキル整合チェックは実行ディレクトリ配下（`./.agents/skills/` など）だけを対象とするため、`~/.agents/skills` 経由で参照されるこのグローバル配備はチェックの対象外です。インストーラーは `--global` 付き、またはこのリポジトリ内で実行しないでください。`--global` は `~/.agents/skills` のリンクを通じて、リポジトリ内での実行は `.agents/skills/` と `.gitignore` への書き込みを通じて、それぞれ未追跡ファイルや意図しない差分を作業ツリーへ混入させます。
 
