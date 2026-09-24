@@ -11,6 +11,7 @@
     pkgs.yq-go
     pkgs.claude-code
     pkgs.vite-plus
+    pkgs.uv
     ollamaPkgs.ollama
   ];
 }

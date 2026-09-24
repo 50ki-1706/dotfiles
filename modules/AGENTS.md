@@ -7,7 +7,7 @@ modulesディレクトリは、ツールごとのhome-managerモジュールを�
 
 | モジュール | 対象ツール | 内容 |
 | --- | --- | --- |
-| `cli.nix` | CLIツール | `home.packages` で導入する汎用CLIツール（fzf、lazygit、bitwarden-cli、devbox、nixfmt、ripgrep、yazi、yq-go、claude-code、vite-plus、ollama） |
+| `cli.nix` | CLIツール | `home.packages` で導入する汎用CLIツール（fzf、lazygit、bitwarden-cli、devbox、nixfmt、ripgrep、yazi、yq-go、claude-code、vite-plus、uv、ollama） |
 | `mise.nix` | mise | `programs.mise` の有効化とZsh連携 |
 | `gh.nix` | GitHub CLI | `programs.gh` の有効化とSSHプロトコル設定 |
 | `ssh.nix` | SSH | `programs.ssh` のGitHub向け鍵とmacOS Keychain連携 |
