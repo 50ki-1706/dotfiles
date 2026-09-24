@@ -54,7 +54,7 @@ imports = [
 | モジュール | 主な責務 |
 | --- | --- |
 | `modules/cli.nix` | `home.packages` に導入する CLI ツールを定義します。 |
-| `modules/mise.nix` | mise の有効化と Zsh 連携を定義します。 |
+| `modules/mise.nix` | mise の有効化と Zsh 連携のみを定義します。グローバル設定 `~/.config/mise/config.toml` は廃止済みで、グローバル CLI ツールは Nix 管理です。プロジェクト単位の `.mise.toml` によるピン留めは可能です。 |
 | `modules/gh.nix` | GitHub CLI の有効化と SSH プロトコル設定を定義します。 |
 | `modules/ssh.nix` | SSH の設定を定義します。 |
 | `modules/fonts.nix` | フォントと fontconfig の設定を定義します。 |
