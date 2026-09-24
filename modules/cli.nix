@@ -5,6 +5,7 @@
     pkgs.lazygit
     pkgs.bitwarden-cli
     pkgs.devbox
+    pkgs.devenv
     pkgs.nixfmt
     pkgs.ripgrep
     pkgs.yazi
