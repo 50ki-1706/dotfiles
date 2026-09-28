@@ -264,6 +264,11 @@ let
         resource = "*";
         effect = "allow";
       }
+      {
+        action = "graphify*";
+        resource = "*";
+        effect = "allow";
+      }
     ];
 
     explore = [

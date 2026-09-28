@@ -119,7 +119,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | エージェント | ファイル・シェル | MCP | 委譲 |
 | --- | --- | --- | --- |
 | `spec` | 読み取り・編集・シェルを拒否 | 拒否 | `explore`、`general`、`plan_review` のみ |
-| `general` | 組み込みの実装権限と共通制限。外部ディレクトリは拒否 | Chrome DevTools | 拒否 |
+| `general` | 組み込みの実装権限と共通制限。外部ディレクトリは拒否 | Chrome DevTools、Graphify | 拒否 |
 | `explore` | 読み取り専用。コード・Web 調査、外部ディレクトリの読み取りを許可 | Graphify | 拒否 |
 | `plan_review` | 読み取り専用。Web とシェルを拒否 | Graphify | 拒否 |
 
