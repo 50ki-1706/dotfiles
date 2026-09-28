@@ -1,2 +1,4 @@
 .agents/*
 !.agents/skills
+.opencode/*
+!.opencode/skills
