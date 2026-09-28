@@ -14,4 +14,8 @@
     source = ./plugins/spec-question-guard.js;
     force = true;
   };
+  home.file.".config/opencode/cli.json" = {
+    text = builtins.toJSON (import ./cli.nix);
+    force = true;
+  };
 }
