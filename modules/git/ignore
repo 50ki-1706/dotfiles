@@ -2,3 +2,4 @@
 !.agents/skills
 .opencode/*
 !.opencode/skills
+/graphify-out/
