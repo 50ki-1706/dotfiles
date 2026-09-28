@@ -20,7 +20,7 @@ in
       permissions = mkPermissions "general";
     };
     explore = {
-      model = "opencode/mimo-v2.6-flash-free";
+      model = "opencode-go/deepseek-v4.1-flash#low";
       permissions = mkPermissions "explore";
     };
     plan_review = {
