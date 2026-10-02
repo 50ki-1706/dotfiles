@@ -11,6 +11,10 @@
       core = {
         excludesFile = "~/.config/git/ignore";
       };
+
+      init = {
+        defaultBranch = "main";
+      };
     };
 
     includes = [
