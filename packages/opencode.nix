@@ -5,12 +5,12 @@
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "opencode";
-  version = "2.0.15";
+  version = "2.0.22";
 
   # Use the same native package as the official @opencode/cli installer.
   src = fetchurl {
     url = "https://registry.npmjs.org/@opencode/cli-darwin-arm64/-/cli-darwin-arm64-${finalAttrs.version}.tgz";
-    hash = "sha256-Bln8cgNomPdlyKe3XiX4fBk1XPsR4klD3cQMdJzwVkI=";
+    hash = "sha256-FvX1hR4Pz4bcOMmAQrxQ5fFnMZqZc4l8lIfxey6BARc=";
   };
 
   sourceRoot = "package";
