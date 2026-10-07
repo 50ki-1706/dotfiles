@@ -181,5 +181,6 @@
   "workbench.view.alwaysShowHeaderActions": true,
   "workbench.colorTheme": "Monokai Dimmed",
   "chat.agent.sandbox.enabled": "on",
-  "security.promptForLocalFileProtocolHandling": false
+  "security.promptForLocalFileProtocolHandling": false,
+  "workbench.editor.enablePreview": false
 }
