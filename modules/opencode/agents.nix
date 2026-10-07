@@ -20,7 +20,7 @@ in
       permissions = mkPermissions "general";
     };
     explore = {
-      model = "opencode-go/deepseek-v4.1-flash#low";
+      model = "opencode/fledge-alpha-free#max";
       permissions = mkPermissions "explore";
     };
     plan_review = {
