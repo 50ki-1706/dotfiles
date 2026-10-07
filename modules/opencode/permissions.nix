@@ -1,194 +1,203 @@
 profile:
 let
   # Preserve list order: the last matching permission rule wins.
+  shellGuards = [
+    {
+      action = "shell";
+      resource = "sudo *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "rm -rf *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "chmod 777 *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "chmod -R 777 *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "chown -R *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "dd *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "shutdown *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "reboot *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "halt *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "curl * | sh";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "curl * | bash";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "wget * | sh";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "wget * | bash";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "git reset --hard *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "git clean *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "git push*";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "brew install *";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "brew uninstall *";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "nix run home-manager -- switch *";
+      effect = "ask";
+    }
+  ];
+
+  secretReadGuards = [
+    {
+      action = "read";
+      resource = ".env";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = ".env.*";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "**/.env";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "**/.env.*";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = ".env.example";
+      effect = "allow";
+    }
+    {
+      action = "read";
+      resource = "**/.env.example";
+      effect = "allow";
+    }
+    {
+      action = "read";
+      resource = "*.key";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "*.pem";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "id_rsa*";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "**/id_rsa*";
+      effect = "deny";
+    }
+  ];
+
   profiles = {
-    global = [
-      {
-        action = "shell";
-        resource = "sudo *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "rm -rf *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "chmod 777 *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "chmod -R 777 *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "chown -R *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "dd *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "shutdown *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "reboot *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "halt *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "curl * | sh";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "curl * | bash";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "wget * | sh";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "wget * | bash";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "git reset --hard *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "git clean *";
-        effect = "deny";
-      }
-      {
-        action = "shell";
-        resource = "git push*";
-        effect = "ask";
-      }
-      {
-        action = "shell";
-        resource = "brew install *";
-        effect = "ask";
-      }
-      {
-        action = "shell";
-        resource = "brew uninstall *";
-        effect = "ask";
-      }
-      {
-        action = "shell";
-        resource = "nix run home-manager -- switch *";
-        effect = "ask";
-      }
-      {
-        action = "read";
-        resource = ".env";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = ".env.*";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "**/.env";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "**/.env.*";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = ".env.example";
-        effect = "allow";
-      }
-      {
-        action = "read";
-        resource = "**/.env.example";
-        effect = "allow";
-      }
-      {
-        action = "read";
-        resource = "*.key";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "*.pem";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "id_rsa*";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "**/id_rsa*";
-        effect = "deny";
-      }
-      {
-        action = "skill";
-        resource = "*";
-        effect = "deny";
-      }
-      {
-        action = "skill";
-        resource = "gh-cli";
-        effect = "allow";
-      }
-      {
-        action = "skill";
-        resource = "computer-use";
-        effect = "allow";
-      }
-      {
-        action = "skill";
-        resource = "orca-cli";
-        effect = "allow";
-      }
-      {
-        action = "skill";
-        resource = "orchestration";
-        effect = "allow";
-      }
-      {
-        action = "skill";
-        resource = "playwright-cli";
-        effect = "allow";
-      }
-      {
-        action = "graphify*";
-        resource = "*";
-        effect = "deny";
-      }
-      {
-        action = "chrome-devtools*";
-        resource = "*";
-        effect = "deny";
-      }
-    ];
+    global =
+      shellGuards
+      ++ secretReadGuards
+      ++ [
+        {
+          action = "skill";
+          resource = "*";
+          effect = "deny";
+        }
+        {
+          action = "skill";
+          resource = "gh-cli";
+          effect = "allow";
+        }
+        {
+          action = "skill";
+          resource = "computer-use";
+          effect = "allow";
+        }
+        {
+          action = "skill";
+          resource = "orca-cli";
+          effect = "allow";
+        }
+        {
+          action = "skill";
+          resource = "orchestration";
+          effect = "allow";
+        }
+        {
+          action = "skill";
+          resource = "playwright-cli";
+          effect = "allow";
+        }
+        {
+          action = "graphify*";
+          resource = "*";
+          effect = "deny";
+        }
+        {
+          action = "chrome-devtools*";
+          resource = "*";
+          effect = "deny";
+        }
+      ];
 
     spec = [
       {
@@ -196,6 +205,30 @@ let
         resource = "*";
         effect = "deny";
       }
+      {
+        action = "shell";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "read";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "glob";
+        resource = "*";
+        effect = "allow";
+      }
+      {
+        action = "grep";
+        resource = "*";
+        effect = "allow";
+      }
+    ]
+    ++ shellGuards
+    ++ secretReadGuards
+    ++ [
       {
         action = "subagent";
         resource = "explore";
@@ -273,11 +306,6 @@ let
 
     explore = [
       {
-        action = "shell";
-        resource = "*";
-        effect = "deny";
-      }
-      {
         action = "edit";
         resource = "*";
         effect = "deny";
@@ -325,56 +353,17 @@ let
         resource = "*";
         effect = "allow";
       }
+    ]
+    ++ secretReadGuards
+    ++ [
       {
-        action = "read";
-        resource = ".env";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = ".env.*";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "**/.env";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "**/.env.*";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = ".env.example";
+        action = "shell";
+        resource = "*";
         effect = "allow";
       }
-      {
-        action = "read";
-        resource = "**/.env.example";
-        effect = "allow";
-      }
-      {
-        action = "read";
-        resource = "*.key";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "*.pem";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "id_rsa*";
-        effect = "deny";
-      }
-      {
-        action = "read";
-        resource = "**/id_rsa*";
-        effect = "deny";
-      }
+    ]
+    ++ shellGuards
+    ++ [
       {
         action = "glob";
         resource = "*";
