@@ -104,15 +104,15 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 #### 組み込み機能と Nix 宣言
 
-エージェントは `modules/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は Nix の共通定義を再利用します。
+エージェントは `modules/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は、共通ガードブロックとケーパビリティオプションで表現します。
 
 組み込みの `general` と `explore` はモデルと権限だけを調整します。`system`、`description`、`mode` を再定義しないため、OpenCode の標準動作を引き継ぎます。作業固有の制約、調査の深さ、成果物、検証方法は `spec` が委譲時に渡します。拡張が必要なときも、まず既存の組み込みエージェントで対応できるかを確認します。
 
 #### 権限の管理
 
-v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後に一致したルールが優先されます。組み込みの既定値、共通ルール、エージェントごとのルールの順に適用されます。シェル操作は `shell`、委譲は `subagent` です。
+v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後に一致したルールが優先されます。組み込みの既定値、グローバル、エージェントごとのルールの順に適用され、共通ガードは各エージェントの配列にも埋め込まれます。シェル操作は `shell`、委譲は `subagent` です。
 
-権限定義は `modules/opencode/permissions.nix` の関数に集約し、`agents.nix` では `mkPermissions "global"` や `mkPermissions "spec"` のように名前を指定します。各プロファイルは、OpenCode V2 の JSONC と同じ `{action, resource, effect}` リテラルの順序付き配列として直接記述します。最後に一致したルールが優先されるため、記述した順序がそのまま適用順序になります。
+権限定義は `modules/opencode/permissions.nix` の関数に集約し、`agents.nix` では `shell` や `read`、`subagent`、`skill` などのケーパビリティ単位でオプションを指定します。各オプションは `"allow"`、`"deny"`、`"inherit"` を受け取り、`subagent` と `skill` は許可する名前のリストも受け取ります（`"allow"` は指定できません）。`denyAll = true` は全拒否を土台にし、`"inherit"` はその土台またはグローバル定義に従います。関数は OpenCode V2 の JSONC と同じ `{action, resource, effect}` の順序付き配列を生成し、最後に一致したルールが優先されます。
 
 共通ルールで機密ファイルの読み取りを制限し、危険なコマンドの拒否、push や環境切り替え時の確認を維持します。シェルの拒否パターンは完全なサンドボックスではありません。調査・レビュー役ではシェルと編集を拒否します。
 
@@ -143,7 +143,8 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | ファイル | 役割 |
 | --- | --- |
 | `modules/opencode/agents.nix` | v2 のエージェント宣言、利用モデル、権限・プロンプト・プロバイダー設定の読み込み |
-| `modules/opencode/permissions.nix` | 共通・役割別の順序付き権限を生成する関数 |
+| `modules/opencode/permissions.nix` | ケーパビリティオプションから共通・役割別の順序付き権限を生成する関数 |
+| `modules/opencode/guards.nix` | 全プロファイル共通の危険コマンド・機密ファイル読み取りガード定義 |
 | `modules/opencode/providers.nix` | プロバイダーごとのモデル設定・推論設定・variant |
 | `modules/opencode/opencode.nix` | Nix 宣言の import、コマンド、MCP、監視対象などの設定 |
 | `modules/opencode/AGENTS.md` | 可読性・保守性と作業範囲に関する共通ルール |
