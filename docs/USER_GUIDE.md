@@ -66,7 +66,7 @@ imports = [
 | `modules/vscode/` | VS Code の設定ファイルの配置を定義します。 |
 | `modules/opencode/` | OpenCode のパッケージ、エージェント設定、プロンプト、プラグイン配置を定義します。 |
 | `modules/skills.nix` | グローバルスキルの配置を定義します。 |
-| `hosts/` | `isDarwin` などの条件に応じて、ホスト固有のモジュールを選択します。 |
+| `hosts/` | ホスト固有の設定の入口です。必要に応じて `isDarwin` などの条件付きモジュールを追加します。 |
 
 ### 3.2 設定の適用
 
