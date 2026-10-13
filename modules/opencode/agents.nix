@@ -7,6 +7,18 @@ in
   model = "opencode-go/qwen3.8-flash#medium";
   providers = import ./providers.nix;
   permissions = mkPermissions {
+    shell = "guarded";
+    read = "guarded";
+    glob = "inherit";
+    grep = "inherit";
+    edit = "inherit";
+    question = "inherit";
+    externalDirectory = "inherit";
+    webfetch = "inherit";
+    websearch = "inherit";
+    opencodeTools = "inherit";
+    subagent = "inherit";
+    execute = "inherit";
     skill = [
       "gh-cli"
       "computer-use"
@@ -29,8 +41,12 @@ in
         read = "allow";
         glob = "allow";
         grep = "allow";
+        edit = "deny";
         question = "allow";
-        graphify = "allow";
+        externalDirectory = "inherit";
+        webfetch = "inherit";
+        websearch = "inherit";
+        opencodeTools = "inherit";
         subagent = [
           "explore"
           "general"
@@ -43,14 +59,34 @@ in
           "orchestration"
           "playwright-cli"
         ];
+        execute = "inherit";
+        graphify = "allow";
+        chromeDevtools = "inherit";
       };
     };
     general = {
       model = "opencode-go/deepseek-v4.1-flash#max";
       permissions = mkPermissions {
-        subagent = "deny";
+        denyAll = true;
+        shell = "allow";
+        read = "allow";
+        glob = "allow";
+        grep = "allow";
+        edit = "allow";
         question = "deny";
         externalDirectory = "deny";
+        webfetch = "allow";
+        websearch = "allow";
+        opencodeTools = "allow";
+        subagent = "deny";
+        skill = [
+          "gh-cli"
+          "computer-use"
+          "orca-cli"
+          "orchestration"
+          "playwright-cli"
+        ];
+        execute = "allow";
         graphify = "allow";
         chromeDevtools = "allow";
       };
@@ -61,13 +97,22 @@ in
       description = "Deep-investigation subagent for external research, architecture understanding, and thorough codebase analysis; shallow lookups belong to spec.";
       system = builtins.readFile ./prompts/explore.md;
       permissions = mkPermissions {
+        denyAll = true;
+        shell = "guarded";
+        read = "allow";
+        glob = "allow";
+        grep = "allow";
         edit = "deny";
-        subagent = "deny";
         question = "deny";
-        skill = "deny";
         externalDirectory = "allow";
+        webfetch = "allow";
+        websearch = "allow";
+        opencodeTools = "inherit";
+        subagent = "deny";
+        skill = "deny";
         execute = "allow";
         graphify = "allow";
+        chromeDevtools = "inherit";
       };
     };
     plan_review = {
@@ -78,12 +123,20 @@ in
       permissions = mkPermissions {
         denyAll = true;
         read = "allow";
-        shell = "allow";
+        shell = "guarded";
         glob = "allow";
         grep = "allow";
+        edit = "deny";
+        question = "deny";
         externalDirectory = "allow";
+        webfetch = "inherit";
+        websearch = "inherit";
+        opencodeTools = "inherit";
+        subagent = "deny";
+        skill = "deny";
         execute = "allow";
         graphify = "allow";
+        chromeDevtools = "inherit";
       };
     };
   };
