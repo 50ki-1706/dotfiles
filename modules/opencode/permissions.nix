@@ -274,6 +274,11 @@ let
         resource = "playwright-cli";
         effect = "allow";
       }
+      {
+        action = "graphify*";
+        resource = "*";
+        effect = "allow";
+      }
     ];
 
     general = [
