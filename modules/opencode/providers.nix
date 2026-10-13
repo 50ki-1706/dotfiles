@@ -16,6 +16,13 @@ in
     "max"
   ];
 
+  # StepFun (OpenCode Zen free)
+  opencode.models."step-5-preview-free".variants = mkVariants [
+    "low"
+    "medium"
+    "high"
+  ];
+
   # OpenCode Go
   opencode-go.models = {
     "deepseek-v4.1-flash".variants = mkVariants [
