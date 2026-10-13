@@ -106,7 +106,7 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 エージェントは `modules/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は Nix の共通定義を再利用します。
 
-組み込みの `general` と `explore` はモデルと権限だけを調整します。`system`、`description`、`mode` を再定義しないため、OpenCode の標準動作を引き継ぎます。作業固有の制約、調査の深さ、成果物、検証方法は `spec` が委譲時に渡します。拡張が必要なときも、まず既存の組み込みエージェントで対応できるかを確認します。
+組み込みの `general` はモデルと権限だけを調整し、標準動作を引き継ぎます。`explore` は組み込み subagent の `mode`、`description`、`system` を上書きし、深い調査（外部調査、アーキテクチャ理解、徹底したコードベース調査）専用にしています。浅い調査は `spec` が自身で行います。作業固有の制約、調査の深さ、成果物、検証方法は `spec` が委譲時に渡します。拡張が必要なときも、まず既存の組み込みエージェントで対応できるかを確認します。
 
 #### 権限の管理
 
@@ -114,14 +114,14 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 
 権限定義は `modules/opencode/permissions.nix` の関数に集約し、`agents.nix` では `mkPermissions "global"` や `mkPermissions "spec"` のように名前を指定します。各プロファイルは、OpenCode V2 の JSONC と同じ `{action, resource, effect}` リテラルの順序付き配列として直接記述します。最後に一致したルールが優先されるため、記述した順序がそのまま適用順序になります。
 
-共通ルールで機密ファイルの読み取りを制限し、危険なコマンドの拒否、push や環境切り替え時の確認を維持します。シェルの拒否パターンは完全なサンドボックスではありません。調査・レビュー役ではシェルと編集を拒否します。
+共通ルールで機密ファイルの読み取りを制限し、危険なコマンドの拒否、push や環境切り替え時の確認を維持します。シェルの拒否パターンは完全なサンドボックスではありません。調査・レビュー役は編集ツールとプロンプトによる動作上の読み取り専用方針で境界を作り、シェルは共通ガード下で調査に限定して扱います（エージェント別の実際の可否は下表の通り）。
 
 | エージェント | ファイル・シェル | MCP | 委譲 |
 | --- | --- | --- | --- |
-| `spec` | 読み取り・編集・シェルを拒否 | 拒否 | `explore`、`general`、`plan_review` のみ |
+| `spec` | 読み取り・編集・シェルを拒否 | Graphify | `explore`、`general`、`plan_review` のみ |
 | `general` | 組み込みの実装権限と共通制限。外部ディレクトリは拒否 | Chrome DevTools、Graphify | 拒否 |
-| `explore` | 読み取り専用。コード・Web 調査、外部ディレクトリの読み取りを許可 | Graphify | 拒否 |
-| `plan_review` | 読み取り専用。Web とシェルを拒否 | Graphify | 拒否 |
+| `explore` | 編集ツール拒否。調査用シェル（共通ガード下）・Web 調査・外部ディレクトリ読み取りを許可 | Graphify | 拒否 |
+| `plan_review` | deny-all で編集・Web を拒否。読み取り系ツールと調査用シェルは共通ガード下で許可し、プロンプトでシェルの実行を行わないことを指示 | Graphify | 拒否 |
 
 グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration`、`playwright-cli` です。`explore` と `plan_review` ではスキルを拒否します。このリポジトリの `opencode.json` は `nix-verify` と `minimal-repository` を許可し、`spec` と `general` がリポジトリ固有の手順を利用できます。
 
@@ -131,7 +131,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | --- | --- | --- | --- |
 | `spec` | 独自 primary（既定） | `opencode-go/qwen3.8-flash#medium` | 日本語での対話、計画、ユーザー確認、委譲 |
 | `general` | 組み込み subagent | `opencode-go/deepseek-v4.1-flash#max` | 実装・検証・承認済みのアーキテクチャ文書更新 |
-| `explore` | 組み込み subagent | `opencode/mimo-v2.6-flash-free` | 対象を絞った調査、広範なコード調査、外部の一次情報調査 |
+| `explore` | 組み込み subagent | `opencode/step-5-preview-free#high` | 深い調査（外部調査、アーキテクチャ理解、徹底したコードベース調査） |
 | `plan_review` | 独自 subagent | `openai/gpt-6-luna#max` | 計画・設計相談・重要な実装変更のレビュー |
 
 `spec → explore / plan_review → ユーザー確認 → general` を基本とし、重要な変更は実装後にも `plan_review` で確認します。組み込みの `build` と `plan` はそのまま利用できます。旧 `executer` は `general`、旧 `deep_explore` と `internet_search` は `explore` に統合しました。
@@ -149,14 +149,15 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | `modules/opencode/AGENTS.md` | 可読性・保守性と作業範囲に関する共通ルール |
 | `modules/opencode/prompts/spec.md` | 対話・計画・確認・委譲を担当する `spec` のプロンプト |
 | `modules/opencode/prompts/plan_review.md` | 計画・設計・重要な実装変更を確認する `plan_review` のプロンプト |
+| `modules/opencode/prompts/explore.md` | 深い調査専用に再定義した `explore` のシステムプロンプト |
 | `modules/opencode/prompts/output-format.md` | 共通の STATUS、summary、findings、validation、impact と証拠の報告規則 |
 | `opencode.json` | このリポジトリで使うスキルの許可 |
 
 `spec` と `plan_review` の指示は英語で記述します。ユーザー向けの計画・質問・報告は `spec` が日本語で行います。組み込みサブエージェントへは委譲時に必要な証拠と報告内容を指定します。
 
-共通出力形式は `output-format.md` の一箇所で管理し、`modules/opencode/default.nix` が配置先の `AGENTS.md` に結合します。v2 はグローバルな `AGENTS.md` をシステムプロンプトに追加するため、組み込みの `general` と `explore` の標準プロンプトを保ちながら、同じ出力形式を共有できます。独自エージェントの `system` へ出力形式を重複して埋め込みません。
+共通出力形式は `output-format.md` の一箇所で管理し、`modules/opencode/default.nix` が配置先の `AGENTS.md` に結合します。v2 はグローバルな `AGENTS.md` をシステムプロンプトに追加するため、組み込みの `general` は標準プロンプトを保ち、`explore` は `system` を上書きしつつ、どちらも同じ出力形式を共有できます。独自エージェントの `system` へ出力形式を重複して埋め込みません。
 
-推論設定は `providers.nix` の `<provider>.models.<model>.variants` に揃え、各 variant の `id` と `settings.reasoningEffort` を同じ値にします。モデル一覧の対応値に合わせて、GLM と DeepSeek V4.1 Flash は `low`、`high`、`max`、Qwen3.8 Flash は `low`、`medium`、`xhigh`、Luna は `none`、`low`、`medium`、`high`、`xhigh`、`max` を定義します。DeepSeek と Qwen のモデル ID はそれぞれ `opencode-go/deepseek-v4.1-flash` と `opencode-go/qwen3.8-flash` です。`spec` は `#medium`、`general` と `plan_review` は `#max` を明示して選択します。別の強度を選ぶ場合はエージェントのモデル指定を `#low` などに変更します。agent の旧 `reasoningEffort` や、実行時に送信されない `request.body` には置きません。
+推論設定は `providers.nix` の `<provider>.models.<model>.variants` に揃え、各 variant の `id` と `settings.reasoningEffort` を同じ値にします。モデル一覧の対応値に合わせて、GLM と DeepSeek V4.1 Flash は `low`、`high`、`max`、Qwen3.8 Flash は `low`、`medium`、`xhigh`、Luna は `none`、`low`、`medium`、`high`、`xhigh`、`max`、StepFun 無料枠（モデル ID `opencode/step-5-preview-free`）は `low`、`medium`、`high` を定義します。DeepSeek と Qwen のモデル ID はそれぞれ `opencode-go/deepseek-v4.1-flash` と `opencode-go/qwen3.8-flash` です。`spec` は `#medium`、`general` と `plan_review` は `#max`、`explore` は `#high` を明示して選択します。別の強度を選ぶ場合はエージェントのモデル指定を `#low` などに変更します。agent の旧 `reasoningEffort` や、実行時に送信されない `request.body` には置きません。
 
 [OpenCode Go](https://opencode.ai/docs/go/#how-it-works) の `opencode-go/mimo-v2.6-flash` と `opencode-go/mimo-v2.6-pro` も `providers.nix` に登録します。現時点の Go のモデル一覧では両モデルの `reasoning_options` が空のため、`variants = [ ];` としてカタログの既定設定を使用します。選択時は `#max` などを付けずにモデル ID を指定します。
 
