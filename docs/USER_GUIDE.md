@@ -187,6 +187,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 | `modules/opencode/AGENTS.md` + `modules/opencode/prompts/output-format.md` | `~/.config/opencode/AGENTS.md` |
 | `modules/opencode/plugins/spec-question-guard.js` | `~/.config/opencode/plugins/spec-question-guard.js` |
 | `modules/opencode/plugins/action-drift-monitor.js` | `~/.config/opencode/plugins/action-drift-monitor.js`（`@BASELINE_ACTIONS@` を `actions.nix` の既知 action リストで置換して配置） |
+| `modules/opencode/plugins/nix-verify-gate.js` | `~/.config/opencode/plugins/nix-verify-gate.js` |
 | `modules/opencode/cli.nix` | `~/.config/opencode/cli.json`（`builtins.toJSON` で生成） |
 
 これらの配置は `modules/opencode/default.nix` に定義されています。`spec-question-guard.js` は `spec` の `question` 呼び出しを監視し、`plan_review` が一度でも完了結果を返した後は最新の完了結果を権威として扱います。最新の完了結果が `STATUS: COMPLETE` の間のみ、日本語の実装計画（見出し契約に適合するテキストのみ・ツールなしのメッセージ）の提示を検出するまで `question` を拒否します。最新の完了結果が `COMPLETE` 以外の場合やレビュー未完了の段階は許可し、ガード内部エラーと解析不能な完了履歴のみフェイルクローズドになります。他のエージェントやツールには干渉しません。
@@ -194,6 +195,8 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 `action-drift-monitor.js` は `permission.evaluate` だけをフックし、`actions.nix` の baseline に無い action の権限評価を `deny` に変えて日本語メッセージを返します（fail-closed）。既知の action には何もしません。セッション途中で ad-hoc に許可へ切り替えることはできず、baseline の更新は「4.5 アクション空間のドリフト検出」の手順（承認ゲート付き）に従います。
 
 端末 UI 設定の `~/.config/opencode/cli.json` は `modules/opencode/cli.nix` から Home Manager が生成・管理します。Home Manager が管理するようになった後は、アプリ内の TUI 設定変更（テーマピッカーや `/thinking` など）は永続化されない可能性があります。書き込みが失敗したり、管理されたリンクを通常ファイルへ置き換えたりする場合があり、その場合も次回の `home-manager switch` でリポジトリの内容に戻ります。設定を変更するときは `modules/opencode/cli.nix` を編集して switch してください。
+
+`nix-verify-gate.js` は Nix 検証の順序ガードです。エージェント自身の完了宣言（現在のターンのアシスタントテキスト先頭行が `STATUS: COMPLETE` で始まること）を起点に、変更を含むチェックアウトのルートで `nix fmt` → `nix run home-manager -- build --flake .#koki` を完全一致のベアな単一コマンドとして成功させた証拠が揃うまで後続ステージを拒否し、欠けている前提と次に実行すべきコマンドを日本語で示します。`env` や `&`、`bash -c`、`&&` 連結などのラップ・複合形式は証拠にならず拒否されます。switch として受理されるのは `nix run home-manager -- switch --flake .#koki` と `home-manager switch --flake .#koki` の 2 形式のみで、いずれも検証対象 `.#koki` を固定します（`--flake` のない `home-manager switch` は対象未固定として拒否されます）。メインチェックアウト `/Users/koki/.dotfiles` のルート・branch `main` で同一セッション中に fmt と build の証拠が揃っている場合のみ許可候補となり、常に人間の承認（ask）に強制されます。人間の承認後も、実行直前にルートと branch を再確認し、成立しない場合は switch の起動を中止します（唯一のコマンド書き換えを伴う実行境界インターロック）。ガードは試行の監視のみで実行は強制せず、認識した変更操作（`rm`・`sed -i`・`git checkout`/`merge`/`restore`/`revert`/`switch`・`worktree` など）や `nix fmt` の再実行、編集系ツールの使用でセッションの検証証拠は保守的に破棄されます。
 
 設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json`、`AGENTS.md`、`cli.json`、`plugins/action-drift-monitor.js` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
 
