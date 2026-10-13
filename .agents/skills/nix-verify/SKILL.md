@@ -7,39 +7,17 @@ description: Use after modifying Nix, flake, Home Manager, package, module, or N
 
 Use this skill whenever a task changes Nix code or files consumed by Nix in this repository (`/Users/koki/.dotfiles`), including `flake.nix`, `flake.lock`, `home.nix`, package modules, Home Manager settings, and Nix-managed config sources.
 
-The `nix-verify-gate` plugin (deployed to `~/.config/opencode/plugins/nix-verify-gate.js`) enforces this policy during tool calls. It does not run anything for you: it denies attempts that skip a stage and prints the exact next command in Japanese. Follow the order below.
+The `nix-verify-gate` plugin enforces the verification order during tool calls and prints guidance for recognized stage denials. The declaration in step 3 is a gate signal that unlocks the verification stages; it is not the final report. Give the final completion report only after verification passed or a failure has been recorded as described in the Reporting section.
 
 ## Required Policy
 
-Run every verification command from the checkout root that contains the change, each as one bare, single, foreground command.
+Run verification from the root of the checkout that contains the change, each stage as one bare, single, foreground command.
 
-1. Inspect the change scope.
-   - Check the working tree before and after edits.
-   - If a newly created file is imported by a flake or module, make sure it is visible to Nix. In git flakes, untracked imported files can break evaluation; run `git add <path>` for new Nix-consumed files early and explain the constraint when staging is not appropriate.
-
+1. Inspect the change scope: check the working tree before and after edits. In git flakes, newly created Nix-consumed files must be staged early (`git add <path>`) before evaluation, or the constraint explained.
 2. Implement the change fully before verification.
-
-3. Declare completion as your own assistant text whose first non-empty line starts with:
-
-   ```text
-   STATUS: COMPLETE
-   ```
-
-   - Emit the declaration in the current turn before running verification. The gate unlocks when the line starts with `STATUS: COMPLETE`; details may follow on the same line or on later lines.
-   - A `STATUS: COMPLETE` reported by a subagent does not unlock the gate, and neither do tool outputs or mid-text citations. The check looks only at the first line of your own assistant text after the last user message.
-
-4. Run the verification pipeline in order:
-   - Step 1: `nix fmt`
-   - Step 2: `nix run home-manager -- build --flake .#koki` (for this repository)
-
-   - Run both from the checkout root that contains the change, as bare single commands. The gate accepts only the exact strings `nix fmt` and `nix run home-manager -- build --flake .#koki`; wrappers and compounds (`env`, `&`, `bash -c`, `&&` chains, pipes, redirects) are denied and never count as evidence.
-   - For other repos, use the closest equivalent such as `nix flake check`, `nix build`, or the project’s documented Home Manager/NixOS build command.
-   - If `nix fmt` fails, fix the formatting problem and re-run `nix fmt` until it exits 0; the gate requires successful fmt evidence before the build stage for this repository. For other repositories, record the failure and continue to the equivalent check when possible.
-
-5. Verify generated or managed outputs when relevant.
-   - If Nix generates a config file, inspect the generated result rather than assuming the attrset rendered correctly.
-   - For this repo’s opencode config, check `result/home-files/.config/opencode/opencode.json` after a Home Manager build when opencode settings or prompts changed.
-
+3. Declare completion: your own assistant text whose first non-empty line starts with `STATUS: COMPLETE`. Only this declaration in the current turn unlocks the gate; subagent reports, tool outputs, and citations do not.
+4. Verify in gate-enforced order: `nix fmt`, then `nix run home-manager -- build --flake .#koki`. If `nix fmt` fails, fix and re-run it until it exits 0 before the build stage. For other repositories, use the closest equivalent checks.
+5. Verify generated or managed outputs when relevant: inspect the build result (for this repo's opencode changes, `result/home-files/.config/opencode/opencode.json`) instead of assuming the attrset rendered correctly.
 6. Check the OpenCode action space when the OpenCode pin changes.
    - If `packages/opencode.nix` or an MCP provider command/pin in `modules/opencode/opencode.nix` changed, run from the repository root:
 
@@ -48,23 +26,7 @@ Run every verification command from the checkout root that contains the change, 
      ```
 
    - Exit 1 = drift, exit 2 = inconclusive. Follow the printed 修正手順 with its approval gates: baseline additions in `modules/opencode/actions.nix` are permission grants and need user approval, then rebuild, verify the candidate generation with `--home ./result`, and keep switch gated.
-
-7. Run activation (switch) only when all of the following hold:
-   - The user asked for the change to take effect now.
-   - You are working from the `/Users/koki/.dotfiles` root with branch `main` checked out.
-   - The `nix fmt` and `nix run home-manager -- build --flake .#koki` evidence ran at that root in this session.
-
-   The command is:
-
-   ```sh
-   nix run home-manager -- switch --flake .#koki
-   ```
-
-   - A linked worktree that merely carries `main` does NOT qualify. After merging a branch, produce fresh fmt and build evidence at the main checkout root before attempting switch.
-   - The gate accepts only `nix run home-manager -- switch --flake .#koki` and `home-manager switch --flake .#koki`; both pin the verified flake target `.#koki`. An unbound `home-manager switch` without `--flake` is denied as unbound.
-   - The gate always forces a human confirmation (`ask`) for switch; it never auto-approves activation.
-   - Even after human approval, the gate re-checks the main root and the branch immediately before the switch command spawns and aborts the switch if either check fails.
-   - If you are not at the main root on `main` (for example, a fix branch worktree), STOP after build and report that activation is deferred, including the post-merge commands to run at `/Users/koki/.dotfiles`.
+7. Activate (switch) only when the user asked for the change to take effect now, you are at the `/Users/koki/.dotfiles` root on branch `main`, and fmt and build evidence ran at that root in this session. After a merge — especially one performed outside gate-observed tool calls — re-run `nix fmt` and `nix run home-manager -- build --flake .#koki` at the main checkout before switching; merges and manual terminal use produce no evidence. Linked worktrees never qualify. Accepted forms are `nix run home-manager -- switch --flake .#koki` and `home-manager switch --flake .#koki`. The gate forces human confirmation, re-checks root and branch just before spawn, and denies recognized attempts that fail its declaration, evidence, root/branch, or command-form checks. On other branches, stop after build and report activation deferred with the post-merge commands.
 
 ## Reporting
 
