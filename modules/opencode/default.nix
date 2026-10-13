@@ -1,4 +1,12 @@
 { pkgs, ... }:
+let
+  actions = import ./actions.nix;
+  baselineActions =
+    actions.coreActions
+    ++ actions.opencodeActions
+    ++ actions.mcpToolActions.graphify
+    ++ actions.mcpToolActions.chromeDevtools;
+in
 {
   programs.opencode = {
     enable = true;
@@ -12,6 +20,12 @@
   };
   home.file.".config/opencode/plugins/spec-question-guard.js" = {
     source = ./plugins/spec-question-guard.js;
+    force = true;
+  };
+  home.file.".config/opencode/plugins/action-drift-monitor.js" = {
+    text = builtins.replaceStrings [ "@BASELINE_ACTIONS@" ] [ (builtins.toJSON baselineActions) ] (
+      builtins.readFile ./plugins/action-drift-monitor.js
+    );
     force = true;
   };
   home.file.".config/opencode/cli.json" = {
