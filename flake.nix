@@ -37,6 +37,13 @@
         {
           "ssh-bootstrap" = import ./packages/ssh-bootstrap.nix pkgs;
         }
+        // nixpkgs.lib.optionalAttrs (system == "aarch64-darwin") {
+          # Drift checker for the OpenCode permission action space. Darwin only,
+          # because the pinned OpenCode package is aarch64-darwin only.
+          opencodeActionCheck = pkgs.callPackage ./packages/opencode-action-check.nix {
+            opencode = pkgs.callPackage ./packages/opencode.nix { };
+          };
+        }
       );
 
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);

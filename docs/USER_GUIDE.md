@@ -104,26 +104,40 @@ OpenCode の設定は、単一の大きなプロンプトにすべてを詰め�
 
 #### 組み込み機能と Nix 宣言
 
-エージェントは `modules/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は Nix の共通定義を再利用します。
+エージェントは `modules/opencode/agents.nix` の `agents` に OpenCode v2 の構造で宣言します。`opencode.nix` はこれを import し、コマンド・MCP などの設定と結合します。Home Manager が最終的な JSON を生成します。モデル設定と順序付きの `permissions` は Nix に集約し、独自エージェントの `system` は `prompts/` の Markdown を `builtins.readFile` で読み込みます。YAML フロントマターは使いません。読み取り制限とスキル許可は、共通ガードブロックとケーパビリティオプションで表現します。
 
 組み込みの `general` はモデルと権限だけを調整し、標準動作を引き継ぎます。`explore` は組み込み subagent の `mode`、`description`、`system` を上書きし、深い調査（外部調査、アーキテクチャ理解、徹底したコードベース調査）専用にしています。浅い調査は `spec` が自身で行います。作業固有の制約、調査の深さ、成果物、検証方法は `spec` が委譲時に渡します。拡張が必要なときも、まず既存の組み込みエージェントで対応できるかを確認します。
 
 #### 権限の管理
 
-v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後に一致したルールが優先されます。組み込みの既定値、共通ルール、エージェントごとのルールの順に適用されます。シェル操作は `shell`、委譲は `subagent` です。
+v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列で、最後に一致したルールが優先されます。同じ action の最後の一致が `resource: "*"` の `deny` になると、そのツールはプロバイダーへのリクエストから丸ごと除外されます（Zen の無料モデルでは 403 を招きます）。そのため `shell`・`read`・`glob`・`grep` は、各エージェントで最後の一致がスコープ付きルール（ガードや個別 allow）になるように構成しています。
 
-権限定義は `modules/opencode/permissions.nix` の関数に集約し、`agents.nix` では `mkPermissions "global"` や `mkPermissions "spec"` のように名前を指定します。各プロファイルは、OpenCode V2 の JSONC と同じ `{action, resource, effect}` リテラルの順序付き配列として直接記述します。最後に一致したルールが優先されるため、記述した順序がそのまま適用順序になります。
+権限は `modules/opencode/permissions.nix` の `mkPermissions` に集約し、`agents.nix` では action ごとのケーパビリティで指定します。インターフェースは次のとおりです。
 
-共通ルールで機密ファイルの読み取りを制限し、危険なコマンドの拒否、push や環境切り替え時の確認を維持します。シェルの拒否パターンは完全なサンドボックスではありません。調査・レビュー役は編集ツールとプロンプトによる動作上の読み取り専用方針で境界を作り、シェルは共通ガード下で調査に限定して扱います（エージェント別の実際の可否は下表の通り）。
+- 必須: `shell`、`read`、`glob`、`grep`、`edit`、`question`、`externalDirectory`、`webfetch`、`websearch`、`opencodeTools`（指定漏れは評価エラー）。
+- 省略可能（既定 `"deny"`）: `subagent`、`skill`、`execute`、`graphify`、`chromeDevtools`。
+- 値: `"allow"`、`"deny"`、`"inherit"`。`shell` と `read` だけは `"guarded"` も受け付けます。
+- `subagent` と `skill` は許可名の非空リストも受け取ります（`"allow"` は指定できません）。
 
-| エージェント | ファイル・シェル | MCP | 委譲 |
-| --- | --- | --- | --- |
-| `spec` | 読み取り・編集・シェルを拒否 | Graphify | `explore`、`general`、`plan_review` のみ |
-| `general` | 組み込みの実装権限と共通制限。外部ディレクトリは拒否 | Chrome DevTools、Graphify | 拒否 |
-| `explore` | 編集ツール拒否。調査用シェル（共通ガード下）・Web 調査・外部ディレクトリ読み取りを許可 | Graphify | 拒否 |
-| `plan_review` | deny-all で編集・Web を拒否。読み取り系ツールと調査用シェルは共通ガード下で許可し、プロンプトでシェルの実行を行わないことを指示 | Graphify | 拒否 |
+各値の意味は次のとおりです。
 
-グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration`、`playwright-cli` です。`explore` と `plan_review` ではスキルを拒否します。このリポジトリの `opencode.json` は `nix-verify` と `minimal-repository` を許可し、`spec` と `general` がリポジトリ固有の手順を利用できます。
+- `"allow"`: ワイルドカードの `{ action, "*", "allow" }` を出します。`shell`/`read` では直後に共通ガードが続きます。`opencodeTools`/`graphify`/`chromeDevtools` ではワイルドカード allow を出さず、`actions.nix` に列挙した既知ツールの完全名だけを allow します（closed-world）。
+- `"guarded"`: ガードのみを出し、ワイルドカード allow を出しません（`shell`/`read` のみ）。露出と実行制約だけを課し、許可は blanket deny や基盤レイヤの扱いに委ねます。
+- `"deny"`: `{ action, "*", "deny" }` を出します（MCP 系はワイルドカード deny）。
+- `"inherit"`: 何も出さず、`denyAll` の blanket deny または基盤・グローバル定義に従います。
+
+`read` に `"allow"`/`"guarded"` を指定したプロファイルには、OpenCode 組み込み既定と同じ `{ read, "*.env", "ask" }`、`{ read, "*.env.*", "ask" }`、`{ read, "*.env.example", "allow" }` を共通ガードの先頭で再掲します（R1′）。これにより、ワイルドカード allow が組み込みの ask を上書きせず、`config.env` のようなファイルは `ask` のままです。続く `secretReadGuards`（`.env`、`*.key`、`*.pem`、`id_rsa*` など）は具体的な deny を最後に置くため、`config.env.private.key` のような重なりは deny に解決します。R1′ により `spec` と `plan_review` は `config.env` 系が allow から ask へ引き締められ、`general` と `explore` は組み込み既定の ask が復元されました。
+
+共通ガードは全プロファイルに埋め込まれ、危険なコマンドの拒否・push や switch 前の確認・機密ファイルの読み取り制限を維持します。シェルの拒否パターンは完全なサンドボックスではありません。
+
+| エージェント | ファイル・シェル | MCP | スキル | 委譲 |
+| --- | --- | --- | --- | --- |
+| `spec` | 読み取り・シェルを許可（blanket deny 上のワイルドカード allow）、編集は拒否 | Graphify（完全名のみ） | 5 グローバル + リポジトリ固有（project 側で宣言） | `explore`、`general`、`plan_review` のみ |
+| `general` | 組み込みの実装権限 + 共通制限。外部ディレクトリは拒否 | Graphify / Chrome DevTools（完全名のみ） | 5 グローバル（リポジトリ固有スキルは closed-world により対象外） | 拒否 |
+| `explore` | 読み取り専用（シェルは guarded） | Graphify（完全名のみ） | 拒否 | 拒否 |
+| `plan_review` | 読み取り + guarded シェル。編集・質問は拒否 | Graphify（完全名のみ） | 拒否 | 拒否 |
+
+グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration`、`playwright-cli` です。このリポジトリの `opencode.json` は `nix-verify` と `minimal-repository` を追加で許可し、`spec` がリポジトリ固有の手順を利用できます。`general` は closed-world 化によりリポジトリ固有スキルの許可対象外になりました（R2′）。エージェント配列の `{ skill, "*", "deny" }` と名前 allow が project オーバーレイより後に適用されるためです。スキルは `SKILL.md` をパスとして読むだけなので、許可外スキルもファイルとしては存在し、読み取りは `read` 権限に従います。
 
 ### 4.2 エージェント構成
 
@@ -143,7 +157,10 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | ファイル | 役割 |
 | --- | --- |
 | `modules/opencode/agents.nix` | v2 のエージェント宣言、利用モデル、権限・プロンプト・プロバイダー設定の読み込み |
-| `modules/opencode/permissions.nix` | 共通・役割別の順序付き権限を生成する関数 |
+| `modules/opencode/actions.nix` | action 空間の単一情報源。`builtinPairs`（出典付き）、完全名の MCP allow-list、`ruleActions`、プラグインとチェッカーの baseline |
+| `modules/opencode/permissions.nix` | ケーパビリティオプションから共通・役割別の順序付き権限を生成する関数（R1′ の baseReadMirrors を含む） |
+| `modules/opencode/guards.nix` | 全プロファイル共通の危険コマンド・機密ファイル読み取りガード定義 |
+| `modules/opencode/plugins/action-drift-monitor.js` | 未知 action を fail-closed で拒否する監視プラグイン（配置時に baseline を埋め込み） |
 | `modules/opencode/providers.nix` | プロバイダーごとのモデル設定・推論設定・variant |
 | `modules/opencode/opencode.nix` | Nix 宣言の import、コマンド、MCP、監視対象などの設定 |
 | `modules/opencode/AGENTS.md` | 可読性・保守性と作業範囲に関する共通ルール |
@@ -151,7 +168,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | `modules/opencode/prompts/plan_review.md` | 計画・設計・重要な実装変更を確認する `plan_review` のプロンプト |
 | `modules/opencode/prompts/explore.md` | 深い調査専用に再定義した `explore` のシステムプロンプト |
 | `modules/opencode/prompts/output-format.md` | 共通の STATUS、summary、findings、validation、impact と証拠の報告規則 |
-| `opencode.json` | このリポジトリで使うスキルの許可 |
+| `opencode.json`（リポジトリ直下） | プロジェクト用オーバーレイ。`nix-verify` / `minimal-repository` の許可と `agents.spec` の追加許可 |
 
 `spec` と `plan_review` の指示は英語で記述します。ユーザー向けの計画・質問・報告は `spec` が日本語で行います。組み込みサブエージェントへは委譲時に必要な証拠と報告内容を指定します。
 
@@ -169,11 +186,57 @@ v2 の `permissions` は `action`、`resource`、`effect` の配列で、最後�
 | --- | --- |
 | `modules/opencode/AGENTS.md` + `modules/opencode/prompts/output-format.md` | `~/.config/opencode/AGENTS.md` |
 | `modules/opencode/plugins/spec-question-guard.js` | `~/.config/opencode/plugins/spec-question-guard.js` |
+| `modules/opencode/plugins/action-drift-monitor.js` | `~/.config/opencode/plugins/action-drift-monitor.js`（`@BASELINE_ACTIONS@` を `actions.nix` の既知 action リストで置換して配置） |
 | `modules/opencode/cli.nix` | `~/.config/opencode/cli.json`（`builtins.toJSON` で生成） |
 
-これらの配置は `modules/opencode/default.nix` に定義されています。`spec-question-guard.js` は `spec` の `question` 呼び出しを監視し、`plan_review` が一度でも完了結果を返した後は最新の完了結果を権威として扱います。最新の完了結果が `STATUS: COMPLETE` の間のみ、日本語の実装計画（見出し契約に適合するテキストのみ・ツールなしのメッセージ）の提示を検出するまで `question` を拒否します。最新の完了結果が `COMPLETE` 以外の場合やレビュー未完了の段階は許可し、ガード内部エラーと解析不能な完了履歴のみフェイルクローズドになります。他のエージェントやツールには干渉しません。端末 UI 設定の `~/.config/opencode/cli.json` は `modules/opencode/cli.nix` から Home Manager が生成・管理します。Home Manager が管理するようになった後は、アプリ内の TUI 設定変更（テーマピッカーや `/thinking` など）は永続化されない可能性があります。書き込みが失敗したり、管理されたリンクを通常ファイルへ置き換えたりする場合があり、その場合も次回の `home-manager switch` でリポジトリの内容に戻ります。設定を変更するときは `modules/opencode/cli.nix` を編集して switch してください。
+これらの配置は `modules/opencode/default.nix` に定義されています。`spec-question-guard.js` は `spec` の `question` 呼び出しを監視し、`plan_review` が一度でも完了結果を返した後は最新の完了結果を権威として扱います。最新の完了結果が `STATUS: COMPLETE` の間のみ、日本語の実装計画（見出し契約に適合するテキストのみ・ツールなしのメッセージ）の提示を検出するまで `question` を拒否します。最新の完了結果が `COMPLETE` 以外の場合やレビュー未完了の段階は許可し、ガード内部エラーと解析不能な完了履歴のみフェイルクローズドになります。他のエージェントやツールには干渉しません。
 
-設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json`、`AGENTS.md`、`cli.json` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
+`action-drift-monitor.js` は `permission.evaluate` だけをフックし、`actions.nix` の baseline に無い action の権限評価を `deny` に変えて日本語メッセージを返します（fail-closed）。既知の action には何もしません。セッション途中で ad-hoc に許可へ切り替えることはできず、baseline の更新は「4.5 アクション空間のドリフト検出」の手順（承認ゲート付き）に従います。
+
+端末 UI 設定の `~/.config/opencode/cli.json` は `modules/opencode/cli.nix` から Home Manager が生成・管理します。Home Manager が管理するようになった後は、アプリ内の TUI 設定変更（テーマピッカーや `/thinking` など）は永続化されない可能性があります。書き込みが失敗したり、管理されたリンクを通常ファイルへ置き換えたりする場合があり、その場合も次回の `home-manager switch` でリポジトリの内容に戻ります。設定を変更するときは `modules/opencode/cli.nix` を編集して switch してください。
+
+設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json`、`AGENTS.md`、`cli.json`、`plugins/action-drift-monitor.js` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
+
+### 4.5 アクション空間のドリフト検出
+
+OpenCode や MCP サーバーが更新されると、既知の action 名（許可リスト）と実際の action 空間がずれます。ずれは次の多層で閉じ込めます。
+
+| 変化 | 検出・防御 | 挙動 |
+| --- | --- | --- |
+| 新しい action がルール層に出現（組み込み・プラグイン・設定） | CHECK A（`opencode debug agents` の action 集合 vs `actions.nix`） | 追加 = exit 1。更新までは fail-closed で拒否 |
+| 既知 MCP サーバーに新しいツールが追加 | 完全名 allow-list（`actions.nix`）+ action-drift-monitor プラグイン + CHECK B（`tools/list` の実測） | プラグインが初回呼び出しを deny。CHECK B の追加検出で exit 1 |
+| 新しい組み込みツールで action がルールに現れない | CHECK A では列挙不能。プラグインが初回の権限評価で deny | 初回利用時に deny メッセージ → runbook で baseline 化 |
+| permission.assert を持たないゲート（`execute` 露出など） | 検出不能な残差として扱う | 変更時は手動レビュー |
+| MCP ツールの削除・改名 | CHECK B の削除/action 変更検出 | exit 1。上流削除かサーバー障害か区別できない場合は `opencode mcp list` とログで確認 |
+
+チェッカーは `nix run .#opencodeActionCheck` で実行します（flake パッケージ `packages/opencode-action-check.nix`、aarch64-darwin 限定、python3 と固定版 OpenCode を同梱）。主なオプションは `--home ./result`（候補 generation の隔離検証）、`--capture`（候補 baseline を stdout に出力）、`--skip-introspection`、`--mcp-timeout <秒>` です。終了コードは 0 = drift なし、1 = drift（追加・削除・action 変更）、2 = 判定保留（MCP 起動失敗・スキップなど。heuristic で 0/1 に丸めません）。
+
+#### 「AI での修正手順」
+
+```sh
+# 1. 現状把握（exit 1 = drift、exit 2 = 判定保留）
+nix run .#opencodeActionCheck
+
+# 2. 候補 baseline を取得（ファイルは書かない）
+nix run .#opencodeActionCheck -- --capture
+
+# 3. modules/opencode/actions.nix を更新（ruleActions / expectedRuleActions /
+#    mcpToolActions / builtinPairs）。追加項目はアクセス付与なのでユーザー承認が必須
+nix fmt
+nix run home-manager -- build --flake .#koki
+
+# 4. 候補 generation を検証（workdir は graphify-out があるリポジトリ実体を指定）
+nix run .#opencodeActionCheck -- --home ./result --workdir /Users/koki/.dotfiles
+
+# 5. switch はユーザーの明示依頼時のみ
+nix run home-manager -- switch --flake .#koki
+```
+
+修正手順の要点:
+
+- allow-list への追加はアクセス付与そのものです。ユーザー承認なしに baseline を広げないでください。
+- 削除項目は上流削除かサーバー障害かを区別できない場合、`opencode mcp list` と `~/.local/share/opencode/log` を確認してください。
+- decline や denial のメッセージには `nix run .#opencodeActionCheck` による確認と承認フローが示され、セッション途中の ad-hoc 承認はできません。
 
 公式仕様: [エージェント](https://opencode.ai/v2/docs/agents/)、[権限](https://opencode.ai/v2/docs/permissions/)、[共通指示](https://opencode.ai/v2/docs/instructions/)、[モデル](https://opencode.ai/v2/docs/models/)、[v1 からの移行](https://opencode.ai/v2/docs/migrate-v1/)。
 
@@ -231,6 +294,7 @@ playwright-cli install-browser
 | --- | --- |
 | `scripts/install.sh` | Nix の確認・導入、アカウント設定、SSH キーの準備、Home Manager の switch までを行うメインセットアップスクリプトです。 |
 | `scripts/migrate-legacy-links.sh` | 旧レイアウトの Git ignore と VS Code のシンボリックリンクを、switch 前に安全に移行するスクリプトです。 |
+| `scripts/check-opencode-actions.sh` | OpenCode の action 空間のドリフトチェッカー本体です。単体実行もできますが、通常は flake の `packages.opencode-action-check.nix` から `nix run .#opencodeActionCheck` で実行します（python3 と固定版 OpenCode を同梱）。 |
 
 メインスクリプトは zsh で実行します。
 
@@ -255,6 +319,7 @@ nix run home-manager -- switch --flake .#koki
 | --- | --- |
 | `packages/ssh-bootstrap.nix` | SSH キーの生成と管理を行う `ssh-bootstrap` パッケージを定義します。 |
 | `packages/opencode.nix` | OpenCode CLI 本体の固定バージョンを定義し、`modules/opencode/default.nix` から読み込みます。 |
+| `packages/opencode-action-check.nix` | action 空間のドリフトチェッカー `opencodeActionCheck` を定義します。`actions.nix` の baseline を焼き込み、aarch64-darwin 限定で公開します。 |
 | `packages/playwright-cli.nix` | `@playwright/cli` の固定バージョンを定義し、`modules/cli.nix` から読み込みます。 |
 | `modules/cli.nix` | Home Manager の `home.packages` に導入する CLI ツールを定義します。 |
 

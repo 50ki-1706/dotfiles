@@ -41,7 +41,16 @@ Run checks from `/Users/koki/.dotfiles`, the repository root.
    - If Nix generates a config file, inspect the generated result rather than assuming the attrset rendered correctly.
    - For this repo’s opencode config, check `result/home-files/.config/opencode/opencode.json` after a Home Manager build when opencode settings or prompts changed.
 
-5. Run activation only when the user asked for the change to take effect now.
+5. Check the OpenCode action space when the OpenCode pin changes.
+   - If `packages/opencode.nix` or an MCP provider command/pin in `modules/opencode/opencode.nix` changed, run from the repository root:
+
+     ```sh
+     nix run .#opencodeActionCheck
+     ```
+
+   - Exit 1 = drift, exit 2 = inconclusive. Follow the printed 修正手順 with its approval gates: baseline additions in `modules/opencode/actions.nix` are permission grants and need user approval, then rebuild, verify the candidate generation with `--home ./result`, and keep switch gated.
+
+6. Run activation only when the user asked for the change to take effect now.
     - For this repository (`/Users/koki/.dotfiles`), activation is:
 
      ```sh
