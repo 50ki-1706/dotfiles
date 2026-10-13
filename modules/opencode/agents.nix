@@ -20,7 +20,10 @@ in
       permissions = mkPermissions "general";
     };
     explore = {
-      model = "opencode/fledge-alpha-free#max";
+      mode = "subagent";
+      model = "opencode/step-5-preview-free#high";
+      description = "Deep-investigation subagent for external research, architecture understanding, and thorough codebase analysis; shallow lookups belong to spec.";
+      system = builtins.readFile ./prompts/explore.md;
       permissions = mkPermissions "explore";
     };
     plan_review = {
