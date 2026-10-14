@@ -65,7 +65,7 @@ in
       };
     };
     general = {
-      model = "grok-build-0.1";
+      model = "openai/gpt-6-luna#max";
       permissions = mkPermissions {
         denyAll = true;
         shell = "allow";
