@@ -66,7 +66,6 @@ in
       "high"
       "xhigh"
     ];
-    "grok-build-0.1".variants = mkVariants [];
-    
-  }
+    "grok-build-0.1".variants = mkVariants []; 
+  };
 }
