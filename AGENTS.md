@@ -3,6 +3,7 @@
 ```sh
 nix run home-manager -- switch --flake .#koki
 ```
+- 検証手順（宣言→fmt→build→main限定switch）は`nix-verify`スキルと`nix-verify-gate`プラグインが強制します。
 - コードベースは無駄がない実装を心がけて下さい。
 - ディレクトリ構造は複雑にならないよう意識して下さい。
 - 必ず将来性、拡張性を意識した実装計画を立てて下さい。
