@@ -4,7 +4,7 @@ in
 {
   "$schema" = "https://opencode.ai/config.json";
   default_agent = "spec";
-  model = "opencode-go/qwen3.8-flash#medium";
+  model = "xai/grok-4.7#high";
   providers = import ./providers.nix;
   permissions = mkPermissions {
     shell = "guarded";
@@ -32,7 +32,7 @@ in
   agents = {
     spec = {
       mode = "primary";
-      model = "opencode-go/qwen3.8-flash#medium";
+      model = "xai/grok-4.7#high";
       description = "Plans work, confirms the plan in Japanese, and delegates to built-in subagents.";
       system = builtins.readFile ./prompts/spec.md;
       permissions = mkPermissions {
@@ -65,7 +65,7 @@ in
       };
     };
     general = {
-      model = "opencode-go/deepseek-v4.1-flash#max";
+      model = "grok-build-0.1";
       permissions = mkPermissions {
         denyAll = true;
         shell = "allow";
@@ -117,7 +117,7 @@ in
     };
     plan_review = {
       mode = "subagent";
-      model = "openai/gpt-6-luna#max";
+      model = "openai/gpt-6.1-sol#xhigh";
       description = "Reviews plans, difficult design decisions, and consequential changes using read-only evidence.";
       system = builtins.readFile ./prompts/plan_review.md;
       permissions = mkPermissions {
