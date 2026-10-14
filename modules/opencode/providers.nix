@@ -8,21 +8,14 @@ let
     }) efforts;
 in
 {
-  # Fledge
-  opencode.models."fledge-alpha-free".variants = mkVariants [
-    "none"
-    "low"
-    "high"
-    "max"
-  ];
-
   # StepFun (OpenCode Zen free)
-  opencode.models."step-5-preview-free".variants = mkVariants [
-    "low"
-    "medium"
-    "high"
-  ];
-
+  opencode.models = {
+    "step-5-preview-free".variants = mkVariants [
+      "low"
+      "medium"
+      "high"
+    ];
+  };
   # OpenCode Go
   opencode-go.models = {
     "deepseek-v4.1-flash".variants = mkVariants [
@@ -46,12 +39,34 @@ in
   };
 
   # OpenAI
-  openai.models."gpt-6-luna".variants = mkVariants [
-    "none"
-    "low"
-    "medium"
-    "high"
-    "xhigh"
-    "max"
-  ];
+  openai.models = {
+    "gpt-6.1-sol".variants = mkVariants [
+      "none"
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
+    "gpt-6-luna".variants = mkVariants [
+      "none"
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
+  };
+  # xAI
+  xai.models = {
+    "grok-4.7".variants = mkVariants [
+      "none"
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+    ];
+    "grok-build-0.1".variants = mkVariants [];
+    
+  }
 }
