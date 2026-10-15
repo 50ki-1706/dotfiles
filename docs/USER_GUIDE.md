@@ -66,7 +66,7 @@ imports = [
 | `modules/vscode/` | VS Code の設定ファイルの配置を定義します。 |
 | `modules/opencode/` | OpenCode のパッケージ、エージェント設定、プロンプト、プラグイン配置を定義します。 |
 | `modules/skills/` | グローバルスキルの配置を定義します。 |
-| `hosts/` | ホスト固有の設定の入口です。必要に応じて `isDarwin` などの条件付きモジュールを追加します。 |
+| `hosts/` | `default.nix` は空の拡張点です。プラットフォーム差分は各ツールモジュールで `pkgs.stdenv.isDarwin` を使い、ホスト固有モジュールがある場合のみ import します。 |
 
 ### 3.2 設定の適用
 
@@ -137,7 +137,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 | `explore` | 読み取り専用（シェルは guarded） | Graphify（完全名のみ） | 拒否 | 拒否 |
 | `plan_review` | 読み取り + guarded シェル。編集・質問は拒否 | Graphify（完全名のみ） | 拒否 | 拒否 |
 
-グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration`、`playwright-cli` です。このリポジトリの `opencode.json` は `nix-verify` と `minimal-repository` を追加で許可し、`spec` がリポジトリ固有の手順を利用できます。`general` は closed-world 化によりリポジトリ固有スキルの許可対象外になりました（R2′）。エージェント配列の `{ skill, "*", "deny" }` と名前 allow が project オーバーレイより後に適用されるためです。スキルは `SKILL.md` をパスとして読むだけなので、許可外スキルもファイルとしては存在し、読み取りは `read` 権限に従います。
+グローバルなスキルの許可対象は `gh-cli`、`computer-use`、`orca-cli`、`orchestration`、`playwright-cli` です。このリポジトリの `opencode.json` は `nix-verify` を追加で許可し、`spec` がリポジトリ固有の手順を利用できます。`general` は closed-world 化によりリポジトリ固有スキルの許可対象外になりました（R2′）。エージェント配列の `{ skill, "*", "deny" }` と名前 allow が project オーバーレイより後に適用されるためです。スキルは `SKILL.md` をパスとして読むだけなので、許可外スキルもファイルとしては存在し、読み取りは `read` 権限に従います。
 
 ### 4.2 エージェント構成
 
@@ -168,7 +168,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 | `modules/opencode/prompts/plan_review.md` | 計画・設計・重要な実装変更を確認する `plan_review` のプロンプト |
 | `modules/opencode/prompts/explore.md` | 深い調査専用に再定義した `explore` のシステムプロンプト |
 | `modules/opencode/prompts/output-format.md` | 共通の STATUS、summary、findings、validation、impact と証拠の報告規則 |
-| `opencode.json`（リポジトリ直下） | プロジェクト用オーバーレイ。`nix-verify` / `minimal-repository` の許可と `agents.spec` の追加許可 |
+| `opencode.json`（リポジトリ直下） | プロジェクト用オーバーレイ。`nix-verify` の許可と `agents.spec` の追加許可 |
 
 `spec` と `plan_review` の指示は英語で記述します。ユーザー向けの計画・質問・報告は `spec` が日本語で行います。組み込みサブエージェントへは委譲時に必要な証拠と報告内容を指定します。
 
@@ -263,7 +263,7 @@ skills/<skill-name>/SKILL.md
 
 Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。リンクが作成済みであれば、リポジトリ内の `SKILL.md` を編集した内容がグローバルスキルへ即時反映されます。リンク自体の作成や再配置を変更した場合は、Home Manager の switch を再実行してください。
 
-リポジトリ固有のスキルは `.agents/skills/<skill-name>/SKILL.md` に配置します（現在は `nix-verify` と `minimal-repository` の 2 つ）。これらは `.gitignore` の例外設定でバージョン管理しますが、`~/.agents/skills` へのリンク対象外で、グローバルには配備されません。リポジトリ固有のスキルを追加する場合も同じ場所に配置します。
+リポジトリ固有のスキルは `.agents/skills/<skill-name>/SKILL.md` に配置します（現在は `nix-verify` のみです）。これらは `.gitignore` の例外設定でバージョン管理しますが、`~/.agents/skills` へのリンク対象外で、グローバルには配備されません。リポジトリ固有のスキルを追加する場合も同じ場所に配置します。
 
 グローバルに配備する新しいスキルを追加するときも、まずモデルや既存のエージェント設定で代替できないかを確認します。追加する場合は `skills/<skill-name>/SKILL.md` に、目的と実行方針を必要最小限で記述します。
 

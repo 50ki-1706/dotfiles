@@ -20,7 +20,7 @@ in
   programs.opencode = {
     enable = true;
     package = pkgs.callPackage ../../packages/opencode.nix { };
-    settings = import ./opencode.nix { };
+    settings = import ./opencode.nix;
   };
 
   home.file.".config/opencode/AGENTS.md" = {

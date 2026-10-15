@@ -2,14 +2,12 @@
   "$schema": "https://opencode.ai/config.json",
   "permissions": [
     { "action": "skill", "resource": "*", "effect": "deny" },
-    { "action": "skill", "resource": "nix-verify", "effect": "allow" },
-    { "action": "skill", "resource": "minimal-repository", "effect": "allow" }
+    { "action": "skill", "resource": "nix-verify", "effect": "allow" }
   ],
   "agents": {
     "spec": {
       "permissions": [
-        { "action": "skill", "resource": "nix-verify", "effect": "allow" },
-        { "action": "skill", "resource": "minimal-repository", "effect": "allow" }
+        { "action": "skill", "resource": "nix-verify", "effect": "allow" }
       ]
     }
   }

@@ -1,29 +1,29 @@
-{ pkgs, lib, ... }:
+{ lib, pkgs, ... }:
 {
   home.file.".config/helix/yazi-picker.sh" = {
     executable = true;
     text = ''
-      #!${pkgs.bash}/bin/bash
+      #!${lib.getExe pkgs.bash}
       set -euo pipefail
 
       tmp="''${TMPDIR:-/tmp}/yazi-chosen-$$"
       trap 'rm -f "$tmp"' EXIT
 
-      ${pkgs.yazi}/bin/yazi --chooser-file="$tmp"
+      ${lib.getExe pkgs.yazi} --chooser-file="$tmp"
 
       if [[ -s "$tmp" ]]; then
         paths="$(cat "$tmp")"
 
         if [[ "$paths" == search://* ]]; then
-          paths="$(printf '%s\n' "$paths" | ${pkgs.gnused}/bin/sed 's|search://[^/]*/||')"
+          paths="$(printf '%s\n' "$paths" | ${lib.getExe pkgs.gnused} 's|search://[^/]*/||')"
         fi
 
-        ${pkgs.zellij}/bin/zellij action toggle-floating-panes
-        ${pkgs.zellij}/bin/zellij action write 27
-        ${pkgs.zellij}/bin/zellij action write-chars ":open \"$paths\""
-        ${pkgs.zellij}/bin/zellij action write 13
+        ${lib.getExe pkgs.zellij} action toggle-floating-panes
+        ${lib.getExe pkgs.zellij} action write 27
+        ${lib.getExe pkgs.zellij} action write-chars ":open \"$paths\""
+        ${lib.getExe pkgs.zellij} action write 13
       else
-        ${pkgs.zellij}/bin/zellij action toggle-floating-panes
+        ${lib.getExe pkgs.zellij} action toggle-floating-panes
       fi
     '';
   };
@@ -34,7 +34,7 @@
     settings = {
       theme = "catppuccin_mocha";
       keys.normal."C-y" =
-        ":sh ${pkgs.zellij}/bin/zellij run -n Yazi -c -f -x 10%% -y 10%% --width 80%% --height 80%% -- ${pkgs.bash}/bin/bash ~/.config/helix/yazi-picker.sh";
+        ":sh ${lib.getExe pkgs.zellij} run -n Yazi -c -f -x 10%% -y 10%% --width 80%% --height 80%% -- ${lib.getExe pkgs.bash} ~/.config/helix/yazi-picker.sh";
       editor = {
         cursor-shape = {
           normal = "block";

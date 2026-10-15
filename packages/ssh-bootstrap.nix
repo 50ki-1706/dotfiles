@@ -1,9 +1,13 @@
-pkgs:
-pkgs.writeShellApplication {
+{
+  writeShellApplication,
+  coreutils,
+  openssh,
+}:
+writeShellApplication {
   name = "ssh-bootstrap";
   runtimeInputs = [
-    pkgs.coreutils
-    pkgs.openssh
+    coreutils
+    openssh
   ];
   text = ''
     set -euo pipefail
