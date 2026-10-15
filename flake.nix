@@ -71,7 +71,7 @@
               system = "aarch64-darwin";
               config.allowUnfree = true;
             };
-            isDarwin = pkgs.stdenv.isDarwin;
+            isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
           };
           modules = [
             ./home.nix
