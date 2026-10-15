@@ -6,6 +6,15 @@ let
     ++ actions.opencodeActions
     ++ actions.mcpToolActions.graphify
     ++ actions.mcpToolActions.chromeDevtools;
+  actionDriftMonitor = pkgs.writeTextFile {
+    name = "action-drift-monitor";
+    destination = "/action-drift-monitor.js";
+    text =
+      builtins.replaceStrings [ "@BASELINE_ACTIONS@" ] [ (builtins.toJSON baselineActions) ] (
+        builtins.readFile ./plugins/action-drift-monitor.js
+      )
+      + "\n// Resolved from a directory-resident store path.\n";
+  };
 in
 {
   programs.opencode = {
@@ -22,10 +31,13 @@ in
     source = ./plugins/spec-question-guard.js;
     force = true;
   };
+  # Do not use `home.file.text`: Home Manager emits a bare /nix/store/<hash>-*.js
+  # object, which the running OpenCode 2.0.22 service fails to resolve.
+  # The trailing generated comment is intentional: a later activation is not
+  # guaranteed to reuse the cached rejection. It does not prove the running
+  # service will recover.
   home.file.".config/opencode/plugins/action-drift-monitor.js" = {
-    text = builtins.replaceStrings [ "@BASELINE_ACTIONS@" ] [ (builtins.toJSON baselineActions) ] (
-      builtins.readFile ./plugins/action-drift-monitor.js
-    );
+    source = "${actionDriftMonitor}/action-drift-monitor.js";
     force = true;
   };
   home.file.".config/opencode/plugins/nix-verify-gate.js" = {
