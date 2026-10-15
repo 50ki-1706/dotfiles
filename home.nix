@@ -5,19 +5,19 @@
 }:
 {
   imports = [
-    ./modules/cli.nix
-    ./modules/mise.nix
-    ./modules/gh.nix
-    ./modules/ssh.nix
-    ./modules/fonts.nix
-    ./modules/helix.nix
-    ./modules/ghostty.nix
+    ./modules/cli
+    ./modules/mise
+    ./modules/gh
+    ./modules/ssh
+    ./modules/fonts
+    ./modules/helix
+    ./modules/ghostty
     ./modules/zellij
     ./modules/git
     ./modules/shell
     ./modules/vscode
     ./modules/opencode
-    ./modules/skills.nix
+    ./modules/skills
     ./hosts
   ];
 
