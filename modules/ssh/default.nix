@@ -9,7 +9,7 @@ let
       IdentitiesOnly = true;
       AddKeysToAgent = "yes";
     }
-    // lib.optionalAttrs pkgs.stdenv.isDarwin {
+    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
       UseKeychain = "yes";
     };
 in

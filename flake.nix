@@ -6,7 +6,8 @@
     nixpkgs-ollama.url = "github:nixos/nixpkgs/dfd9566f82a6e1d55c30f861879186440614696e";
     vite-plus.url = "github:ryoppippi/nix-vite-plus";
     home-manager = {
-      url = "github:nix-community/home-manager";
+      # stdenv.is* 非推奨対応を含む最小更新。最新版は programs.opencode など、この構成が使う他モジュールにも変更が及ぶため対象外。
+      url = "github:nix-community/home-manager/0668fdbc15bd602e463cab37ff64346021193652";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -71,7 +72,7 @@
               system = "aarch64-darwin";
               config.allowUnfree = true;
             };
-            isDarwin = pkgs.stdenv.isDarwin;
+            isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
           };
           modules = [
             ./home.nix
