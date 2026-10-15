@@ -1,4 +1,3 @@
-{ ... }:
 let
   mcpPath = "/Users/koki/.nix-profile/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 in

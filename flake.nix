@@ -21,6 +21,17 @@
       vite-plus,
     }:
     let
+      mkPkgs =
+        {
+          system,
+          source ? nixpkgs,
+          overlays ? [ ],
+        }:
+        import source {
+          inherit system overlays;
+          config.allowUnfree = true;
+        };
+      # ssh-bootstrap・formatter・appを両システムで公開し、homeConfigurationsはaarch64-darwin固定。
       forAllSystems = nixpkgs.lib.genAttrs [
         "aarch64-darwin"
         "x86_64-linux"
@@ -30,13 +41,10 @@
       packages = forAllSystems (
         system:
         let
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
+          pkgs = mkPkgs { inherit system; };
         in
         {
-          "ssh-bootstrap" = import ./packages/ssh-bootstrap.nix pkgs;
+          "ssh-bootstrap" = pkgs.callPackage ./packages/ssh-bootstrap.nix { };
         }
         // nixpkgs.lib.optionalAttrs (system == "aarch64-darwin") {
           # Drift checker for the OpenCode permission action space. Darwin only,
@@ -58,9 +66,8 @@
 
       homeConfigurations."koki" =
         let
-          pkgs = import nixpkgs {
+          pkgs = mkPkgs {
             system = "aarch64-darwin";
-            config.allowUnfree = true;
             overlays = [ vite-plus.overlays.default ];
           };
         in
@@ -68,11 +75,10 @@
           inherit pkgs;
           extraSpecialArgs = {
             # Intent: M5 Mac で動作する最新バージョン（0.20.3）に固定。これ以降のバージョンはバグで動作しない。
-            ollamaPkgs = import nixpkgs-ollama {
+            ollamaPkgs = mkPkgs {
               system = "aarch64-darwin";
-              config.allowUnfree = true;
+              source = nixpkgs-ollama;
             };
-            isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
           };
           modules = [
             ./home.nix

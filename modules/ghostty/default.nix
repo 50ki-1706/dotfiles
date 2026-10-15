@@ -1,7 +1,12 @@
-{ pkgs, config, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   ghosttyZellij = pkgs.writeShellScript "ghostty-zellij" ''
-    exec ${pkgs.zellij}/bin/zellij attach -c ghostty
+    exec ${lib.getExe pkgs.zellij} attach -c ghostty
   '';
 in
 {
