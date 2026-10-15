@@ -32,19 +32,19 @@ Home Manager の入口は `home.nix` です。主なモジュールを次のよ�
 
 ```nix
 imports = [
-  ./modules/cli.nix
-  ./modules/mise.nix
-  ./modules/gh.nix
-  ./modules/ssh.nix
-  ./modules/fonts.nix
-  ./modules/helix.nix
-  ./modules/ghostty.nix
+  ./modules/cli
+  ./modules/mise
+  ./modules/gh
+  ./modules/ssh
+  ./modules/fonts
+  ./modules/helix
+  ./modules/ghostty
   ./modules/zellij
   ./modules/git
   ./modules/shell
   ./modules/vscode
   ./modules/opencode
-  ./modules/skills.nix
+  ./modules/skills
   ./hosts
 ];
 ```
@@ -53,19 +53,19 @@ imports = [
 
 | モジュール | 主な責務 |
 | --- | --- |
-| `modules/cli.nix` | `home.packages` に導入する CLI ツールを定義します。 |
-| `modules/mise.nix` | mise の有効化と Zsh 連携のみを定義します。グローバル設定 `~/.config/mise/config.toml` は廃止済みで、グローバル CLI ツールは Nix 管理です。プロジェクト単位の `.mise.toml` によるピン留めは可能です。 |
-| `modules/gh.nix` | GitHub CLI の有効化と SSH プロトコル設定を定義します。 |
-| `modules/ssh.nix` | SSH の設定を定義します。 |
-| `modules/fonts.nix` | フォントと fontconfig の設定を定義します。 |
-| `modules/helix.nix` | Helix エディタの設定を定義します。 |
-| `modules/ghostty.nix` | Ghostty の設定を定義します。 |
+| `modules/cli/` | `home.packages` に導入する CLI ツールを定義します。 |
+| `modules/mise/` | mise の有効化と Zsh 連携のみを定義します。グローバル設定 `~/.config/mise/config.toml` は廃止済みで、グローバル CLI ツールは Nix 管理です。プロジェクト単位の `.mise.toml` によるピン留めは可能です。 |
+| `modules/gh/` | GitHub CLI の有効化と SSH プロトコル設定を定義します。 |
+| `modules/ssh/` | SSH の設定を定義します。 |
+| `modules/fonts/` | フォントと fontconfig の設定を定義します。 |
+| `modules/helix/` | Helix エディタの設定を定義します。 |
+| `modules/ghostty/` | Ghostty の設定を定義します。 |
 | `modules/zellij/` | Zellij のパッケージ、レイアウト、キーバインド設定を定義します。 |
 | `modules/git/` | Git の設定と Git 用の生設定ファイルの配置を定義します。 |
 | `modules/shell/` | Zsh とシェルエイリアスの設定を定義します。 |
 | `modules/vscode/` | VS Code の設定ファイルの配置を定義します。 |
 | `modules/opencode/` | OpenCode のパッケージ、エージェント設定、プロンプト、プラグイン配置を定義します。 |
-| `modules/skills.nix` | グローバルスキルの配置を定義します。 |
+| `modules/skills/` | グローバルスキルの配置を定義します。 |
 | `hosts/` | ホスト固有の設定の入口です。必要に応じて `isDarwin` などの条件付きモジュールを追加します。 |
 
 ### 3.2 設定の適用
@@ -316,15 +316,15 @@ nix run home-manager -- switch --flake .#koki
 
 ## 7. パッケージ管理
 
-`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。通常の CLI パッケージは `modules/cli.nix` の `home.packages` で定義し、`home.nix` の import を通じて Home Manager に読み込ませます。
+`packages/` には、Home Manager のセットアップフローから利用する Nix パッケージ定義を集約します。通常の CLI パッケージは `modules/cli/` の `home.packages` で定義し、`home.nix` の import を通じて Home Manager に読み込ませます。
 
 | ファイル | 役割 |
 | --- | --- |
 | `packages/ssh-bootstrap.nix` | SSH キーの生成と管理を行う `ssh-bootstrap` パッケージを定義します。 |
 | `packages/opencode.nix` | OpenCode CLI 本体の固定バージョンを定義し、`modules/opencode/default.nix` から読み込みます。 |
 | `packages/opencode-action-check.nix` | action 空間のドリフトチェッカー `opencodeActionCheck` を定義します。`actions.nix` の baseline を焼き込み、aarch64-darwin 限定で公開します。 |
-| `packages/playwright-cli.nix` | `@playwright/cli` の固定バージョンを定義し、`modules/cli.nix` から読み込みます。 |
-| `modules/cli.nix` | Home Manager の `home.packages` に導入する CLI ツールを定義します。 |
+| `packages/playwright-cli.nix` | `@playwright/cli` の固定バージョンを定義し、`modules/cli/` から読み込みます。 |
+| `modules/cli/` | Home Manager の `home.packages` に導入する CLI ツールを定義します。 |
 
 `packages/ssh-bootstrap.nix` は `flake.nix` の package/app として公開され、セットアップ時に `install.sh` から利用されます。SSH キーそのものをリポジトリへ保存するのではなく、必要な環境でこの SSH キーのプロビジョニング処理を実行する設計です。
 

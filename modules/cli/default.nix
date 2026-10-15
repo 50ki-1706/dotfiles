@@ -14,7 +14,7 @@
     pkgs.vite-plus
     pkgs.uv
     pkgs.nodejs_24
-    (pkgs.callPackage ../packages/playwright-cli.nix { })
+    (pkgs.callPackage ../../packages/playwright-cli.nix { })
     ollamaPkgs.ollama
   ];
 }

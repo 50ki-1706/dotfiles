@@ -1,4 +1,11 @@
 let
+  commonSkills = [
+    "gh-cli"
+    "computer-use"
+    "orca-cli"
+    "orchestration"
+    "playwright-cli"
+  ];
   mkPermissions = import ./permissions.nix;
 in
 {
@@ -19,13 +26,7 @@ in
     opencodeTools = "inherit";
     subagent = "inherit";
     execute = "inherit";
-    skill = [
-      "gh-cli"
-      "computer-use"
-      "orca-cli"
-      "orchestration"
-      "playwright-cli"
-    ];
+    skill = commonSkills;
     graphify = "deny";
     chromeDevtools = "deny";
   };
@@ -52,13 +53,7 @@ in
           "general"
           "plan_review"
         ];
-        skill = [
-          "gh-cli"
-          "computer-use"
-          "orca-cli"
-          "orchestration"
-          "playwright-cli"
-        ];
+        skill = commonSkills;
         execute = "inherit";
         graphify = "allow";
         chromeDevtools = "inherit";
@@ -79,13 +74,7 @@ in
         websearch = "allow";
         opencodeTools = "allow";
         subagent = "deny";
-        skill = [
-          "gh-cli"
-          "computer-use"
-          "orca-cli"
-          "orchestration"
-          "playwright-cli"
-        ];
+        skill = commonSkills;
         execute = "allow";
         graphify = "allow";
         chromeDevtools = "allow";
