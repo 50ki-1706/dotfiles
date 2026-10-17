@@ -8,12 +8,52 @@ let
     }) efforts;
 in
 {
-  # StepFun (OpenCode Zen free)
+  # OpenCode Zen free
   opencode.models = {
-    "step-5-preview-free".variants = mkVariants [
+    # Reflection
+    "beam-free".variants = mkVariants [
       "low"
       "medium"
       "high"
+      "xhigh"
+      "max"
+    ];
+    # Stealth. Zen exposes no reasoning effort variants.
+    "big-pickle".variants = [ ];
+    # DeepSeek
+    "deepseek-v4.1-flash-free".variants = mkVariants [
+      "low"
+      "high"
+      "max"
+    ];
+    # ZhipuAI
+    "glm-5.3-flash-free".variants = mkVariants [
+      "low"
+      "high"
+      "max"
+    ];
+    # Meituan. Zen exposes a reasoning toggle, not effort values.
+    "longcat-2.5-preview-free".variants = [ ];
+    # Xiaomi. Zen exposes no reasoning effort variants.
+    "mimo-v2.6-flash-free".variants = [ ];
+    # NVIDIA. Ultra and Lightning expose no reasoning effort variants.
+    "nemotron-3-ultra-free".variants = [ ];
+    "nemotron-3.5-lightning-free".variants = [ ];
+    "nemotron-3.5-super-vl-free".variants = mkVariants [
+      "none"
+      "minimal"
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+    ];
+    # Stealth
+    "space-bunny-free".variants = mkVariants [
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
     ];
   };
   # OpenCode Go

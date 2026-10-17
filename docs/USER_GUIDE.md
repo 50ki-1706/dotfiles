@@ -145,7 +145,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 | --- | --- | --- | --- |
 | `spec` | 独自 primary（既定） | `opencode-go/qwen3.8-flash#medium` | 日本語での対話、計画、ユーザー確認、委譲 |
 | `general` | 組み込み subagent | `opencode-go/deepseek-v4.1-flash#max` | 実装・検証・承認済みのアーキテクチャ文書更新 |
-| `explore` | 組み込み subagent | `opencode/step-5-preview-free#high` | 深い調査（外部調査、アーキテクチャ理解、徹底したコードベース調査） |
+| `explore` | 組み込み subagent | `opencode/glm-5.3-flash-free#high` | 深い調査（外部調査、アーキテクチャ理解、徹底したコードベース調査） |
 | `plan_review` | 独自 subagent | `openai/gpt-6-luna#max` | 計画・設計相談・重要な実装変更のレビュー |
 
 `spec → explore / plan_review → ユーザー確認 → general` を基本とし、重要な変更は実装後にも `plan_review` で確認します。組み込みの `build` と `plan` はそのまま利用できます。旧 `executer` は `general`、旧 `deep_explore` と `internet_search` は `explore` に統合しました。
@@ -174,7 +174,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 
 共通出力形式は `output-format.md` の一箇所で管理し、`modules/opencode/default.nix` が配置先の `AGENTS.md` に結合します。v2 はグローバルな `AGENTS.md` をシステムプロンプトに追加するため、組み込みの `general` は標準プロンプトを保ち、`explore` は `system` を上書きしつつ、どちらも同じ出力形式を共有できます。独自エージェントの `system` へ出力形式を重複して埋め込みません。
 
-推論設定は `providers.nix` の `<provider>.models.<model>.variants` に揃え、各 variant の `id` と `settings.reasoningEffort` を同じ値にします。モデル一覧の対応値に合わせて、GLM と DeepSeek V4.1 Flash は `low`、`high`、`max`、Qwen3.8 Flash は `low`、`medium`、`xhigh`、Luna は `none`、`low`、`medium`、`high`、`xhigh`、`max`、StepFun 無料枠（モデル ID `opencode/step-5-preview-free`）は `low`、`medium`、`high` を定義します。DeepSeek と Qwen のモデル ID はそれぞれ `opencode-go/deepseek-v4.1-flash` と `opencode-go/qwen3.8-flash` です。`spec` は `#medium`、`general` と `plan_review` は `#max`、`explore` は `#high` を明示して選択します。別の強度を選ぶ場合はエージェントのモデル指定を `#low` などに変更します。agent の旧 `reasoningEffort` や、実行時に送信されない `request.body` には置きません。
+推論設定は `providers.nix` の `<provider>.models.<model>.variants` に揃え、各 variant の `id` と `settings.reasoningEffort` を同じ値にします。モデル一覧の対応値に合わせて、GLM と DeepSeek V4.1 Flash は `low`、`high`、`max`、Qwen3.8 Flash は `low`、`medium`、`xhigh`、Luna は `none`、`low`、`medium`、`high`、`xhigh`、`max` を定義します。OpenCode Zen の無料モデルは `opencode.models` に、各モデルが対応する reasoning effort だけを定義します。DeepSeek と Qwen のモデル ID はそれぞれ `opencode-go/deepseek-v4.1-flash` と `opencode-go/qwen3.8-flash` です。`spec` は `#medium`、`general` と `plan_review` は `#max`、`explore` は `#high` を明示して選択します。別の強度を選ぶ場合はエージェントのモデル指定を `#low` などに変更します。agent の旧 `reasoningEffort` や、実行時に送信されない `request.body` には置きません。
 
 [OpenCode Go](https://opencode.ai/docs/go/#how-it-works) の `opencode-go/mimo-v2.6-flash` と `opencode-go/mimo-v2.6-pro` も `providers.nix` に登録します。現時点の Go のモデル一覧では両モデルの `reasoning_options` が空のため、`variants = [ ];` としてカタログの既定設定を使用します。選択時は `#max` などを付けずにモデル ID を指定します。
 
