@@ -32,12 +32,13 @@ in
       "high"
       "max"
     ];
+    # TypeSafe. No catalog data on reasoning efforts.
+    "jev-1.13-free".variants = [ ];
     # Meituan. Zen exposes a reasoning toggle, not effort values.
     "longcat-2.5-preview-free".variants = [ ];
     # Xiaomi. Zen exposes no reasoning effort variants.
     "mimo-v2.6-flash-free".variants = [ ];
-    # NVIDIA. Ultra and Lightning expose no reasoning effort variants.
-    "nemotron-3-ultra-free".variants = [ ];
+    # NVIDIA. Lightning exposes no reasoning effort variants.
     "nemotron-3.5-lightning-free".variants = [ ];
     "nemotron-3.5-super-vl-free".variants = mkVariants [
       "none"
