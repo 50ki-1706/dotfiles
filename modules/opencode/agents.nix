@@ -82,7 +82,7 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "opencode/step-5-preview-free#high";
+      model = "opencode/glm-5.3-flash-free#high";
       description = "Deep-investigation subagent for external research, architecture understanding, and thorough codebase analysis; shallow lookups belong to spec.";
       system = builtins.readFile ./prompts/explore.md;
       permissions = mkPermissions {
