@@ -196,7 +196,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 
 `action-drift-monitor.js` は `permission.evaluate` だけをフックし、`actions.nix` の baseline に無い action の権限評価を `deny` に変えて日本語メッセージを返します（fail-closed）。既知の action には何もしません。セッション途中で ad-hoc に許可へ切り替えることはできず、baseline の更新は「4.5 アクション空間のドリフト検出」の手順（承認ゲート付き）に従います。
 
-モデル fallback は設定済みの順序どおりに、各モデルで communication failure が 3 回続いた後に次を試します。OpenCode の retry 判断は変更せず、OpenCode Go は使用しません。
+モデル fallback は設定済みの順序どおりに、provider.transport、provider.timeout、provider.internal、provider.rate-limit のいずれかが各モデルで 3 回続いた後に次を試します。OpenCode の retry 判断は変更せず、OpenCode Go は使用しません。
 
 端末 UI 設定の `~/.config/opencode/cli.json` は `modules/opencode/cli.nix` から Home Manager が生成・管理します。Home Manager が管理するようになった後は、アプリ内の TUI 設定変更（テーマピッカーや `/thinking` など）は永続化されない可能性があります。書き込みが失敗したり、管理されたリンクを通常ファイルへ置き換えたりする場合があり、その場合も次回の `home-manager switch` でリポジトリの内容に戻ります。設定を変更するときは `modules/opencode/cli.nix` を編集して switch してください。
 
