@@ -10,7 +10,7 @@ writeTextFile {
       [ "@POLICY_SOURCE@" "@FALLBACK_CONFIG@" ]
       [
         (builtins.readFile ./policy.js)
-        (builtins.toJSON (builtins.removeAttrs fallbackConfig [ "validate" ]))
+        (builtins.toJSON fallbackConfig)
       ]
       (builtins.readFile ./plugin.js)
     + "\n// Generated from the fallback policy and validated Nix configuration.\n";

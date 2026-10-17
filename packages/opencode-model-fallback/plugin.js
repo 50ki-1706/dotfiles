@@ -3,8 +3,7 @@
 const CONFIG = @FALLBACK_CONFIG@
 
 function messagesFromContext(context) {
-  if (Array.isArray(context)) return context
-  return Array.isArray(context?.messages) ? context.messages : []
+  return Array.isArray(context) ? context : []
 }
 
 function warning(action, error) {

@@ -244,6 +244,65 @@ test("compaction latches a pre-truncation success for the next failure", () => {
   assert.equal(next.requested, null)
 })
 
+test("compaction context failure clears the count and success latch", () => {
+  const state = {
+    ...createState(),
+    count: 2,
+    pendingTerminal: true,
+    successLatched: true,
+  }
+  const failed = reduceCompaction(state, { contextFailed: true })
+  assert.equal(failed.count, 0)
+  assert.equal(failed.pendingTerminal, false)
+  assert.equal(failed.successLatched, false)
+})
+
+test("a context failure after compaction latch counts once and consumes the latch", () => {
+  const chain = ["xai/grok-4.7#high", "openai/gpt-6-luna#max"]
+  const compacted = reduceCompaction(
+    { ...createState(), count: 2, lastFailureAt: 100 },
+    { messages: [{ type: "assistant", finish: "stop", time: { completed: 101 } }] },
+  )
+  assert.equal(compacted.successLatched, true)
+
+  const failed = failure(compacted, chain, { contextFailed: true, now: 102 })
+  assert.equal(failed.state.count, 1)
+  assert.equal(failed.state.successLatched, false)
+  assert.equal(failed.requested, null)
+})
+
+test("attempts 2, 3, and 4 count toward the next-model request without changing retry decisions", () => {
+  const chain = ["xai/grok-4.7#high", "openai/gpt-6.1-sol#high"]
+  let state = createState()
+  let result
+
+  for (const attempt of [2, 3, 4]) {
+    const event = {
+      model: chain[0],
+      error: communicationError,
+      attempt,
+      decision: { retry: false },
+    }
+    result = reduceFailure(state, {
+      event,
+      sessionModel: chain[0],
+      chain,
+      threshold,
+      now: 1500 + attempt,
+      contextMessages: [],
+    })
+    state = result.state
+    assert.equal(event.decision.retry, false)
+  }
+
+  assert.deepEqual(result.requested, {
+    index: 1,
+    model: { providerID: "openai", id: "gpt-6.1-sol", variant: "high" },
+  })
+  assert.equal("decision" in result, false)
+  assert.equal("decisionWrite" in result, false)
+})
+
 test("three terminal failures without a success signal request the next model", () => {
   const chain = ["xai/grok-4.7#high", "openai/gpt-6-luna#max"]
   let state = createState()

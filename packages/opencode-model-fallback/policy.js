@@ -108,7 +108,6 @@ export function reduceFailure(state, input) {
   if (!contextFailed && hasAssistantSuccess(contextMessages, next.lastFailureAt)) {
     next.count = 0
     next.pendingTerminal = false
-    next.successLatched = true
   }
 
   if (event.attempt === 2 && !next.pendingTerminal) next.count = 0

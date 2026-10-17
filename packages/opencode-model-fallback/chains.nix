@@ -37,37 +37,23 @@ let
       )
     );
   validModel = model: builtins.isString model && builtins.match modelPattern model != null;
-  build =
-    overrides:
+  validAgent =
+    name:
     let
-      lists = fallbackLists // overrides;
-      names = builtins.attrNames fallbackLists;
-      overrideNames = builtins.attrNames overrides;
-      validAgent =
-        name:
-        let
-          models = lists.${name};
-          primary = agentModels.${name}.model;
-        in
-        builtins.isList models
-        && builtins.length models <= 3
-        && unique models
-        && !(builtins.elem (canonicalModel primary) (map canonicalModel models))
-        && builtins.all validModel models;
-      valid = builtins.all validAgent names;
+      models = fallbackLists.${name};
+      primary = agentModels.${name}.model;
     in
-    assert builtins.all (name: builtins.elem name names) overrideNames;
-    assert valid;
-    {
-      inherit threshold;
-      agents = builtins.mapAttrs (name: fallbacks: {
-        primary = agentModels.${name}.model;
-        inherit fallbacks;
-      }) lists;
-    };
-  config = build { };
+    builtins.isList models
+    && builtins.length models <= 3
+    && unique models
+    && !(builtins.elem (canonicalModel primary) (map canonicalModel models))
+    && builtins.all validModel models;
 in
-config
-// {
-  validate = build;
+assert builtins.all validAgent (builtins.attrNames fallbackLists);
+{
+  inherit threshold;
+  agents = builtins.mapAttrs (name: fallbacks: {
+    primary = agentModels.${name}.model;
+    inherit fallbacks;
+  }) fallbackLists;
 }
