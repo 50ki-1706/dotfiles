@@ -30,6 +30,7 @@ in
     graphify = "deny";
     chromeDevtools = "deny";
   };
+  # Ordered fallback chains are validated against these primary models in packages/opencode-model-fallback/chains.nix.
   agents = {
     spec = {
       mode = "primary";

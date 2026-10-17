@@ -15,6 +15,7 @@ let
       )
       + "\n// Resolved from a directory-resident store path.\n";
   };
+  modelFallback = pkgs.callPackage ../../packages/opencode-model-fallback { };
 in
 {
   programs.opencode = {
@@ -29,6 +30,11 @@ in
   };
   home.file.".config/opencode/plugins/spec-question-guard.js" = {
     source = ./plugins/spec-question-guard.js;
+    force = true;
+  };
+  # Keep generated plugins directory-resident; OpenCode 2.0.22 cannot resolve a bare store-file source.
+  home.file.".config/opencode/plugins/model-fallback.js" = {
+    source = "${modelFallback}/model-fallback.js";
     force = true;
   };
   # Do not use `home.file.text`: Home Manager emits a bare /nix/store/<hash>-*.js
