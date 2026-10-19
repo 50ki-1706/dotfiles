@@ -145,7 +145,7 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 | --- | --- | --- | --- |
 | `spec` | 独自 primary（既定） | `opencode-go/qwen3.8-flash#medium` | 日本語での対話、計画、ユーザー確認、委譲 |
 | `general` | 組み込み subagent | `opencode-go/deepseek-v4.1-flash#max` | 実装・検証・承認済みのアーキテクチャ文書更新 |
-| `explore` | 組み込み subagent | `opencode/glm-5.3-flash-free#high` | 深い調査（外部調査、アーキテクチャ理解、徹底したコードベース調査） |
+| `explore` | 組み込み subagent | `opencode/minimax-m3.1-flash-free#high` | 深い調査（外部調査、アーキテクチャ理解、徹底したコードベース調査） |
 | `plan_review` | 独自 subagent | `openai/gpt-6-luna#max` | 計画・設計相談・重要な実装変更のレビュー |
 
 `spec → explore / plan_review → ユーザー確認 → general` を基本とし、重要な変更は実装後にも `plan_review` で確認します。組み込みの `build` と `plan` はそのまま利用できます。旧 `executer` は `general`、旧 `deep_explore` と `internet_search` は `explore` に統合しました。
