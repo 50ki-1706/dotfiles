@@ -38,6 +38,14 @@ in
     "longcat-2.5-preview-free".variants = [ ];
     # Xiaomi. Zen exposes no reasoning effort variants.
     "mimo-v2.6-flash-free".variants = [ ];
+    # MiniMax
+    "minimax-m3.1-flash-free".variants = mkVariants [
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
     # NVIDIA. Lightning exposes no reasoning effort variants.
     "nemotron-3.5-lightning-free".variants = [ ];
     "nemotron-3.5-super-vl-free".variants = mkVariants [
@@ -47,14 +55,6 @@ in
       "medium"
       "high"
       "xhigh"
-    ];
-    # Stealth
-    "space-bunny-free".variants = mkVariants [
-      "low"
-      "medium"
-      "high"
-      "xhigh"
-      "max"
     ];
   };
   # OpenCode Go
