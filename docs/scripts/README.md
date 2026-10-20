@@ -2,6 +2,8 @@
 
 ## 初期設定
 
+リポジトリを [対象環境](../introduction/README.md) の配置先に取得し、リポジトリルートで実行します。事前に Homebrew を導入し、Mac App Store にサインインしてください。`hosts/mac.nix` のローカル tap が参照する `/Users/koki/Dev/mywork/eigo-no-hanon/homebrew-tap` も必要です。
+
 ```sh
 zsh scripts/install.sh
 ```
@@ -19,6 +21,16 @@ zsh scripts/migrate-legacy-links.sh
 未認識の `/etc/bashrc`・`/etc/zshrc` は、対話時に退避の確認が出ます（既定は「いいえ」）。承認すると `*.before-nix-darwin` に退避され、元のパスは nix-darwin の設定に置き換わります。カスタマイズは退避先に残り、`*.local` は変更しません。非対話時は手動の `sudo mv` コマンドを表示して中止します。
 
 ## Git アカウント管理
+
+アカウントは Git 管理外の `accounts.csv` に定義します。形式は [accounts.csv.example](../../accounts.csv.example) を参照してください。初期設定では対話入力または既存ファイルを使い、Git の include 設定と追加アカウントの SSH キーを生成します。
+
+アカウント定義の変更だけを反映する場合は、リポジトリルートで次を実行します。
+
+```sh
+zsh -c 'source scripts/lib/accounts.sh; parse_accounts accounts.csv'
+```
+
+生成先は `~/.config/git/accounts/` と `~/.config/git/accounts.include` です。Nix はこれらを生成しません。`accounts.csv` が未作成・空・コメントのみの場合は生成済みのアカウント設定を削除します。SSH キーは削除しません。
 
 `agc` で、アカウント別の SSH キーと Git 設定を使ってクローンできます。
 
