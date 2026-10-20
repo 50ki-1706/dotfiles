@@ -19,23 +19,15 @@ let
     "json-ld"
     "nix"
   ];
+  typescriptLanguageServers = [
+    "typescript-language-server"
+    "tailwindcss-ls"
+  ];
   languageServerOverrides = {
-    javascript = [
-      "typescript-language-server"
-      "tailwindcss-ls"
-    ];
-    jsx = [
-      "typescript-language-server"
-      "tailwindcss-ls"
-    ];
-    typescript = [
-      "typescript-language-server"
-      "tailwindcss-ls"
-    ];
-    tsx = [
-      "typescript-language-server"
-      "tailwindcss-ls"
-    ];
+    javascript = typescriptLanguageServers;
+    jsx = typescriptLanguageServers;
+    typescript = typescriptLanguageServers;
+    tsx = typescriptLanguageServers;
     html = [
       "vscode-html-language-server"
       "tailwindcss-ls"
@@ -78,17 +70,15 @@ in
       };
     };
 
-    languages = {
-      language = map (
-        name:
-        {
-          inherit name;
-          auto-format = false;
-        }
-        // lib.optionalAttrs (builtins.hasAttr name languageServerOverrides) {
-          language-servers = languageServerOverrides.${name};
-        }
-      ) manualFormatLanguages;
-    };
+    languages.language = map (
+      name:
+      {
+        inherit name;
+        auto-format = false;
+      }
+      // lib.optionalAttrs (builtins.hasAttr name languageServerOverrides) {
+        language-servers = languageServerOverrides.${name};
+      }
+    ) manualFormatLanguages;
   };
 }

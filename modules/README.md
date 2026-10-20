@@ -25,7 +25,7 @@
 
 標準ピッカーは `Space e`（ファイルツリー）、`Space f`（ファイル）、`Space /`（全文検索）、`Space b`（バッファ）、`Space d`（診断）、`Space D`（ワークスペース診断）です。共通 LSP は Nix で用意します。プロジェクトの `.helix/languages.toml` で言語設定やサーバーを上書きできますが、ツール自体は導入されません。共通サーバーは自動起動することがあるため、プロジェクトの実行ファイルが必要な場合はプロジェクト環境から `hx` を起動してください。
 
-`html`、`css`、`scss`、`javascript`、`jsx`、`typescript`、`tsx`、`elm`、`go`、`gomod`、`gowork`、`python`、`toml`、`json`、`jsonc`、`json-ld`、`nix` の17言語は、保存時の自動整形が既定で無効です。`:fmt`（`:format` の別名）で手動整形できます。formatter と保存時整形はプロジェクトごとに設定できます。たとえば、プロジェクトが用意した Prettier を使う場合は、`.helix/languages.toml` に次のように記述します。
+[共通設定](helix/default.nix) の `manualFormatLanguages` にある言語は、保存時の自動整形が既定で無効です。`:fmt`（`:format` の別名）で手動整形できます。formatter と保存時整形はプロジェクトごとに設定できます。たとえば、プロジェクトが用意した Prettier を使う場合は、`.helix/languages.toml` に次のように記述します。
 
 ```toml
 [[language]]
