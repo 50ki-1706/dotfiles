@@ -1,4 +1,4 @@
-// Nix verification gate for the home-manager dotfiles repository.
+// Nix verification gate for the nix-darwin dotfiles repository.
 //
 // Policy enforced (see .agents/skills/nix-verify/SKILL.md): after the agent
 // declares completion, verification runs in strict order, each stage as one
@@ -6,9 +6,10 @@
 //
 //   1. `nix fmt`
 //   2. `nix run home-manager -- build --flake .#koki`
-//   3. `nix run home-manager -- switch --flake .#koki` only from the main
-//      checkout root /Users/koki/.dotfiles on branch main, and only after fmt
-//      and build evidence was produced at that root in the same session.
+//   3. `nix build .#darwinConfigurations.mac.system --out-link result-darwin`
+//   4. A canonical `darwin-rebuild switch` command only from the main checkout
+//      root /Users/koki/.dotfiles on branch main, after all three evidence
+//      stages were produced there in the same session.
 //
 // The gate steers the agent with denials instead of rewriting commands, with
 // exactly one exception: the execution-boundary interlock below.
@@ -20,15 +21,17 @@
 //   later lines. Tool parts, subagent outputs, and mid-text citations do not
 //   count.
 // - Stage permission attempts must be bare exact commands. Allowed forms:
-//   fmt = "nix fmt"; build = "nix run home-manager -- build --flake .#koki";
-//   switch = "nix run home-manager -- switch --flake .#koki" or
-//   "home-manager switch --flake .#koki" (both pin the verified flake target;
-//   an unbound `home-manager switch` without --flake is not accepted).
+//   fmt = "nix fmt"; HM build = "nix run home-manager -- build --flake .#koki";
+//   darwin build = "nix build .#darwinConfigurations.mac.system --out-link result-darwin";
+//   switch = "sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac"
+//   or "sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac".
+//   Legacy home-manager switches are denied with migration guidance.
 //   Wrapped or compound forms (env, &, bash -c, &&, pipes, redirects) are
 //   denied with the separate-command guidance and never count as evidence.
-// - Evidence is tied to (session, realpath of the checkout root): fmt and
-//   build must succeed at the root containing the change. Switch additionally
-//   requires evidence at the main checkout root and the call rooted there.
+// - Evidence is tied to (session, realpath of the checkout root), and records
+//   the branch at completion. Switch additionally requires all evidence at the
+//   main checkout root recorded on main, with the call rooted there while the
+//   live branch is still main.
 // - Any recognized mutation (rm/mv/cp/..., sed -i, perl -i, git mutations
 //   including worktree/clone/restore/switch/revert, file redirects) clears the
 //   whole session's evidence independently of stage matching. Edit-family tool
@@ -43,7 +46,7 @@
 // that the invocation cwd resolves to the realpath of /Users/koki/.dotfiles
 // and that the branch there is main. On mismatch the invocation command is
 // replaced with an echoing `false` so nothing is activated. This applies to
-// in-session switch attempts only and never touches any other command.
+// recognized switch attempts only and never touches any other command.
 //
 // Pinned runtime shape (verified; evidence preserved in .probe-shape/):
 // @opencode/client@2.0.22 dist/promise/generated/types.d.ts:3300
@@ -68,9 +71,9 @@
 //   permission evaluations, it cannot make the agent run a command. The
 //   create.before interlock is the only execution-boundary control.
 // - Guard, not lock: manual terminal use is out of scope. Non-canonical
-//   `home-manager switch` spellings are detected and forced to "ask"; exotic
-//   re-encodings depend on the resources the runtime scanner reports, which
-//   are captured from permission events at runtime.
+//   darwin-rebuild/nix-darwin and legacy home-manager switch attempts are
+//   detected and denied; exotic re-encodings depend on the resources the
+//   runtime scanner reports, which are captured from permission events.
 // - Classification is heuristic text matching and can false-positive, e.g.
 //   `echo "nix fmt"` counts as a fmt attempt, and any `>`/`>>` redirect to a
 //   target other than /dev/null counts as a mutation. The git mutation check
@@ -97,19 +100,35 @@ import path from "node:path"
 const MAIN_ROOT = "/Users/koki/.dotfiles"
 const BARE_FMT = "nix fmt"
 const BARE_BUILD = "nix run home-manager -- build --flake .#koki"
-const BARE_SWITCH = "nix run home-manager -- switch --flake .#koki"
+const BARE_DARWIN_BUILD = "nix build .#darwinConfigurations.mac.system --out-link result-darwin"
+const BARE_BOOTSTRAP_SWITCH =
+  "sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac"
+const BARE_DARWIN_SWITCH = "sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac"
 const BARE_STAGES = new Map([
   [BARE_FMT, "fmt"],
   [BARE_BUILD, "build"],
-  [BARE_SWITCH, "switch"],
-  ["home-manager switch --flake .#koki", "switch"],
+  [BARE_DARWIN_BUILD, "darwinBuild"],
+  [BARE_BOOTSTRAP_SWITCH, "switch"],
+  [BARE_DARWIN_SWITCH, "switch"],
+])
+const EVIDENCE_FIELDS = new Map([
+  [BARE_FMT, "fmtOk"],
+  [BARE_BUILD, "buildOk"],
+  [BARE_DARWIN_BUILD, "darwinBuildOk"],
 ])
 
 const STATUS_RE = /^STATUS: COMPLETE/
-const SWITCH_RE =
-  /(?:^|[\s;&|("'`(])(?:nix\s+run\s+home-manager\s+--\s+switch|home-manager\s+switch)(?:\s|$)/
+const SWITCH_EXECUTABLE_RE =
+  /(?:^|[\s;&|("'`(])(?:[^\s;&|"'`()<>]*\/)?(?:home-manager|darwin-rebuild)(?=$|[\s"'`])[^;&|\n]*?(?:^|[\s<>|;&])switch(?=$|[\s"'`<>;&|])/
+const HOME_MANAGER_SWITCH_RE =
+  /(?:^|[\s;&|("'`(])(?:[^\s;&|"'`()<>]*\/)?home-manager(?=$|[\s"'`])[^;&|\n]*?(?:^|[\s<>|;&])switch(?=$|[\s"'`<>;&|])/
+const NIX_COMMAND_START_RE = /(?:^|[\s;&|("'`(])nix\b/g
+const SWITCH_INSTALLABLE_RE = /\b(?:home-manager|darwin-rebuild|nix-darwin)\b/
+const HOME_MANAGER_INSTALLABLE_RE = /\bhome-manager\b/
 const FMT_RE = /(?:^|[\s;&|("'`(])nix\s+fmt\b/
 const BUILD_RE = /(?:^|[\s;&|("'`(])nix\s+run\s+home-manager\s+--\s+build\b/
+const DARWIN_BUILD_RE =
+  /(?:^|[\s;&|("'`(])nix\s+build\b[^;&|]*#darwinConfigurations\.mac\.system(?:\s|$)/
 const MUTATION_TOKEN_RE =
   /(?:^|[\s;&|("'`(])(?:rm|mv|cp|touch|tee|mkdir|rmdir|ln|truncate|dd|chmod|chown)(?:\s|$)/
 const INPLACE_EDIT_RE = /(?:^|[\s;&|("'`(])(?:sed|perl)\s+-[a-zA-Z]*i/
@@ -124,31 +143,40 @@ const CALL_TTL_MS = 5 * 60 * 1000
 const CALL_LIMIT = 256
 
 const DECLARE_MESSAGE = "先に実装完了宣言(先頭行 STATUS: COMPLETE)を出力してください。"
-const FMT_DENY_MESSAGE =
-  DECLARE_MESSAGE + "その後、単一コマンドとして `nix fmt` を実行できます。"
+const FMT_DENY_MESSAGE = `${DECLARE_MESSAGE}その後、単一コマンドとして \`${BARE_FMT}\` を実行できます。`
 const BUILD_DENY_MESSAGE =
-  DECLARE_MESSAGE +
-  "その後、このチェックアウトのルートで `nix fmt` → `nix run home-manager -- build --flake .#koki` を順に実行してください。"
+  `${DECLARE_MESSAGE}その後、このチェックアウトのルートで ` +
+  `\`${BARE_FMT}\` → \`${BARE_BUILD}\` を順に実行してください。`
 const BUILD_FMT_MESSAGE =
-  "検証には、このチェックアウトのルートで単一コマンドの `nix fmt` を成功させておく必要があります。" +
-  "`nix fmt` を実行してから `nix run home-manager -- build --flake .#koki` を実行してください。"
+  `検証には、このチェックアウトのルートで単一コマンドの \`${BARE_FMT}\` を成功させておく必要があります。` +
+  `\`${BARE_FMT}\` を実行してから \`${BARE_BUILD}\` を実行してください。`
+const DARWIN_BUILD_DENY_MESSAGE =
+  `${DECLARE_MESSAGE}その後、このチェックアウトのルートで ` +
+  `\`${BARE_FMT}\` → \`${BARE_BUILD}\` → \`${BARE_DARWIN_BUILD}\` を順に実行してください。`
+const DARWIN_BUILD_ORDER_MESSAGE =
+  `darwin 構成のビルド前に、このチェックアウトのルートで ` +
+  `\`${BARE_FMT}\` と \`${BARE_BUILD}\` を成功させてください。`
 const SWITCH_DENY_MESSAGE =
-  DECLARE_MESSAGE +
-  "その後、メインチェックアウト /Users/koki/.dotfiles のルートで `nix fmt` → `nix run home-manager -- build --flake .#koki` を順に実行してください。"
+  `${DECLARE_MESSAGE}その後、メインチェックアウト ${MAIN_ROOT} のルート・branch main で ` +
+  `\`${BARE_FMT}\` → \`${BARE_BUILD}\` → \`${BARE_DARWIN_BUILD}\` を順に実行してください。`
 const SWITCH_REVERIFY_MESSAGE =
-  "メインチェックアウト /Users/koki/.dotfiles のルートで `nix fmt` → `nix run home-manager -- build --flake .#koki` を順に再実行してください（マージ後のmainルートでの検証証拠が必要です）"
+  `メインチェックアウト ${MAIN_ROOT} のルート・branch main で ` +
+  `\`${BARE_FMT}\` → \`${BARE_BUILD}\` → \`${BARE_DARWIN_BUILD}\` を順に再実行してください（マージ後のmainルートでの検証証拠が必要です）`
 const SWITCH_IDENTITY_MESSAGE =
-  "switch は /Users/koki/.dotfiles のルート・branch main でのみ実行可能です。"
+  `darwin-rebuild switch は ${MAIN_ROOT} のルート・branch main でのみ実行可能です。`
 const SWITCH_ASK_MESSAGE =
-  "nix-verify-gate: 前提（宣言・fmt・build・main ルート同一性）確認済。最終は人間の承認が必要です。"
+  "nix-verify-gate: 前提（宣言・fmt・Home Manager build・darwin build・main ルート同一性）確認済。最終は人間の承認が必要です。"
+const LEGACY_SWITCH_MESSAGE =
+  `Home Manager の switch は廃止されました。nix-darwin の構成を検証し、\`${BARE_DARWIN_SWITCH}\` を使用してください。`
 const COMPOUND_MESSAGE =
   "検証ステージは単一のベアコマンドとして個別に実行してください。順序: 実装完了宣言(先頭行 STATUS: COMPLETE) → " +
-  "`nix fmt` → `nix run home-manager -- build --flake .#koki` → （メインチェックアウト /Users/koki/.dotfiles のルート・branch main でのみ）" +
-  "`nix run home-manager -- switch --flake .#koki`。"
+  `\`${BARE_FMT}\` → \`${BARE_BUILD}\` → \`${BARE_DARWIN_BUILD}\` → ` +
+  `（メインチェックアウト ${MAIN_ROOT} のルート・branch main でのみ）\`${BARE_BOOTSTRAP_SWITCH}\` ` +
+  `または \`${BARE_DARWIN_SWITCH}\`。`
 const ERROR_MESSAGE =
   "nix-verify-gate の評価に失敗したため、この検証ステップを拒否します。単一コマンドで順序どおりに再実行してください。"
 const NEUTRALIZE_COMMAND =
-  "echo '[nix-verify-gate] switch を実行時に中止: 承認後の実行直前に /Users/koki/.dotfiles ルート・branch main 判定が成立しませんでした' >&2; false"
+  `echo '[nix-verify-gate] darwin-rebuild switch を実行時に中止: 承認後の実行直前に ${MAIN_ROOT} ルート・branch main 判定が成立しませんでした' >&2; false`
 
 // Overridable seams for tests; production code only.
 export const deps = {
@@ -208,12 +236,13 @@ export default {
       try {
         if (event.tool !== "shell" || event.status !== "completed") return
         if (event.result?.metadata?.status === "running") return
-        const command = typeof event.input?.command === "string" ? event.input.command.trim() : ""
-        if (command !== BARE_FMT && command !== BARE_BUILD) return
+        const command = typeof event.input?.command === "string" ? event.input.command : ""
+        const evidenceField = EVIDENCE_FIELDS.get(command)
+        if (!evidenceField) return
         if (event.result?.metadata?.exit !== 0) return
         const realpathCwd = pendingCall(event)?.realpathCwd ?? (await resolveCwd(ctx, event))
         if (!realpathCwd) return
-        setEvidence(event.sessionID, realpathCwd, command === BARE_FMT ? "fmtOk" : "buildOk")
+        setEvidence(event.sessionID, realpathCwd, evidenceField, gitBranch(realpathCwd))
         deleteCall(event)
       } catch (error) {
         console.warn(`nix-verify-gate hook failed: ${errorMessage(error)}`)
@@ -268,6 +297,10 @@ async function applyPlan(event, plan, ctx) {
     deny(event, COMPOUND_MESSAGE)
     return
   }
+  if (plan.kind === "legacy-switch") {
+    deny(event, LEGACY_SWITCH_MESSAGE)
+    return
+  }
   if (plan.kind === "fmt") {
     if (await statusDeclared(ctx, event)) return
     deny(event, FMT_DENY_MESSAGE)
@@ -285,7 +318,23 @@ async function applyPlan(event, plan, ctx) {
     }
     return
   }
-  // Switch attempts: declaration, then main-root evidence, then identity.
+  if (plan.kind === "darwinBuild") {
+    if (!(await statusDeclared(ctx, event))) {
+      deny(event, DARWIN_BUILD_DENY_MESSAGE)
+      return
+    }
+    const realpathCwd = callEntry(event)?.realpathCwd
+    if (
+      !realpathCwd ||
+      !hasEvidence(event.sessionID, realpathCwd, "fmtOk") ||
+      !hasEvidence(event.sessionID, realpathCwd, "buildOk")
+    ) {
+      deny(event, DARWIN_BUILD_ORDER_MESSAGE)
+      return
+    }
+    return
+  }
+  // Switch attempts: declaration, all build evidence at main, then identity.
   if (!(await statusDeclared(ctx, event))) {
     deny(event, SWITCH_DENY_MESSAGE)
     return
@@ -293,14 +342,15 @@ async function applyPlan(event, plan, ctx) {
   const mainRoot = deps.realpath(MAIN_ROOT)
   if (
     !mainRoot ||
-    !hasEvidence(event.sessionID, mainRoot, "fmtOk") ||
-    !hasEvidence(event.sessionID, mainRoot, "buildOk")
+    !hasEvidenceOnBranch(event.sessionID, mainRoot, "fmtOk", "main") ||
+    !hasEvidenceOnBranch(event.sessionID, mainRoot, "buildOk", "main") ||
+    !hasEvidenceOnBranch(event.sessionID, mainRoot, "darwinBuildOk", "main")
   ) {
     deny(event, SWITCH_REVERIFY_MESSAGE)
     return
   }
   const entry = takeCallEntry(event)
-  if (!entry || entry.identityVerdict !== true) {
+  if (!entry || entry.identityVerdict !== true || !isMainRoot(entry.realpathCwd)) {
     deny(event, SWITCH_IDENTITY_MESSAGE)
     return
   }
@@ -308,14 +358,16 @@ async function applyPlan(event, plan, ctx) {
   event.message = SWITCH_ASK_MESSAGE
 }
 
-// Priority per string: switch > fmt/build stage > mutation. Stage patterns
-// run on the raw string and on its backslash-stripped fixpoint variant.
+// Priority per string: switch > fmt/build stage > mutation. Switch matching
+// also checks normalized quoting/backslashes; stage patterns use the raw string
+// and its backslash-stripped fixpoint variant.
 function classify(command) {
   if (typeof command !== "string" || command.trim() === "") return "none"
   const variants = [command, stripBackslashes(command)]
-  for (const variant of variants) if (SWITCH_RE.test(variant)) return "switch"
+  if (matchesSwitchText(command)) return "switch"
   for (const variant of variants) if (FMT_RE.test(variant)) return "fmt"
   for (const variant of variants) if (BUILD_RE.test(variant)) return "build"
+  for (const variant of variants) if (DARWIN_BUILD_RE.test(variant)) return "darwinBuild"
   if (isMutation(command)) return "mutation"
   return "none"
 }
@@ -325,7 +377,7 @@ function classify(command) {
 function isMutation(command) {
   if (typeof command !== "string") return false
   const trimmed = command.trim()
-  if (trimmed === BARE_FMT || trimmed === BARE_BUILD || trimmed === BARE_SWITCH) return false
+  if (BARE_STAGES.has(trimmed)) return false
   return [command, stripBackslashes(command)].some((variant) => mutationVariant(variant))
 }
 
@@ -372,7 +424,14 @@ function planFor(resources, rawCommand) {
       : stageResources.length === 1
         ? stageResources[0]
         : null
-  const stageKind = candidate === null ? undefined : BARE_STAGES.get(stripBackslashes(candidate).trim())
+  if (
+    candidate !== null &&
+    matchesHomeManagerSwitchText(candidate) &&
+    stageResources.length === 1
+  ) {
+    return { kind: "legacy-switch" }
+  }
+  const stageKind = candidate === null ? undefined : BARE_STAGES.get(candidate)
   if (!stageKind) return { kind: "compound" }
   if (stageResources.length !== 1) return { kind: "compound" }
   if (isMutation(candidate) || resources.some((resource) => isMutation(resource))) {
@@ -382,7 +441,7 @@ function planFor(resources, rawCommand) {
 }
 
 function isStage(kind) {
-  return kind === "switch" || kind === "fmt" || kind === "build"
+  return kind === "switch" || kind === "fmt" || kind === "build" || kind === "darwinBuild"
 }
 
 // True when an assistant record after the last user record starts (first
@@ -433,7 +492,12 @@ function hasEvidence(sessionID, realpathCwd, field) {
   return pipeline.get(sessionID)?.get(realpathCwd)?.[field] === true
 }
 
-function setEvidence(sessionID, realpathCwd, field) {
+function hasEvidenceOnBranch(sessionID, realpathCwd, field, branch) {
+  const evidence = pipeline.get(sessionID)?.get(realpathCwd)
+  return evidence?.[field] === true && evidence[`${field}Branch`] === branch
+}
+
+function setEvidence(sessionID, realpathCwd, field, branch) {
   if (!sessionID || !realpathCwd) return
   let roots = pipeline.get(sessionID)
   if (!roots) {
@@ -442,6 +506,7 @@ function setEvidence(sessionID, realpathCwd, field) {
   }
   const evidence = roots.get(realpathCwd) ?? {}
   evidence[field] = true
+  evidence[`${field}Branch`] = branch
   roots.set(realpathCwd, evidence)
 }
 
@@ -469,16 +534,50 @@ async function sessionDirectory(ctx, sessionID) {
 }
 
 function matchesSwitchText(command) {
+  return matchesSwitchTextWithPatterns(command, SWITCH_EXECUTABLE_RE, SWITCH_INSTALLABLE_RE)
+}
+
+function matchesHomeManagerSwitchText(command) {
+  return matchesSwitchTextWithPatterns(command, HOME_MANAGER_SWITCH_RE, HOME_MANAGER_INSTALLABLE_RE)
+}
+
+function matchesSwitchTextWithPatterns(command, executablePattern, installablePattern) {
   if (typeof command !== "string") return false
-  return SWITCH_RE.test(command) || SWITCH_RE.test(stripBackslashes(command))
+  return switchTextVariants(command).some(
+    (variant) =>
+      executablePattern.test(variant) || matchesNixRunSwitch(variant, installablePattern),
+  )
+}
+
+function switchTextVariants(command) {
+  const unescaped = stripBackslashes(command)
+  return [command, unescaped, unescaped.replaceAll(/["'`]/g, "")]
+}
+
+function matchesNixRunSwitch(command, installablePattern) {
+  for (const match of command.matchAll(NIX_COMMAND_START_RE)) {
+    const start = match.index + match[0].length
+    const remainder = command.slice(start)
+    const commandEnd = /[;&|\n]/.exec(remainder)?.index ?? remainder.length
+    const nixArguments = remainder.slice(0, commandEnd)
+    const run = /\brun\b/.exec(nixArguments)
+    if (!run) continue
+
+    const runArguments = nixArguments.slice(run.index + run[0].length)
+    const runTokens = runArguments.trim().split(/[\s<>|;&]+/).filter(Boolean)
+    const argumentSeparator = runTokens.indexOf("--")
+    const installableTokens =
+      argumentSeparator === -1 ? runTokens : runTokens.slice(0, argumentSeparator)
+    if (installablePattern.test(installableTokens.join(" ")) && runTokens.includes("switch")) {
+      return true
+    }
+  }
+  return false
 }
 
 function mainRootLive(cwd) {
   if (typeof cwd !== "string" || cwd === "") return false
-  const resolved = deps.realpath(cwd)
-  const mainRoot = deps.realpath(MAIN_ROOT)
-  if (!resolved || !mainRoot || resolved !== mainRoot) return false
-  return gitBranch(MAIN_ROOT) === "main"
+  return isMainRoot(deps.realpath(cwd))
 }
 
 function isMainRoot(realpathCwd) {
