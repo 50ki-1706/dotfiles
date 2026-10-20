@@ -1,75 +1,24 @@
 # dotfiles
 
-## 特徴
-- Nix、Home Manager、nix-darwinによる設定とアプリケーション管理
-- SSHキーとGit設定を分離した複数Gitアカウントの管理
-- Nixで管理されるユーザー設定（git global ignoreなど）をホームディレクトリにシンボリックリンクで配置
-## 使い方
+## What this is / isn’t
 
-`git clone`またはzipファイルを展開して、ローカルマシンにこのリポジトリを取得します。
+macOS の開発環境を Nix で管理する個人用 dotfiles。
 
-### 初期設定
+## What’s inside
 
-インストールスクリプトを実行して、Nix、Home Manager、Gitアカウントを設定します。
+- [シェル・エディタ・ターミナル・CLI の設定](modules/README.md)
+- [macOS・アプリの設定](hosts/README.md)
+- [複数の Git アカウント・SSH キーの管理](docs/scripts/README.md#git-アカウント管理)
+- [OpenCode ハーネス](docs/opencode/README.md)と[エージェント用スキル](skills/README.md)
+- [初期設定・移行・検証スクリプト](scripts/README.md)
 
-```sh
-./scripts/install.sh
-```
+## Installation
 
-リポジトリの構造、OpenCodeエージェントハーネス、設定管理の詳細は [docs/USER_GUIDE.md](docs/USER_GUIDE.md) を参照してください。
-
-### Gitアカウント管理
-
-`agc`を使用すると、ディレクトリに応じた適切なSSHキーとGit設定でリポジトリをクローンできます。
+このリポジトリを `~/.dotfiles` に取得し、実行します。
 
 ```sh
-Usage: agc [<dir>] <url> [<path>]
-dir: accounts.csv のディレクトリ名（例: work）。省略時はデフォルトアカウント
-url: SSH URL（git@... または ssh://... のみ対応）
-path: clone先（省略時は ~/Dev/<dir>/<repo名>、dir省略時は ~/Dev/<repo名>）
-相対パスはカレントディレクトリ基準で解決後、
-clone先ベース配下のみ許可。通常は省略を推奨。
+cd ~/.dotfiles
+zsh scripts/install.sh
 ```
 
-リポジトリをクローンした後、通常通り`git`コマンドを使用できます。ディレクトリに応じたSSHキーとGit設定が適用されます。
-
-## 変更適用方法
-
-詳細は [docs/USER_GUIDE.md](docs/USER_GUIDE.md) を参照してください。
-
-```sh
-sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac
-sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
-```
-
-初回の bootstrap は flake lock に固定された `darwin-rebuild` app を使い、ユーザー自身が実行します。以後は2行目のコマンドで設定を適用します。
-
-## トラブルシューティング
-
-### nixコマンドが見つからない場合
-
-macOSのアップデートなど、特定のタイミングで、nixで管理するアプリケーションが使用できなくなることがあります。
-その場合は、`scripts/install.sh` を再度実行してみてください。NixのインストールとHome Managerの設定が再度適用されます。
-
-## gitアカウントの確認
-
-```sh
-cat ~/.ssh/id_ed25519.pub
-cat ~/.ssh/id_ed25519_<dir>.pub
-```
-
-デフォルトアカウントの接続確認:
-
-```sh
-ssh -T git@github.com
-```
-
-追加アカウントの SSH コマンド単体での確認:
-
-```sh
-ssh -i ~/.ssh/id_ed25519_<dir> -o IdentitiesOnly=yes -T git@github.com
-```
-
-> [!NOTE]
-> `ssh -T git@github.com` はディレクトリに関係なく、常に SSH のデフォルト鍵で接続します。
-> 追加アカウントの鍵切り替えは Git の `includeIf gitdir` と `core.sshCommand` で行うため、実際の切り替え確認は `git push` や `git ls-remote` など Git 経由で行ってください。
+詳しい手順は [初期設定](docs/scripts/README.md#初期設定)、導入後の変更は [設定の適用](docs/home-manager/README.md#設定の適用) を参照してください。その他は [ドキュメント一覧](docs/README.md) にまとめています。

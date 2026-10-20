@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${0:A}")/.." && pwd)"
+SCRIPT_PATH="${(%):-%N}"
+REPO_ROOT="$(cd "$(dirname "${SCRIPT_PATH:A}")/.." && pwd)"
 
 . "${REPO_ROOT}/scripts/lib/accounts.sh"
 
@@ -89,6 +90,129 @@ cleanup_existing_nix_store_volume() {
   else
     echo "既存の Nix Store ボリュームを残したまま続行します。"
   fi
+}
+
+preflight_nix_darwin_etc() {
+  [[ "$(uname -s)" == "Darwin" ]] || return 0
+
+  local etc_root="${nix_darwin_etc_root:-/etc}"
+  local name
+  local file
+  local backup
+  local managed_target
+  local link_target
+  local diagnostic
+  local -i abort=0
+  local -i failed=0
+  local -i index
+  local -a needed=()
+  local -a diagnostics=()
+  local -a moved=()
+
+  [[ "$etc_root" == "/" ]] && etc_root=""
+
+  echo "== nix-darwin の /etc 設定事前確認 =="
+
+  # Classify both paths and backups before any mutation.
+  for name in bashrc zshrc; do
+    file="${etc_root}/${name}"
+    backup="${file}.before-nix-darwin"
+    managed_target="${etc_root}/static/${name}"
+    link_target=""
+
+    if [[ -L "$file" ]]; then
+      if link_target="$(readlink "$file" 2>/dev/null)" && [[ "$link_target" == "$managed_target" ]]; then
+        diagnostics+=("確認済み: ${file} は nix-darwin 管理のリンクです。")
+      elif [[ -n "$link_target" ]]; then
+        diagnostics+=("中止: ${file} のリンク先が nix-darwin 管理対象ではありません: ${link_target}")
+        abort=1
+      else
+        diagnostics+=("中止: ${file} のリンク先を読み取れません。")
+        abort=1
+      fi
+    elif [[ -f "$file" ]]; then
+      needed+=("$file")
+      if [[ -e "$backup" || -L "$backup" ]]; then
+        diagnostics+=("中止: ${file} のバックアップが既に存在します: ${backup}")
+        abort=1
+      else
+        diagnostics+=("移動対象: ${file} -> ${backup}")
+      fi
+    elif [[ -e "$file" ]]; then
+      diagnostics+=("中止: ${file} は通常ファイルまたは管理済みリンクではありません。")
+      abort=1
+    else
+      diagnostics+=("対象なし: ${file}")
+    fi
+  done
+
+  if (( abort != 0 )); then
+    echo "事前確認を中止しました。/etc の変更は行っていません。" >&2
+    for diagnostic in "${diagnostics[@]}"; do
+      echo "$diagnostic" >&2
+    done
+    return 1
+  fi
+
+  for diagnostic in "${diagnostics[@]}"; do
+    echo "$diagnostic"
+  done
+
+  (( ${#needed[@]} == 0 )) && return 0
+
+  if ! is_interactive; then
+    echo "非対話環境のため移動しません。必要な場合は次のコマンドを手動で実行してください:" >&2
+    for file in "${needed[@]}"; do
+      printf 'sudo mv -n %q %q\n' "$file" "${file}.before-nix-darwin" >&2
+    done
+    return 1
+  fi
+
+  if ! prompt_yes_no "カスタマイズは *.before-nix-darwin のバックアップにのみ残り、nix-darwin は現在の /etc/bashrc と /etc/zshrc を置き換えます。対象ファイルをバックアップへ移動しますか?" "n"; then
+    echo "移動を承認しなかったため、bootstrap を中止します。" >&2
+    return 1
+  fi
+
+  for file in "${needed[@]}"; do
+    backup="${file}.before-nix-darwin"
+    if [[ -e "$backup" || -L "$backup" ]]; then
+      echo "移動前にバックアップが作成されたため、上書きせず中止します: ${backup}" >&2
+      failed=1
+      break
+    fi
+    if ! sudo mv -n "$file" "$backup"; then
+      echo "移動に失敗しました: ${file}" >&2
+      failed=1
+      break
+    fi
+    if [[ -e "$file" || -L "$file" ]]; then
+      echo "バックアップが既に存在するため移動できませんでした: ${backup}" >&2
+      failed=1
+      break
+    fi
+    moved+=("$file")
+  done
+
+  if (( failed != 0 )); then
+    index=${#moved[@]}
+    while (( index > 0 )); do
+      file="${moved[index]}"
+      backup="${file}.before-nix-darwin"
+      if [[ -e "$file" || -L "$file" ]]; then
+        echo "ロールバック先が使用中のため復元しません。バックアップを保持しています: ${backup}（使用中のパス: ${file}）" >&2
+      elif sudo mv -n "$backup" "$file" && [[ ! -e "$backup" && ! -L "$backup" ]]; then
+        echo "ロールバックしました: ${backup} -> ${file}" >&2
+      elif [[ -e "$file" || -L "$file" ]]; then
+        echo "ロールバック先が使用中のため復元しません。バックアップを保持しています: ${backup}（使用中のパス: ${file}）" >&2
+      else
+        printf '手動で復元してください: sudo mv -n %q %q\n' "$backup" "$file" >&2
+      fi
+      index=$((index - 1))
+    done
+    return 1
+  fi
+
+  return 0
 }
 
 ensure_nix() {
@@ -237,6 +361,7 @@ ensure_default_ssh_key() {
   fi
 }
 
+if [[ "${ZSH_EVAL_CONTEXT:-}" == "toplevel" ]]; then
 ensure_nix
 
 echo ""
@@ -253,7 +378,11 @@ parse_accounts "$CSV_FILE"
 echo ""
 echo "== Nix 設定の同期 =="
 zsh "${REPO_ROOT}/scripts/migrate-legacy-links.sh" || {
-  echo "Legacy symlink migration failed; aborting before switch."
+  echo "Legacy symlink migration failed; aborting before switch." >&2
+  exit 1
+}
+preflight_nix_darwin_etc || {
+  echo "nix-darwin の /etc 事前確認に失敗したため、bootstrap を中止します。" >&2
   exit 1
 }
 sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run "${REPO_ROOT}#darwin-rebuild" -- switch --flake "${REPO_ROOT}#mac"
@@ -274,3 +403,4 @@ echo "公開鍵を GitHub の Settings > SSH and GPG keys に登録してくだ�
 echo "デフォルト鍵: cat ~/.ssh/id_ed25519.pub"
 echo "追加アカウント鍵: cat ~/.ssh/id_ed25519_<dir>.pub"
 echo "セットアップが完了しました。"
+fi
