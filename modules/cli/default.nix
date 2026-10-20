@@ -8,7 +8,7 @@
     pkgs.devenv
     pkgs.nixfmt
     pkgs.ripgrep
-    pkgs.yazi
+    pkgs.herdr
     pkgs.yq-go
     pkgs.claude-code
     pkgs.vite-plus

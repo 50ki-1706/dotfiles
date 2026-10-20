@@ -11,9 +11,8 @@
 | `gh/` | GitHub CLI・SSH 接続 |
 | `ssh/` | GitHub 用 SSH キー・macOS Keychain |
 | `fonts/` | Nerd Font・fontconfig・macOS アプリ用フォント |
-| `helix/` | Helix・Yazi ピッカー |
-| `ghostty/` | Ghostty・Zellij 起動 |
-| `zellij/` | Zellij のレイアウト・キー設定 |
+| `helix/` | Helix |
+| `ghostty/` | Ghostty・herdr セッション起動 |
 | `git/` | Git・共通 ignore |
 | `shell/` | Zsh・エイリアス・プロンプト |
 | `vscode/` | macOS 用 VS Code 設定・キーバインド |

@@ -5,8 +5,8 @@
   ...
 }:
 let
-  ghosttyZellij = pkgs.writeShellScript "ghostty-zellij" ''
-    exec ${lib.getExe pkgs.zellij} attach -c ghostty
+  ghosttyHerdr = pkgs.writeShellScript "ghostty-herdr" ''
+    exec ${lib.getExe pkgs.herdr} --session ghostty
   '';
 in
 {
@@ -14,7 +14,7 @@ in
     enable = true;
     package = pkgs.ghostty-bin;
     settings = {
-      command = "${ghosttyZellij}";
+      command = "${ghosttyHerdr}";
       font-family = "JetBrainsMono Nerd Font Mono";
     };
   };
