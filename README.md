@@ -1,7 +1,7 @@
 # dotfiles
 
 ## 特徴
-- Nix、Home Manager、Brewfileによるアプリケーション管理
+- Nix、Home Manager、nix-darwinによる設定とアプリケーション管理
 - SSHキーとGit設定を分離した複数Gitアカウントの管理
 - Nixで管理されるユーザー設定（git global ignoreなど）をホームディレクトリにシンボリックリンクで配置
 ## 使い方
@@ -38,8 +38,11 @@ clone先ベース配下のみ許可。通常は省略を推奨。
 詳細は [docs/USER_GUIDE.md](docs/USER_GUIDE.md) を参照してください。
 
 ```sh
-nix run home-manager -- switch --flake .#koki
+sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac
+sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
 ```
+
+初回の bootstrap は flake lock に固定された `darwin-rebuild` app を使い、ユーザー自身が実行します。以後は2行目のコマンドで設定を適用します。
 
 ## トラブルシューティング
 
