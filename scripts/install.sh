@@ -256,19 +256,19 @@ zsh "${REPO_ROOT}/scripts/migrate-legacy-links.sh" || {
   echo "Legacy symlink migration failed; aborting before switch."
   exit 1
 }
-nix run home-manager -- switch --flake "${REPO_ROOT}#koki"
+sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run "${REPO_ROOT}#darwin-rebuild" -- switch --flake "${REPO_ROOT}#mac"
 
 echo ""
-echo "opencode 本体と設定は Nix (home-manager switch) で管理されます。"
+echo "opencode 本体と設定は Nix (Home Manager) で管理されます。"
 
 echo ""
-echo "core.excludesfile の設定は Nix (home-manager switch) で管理されます。"
+echo "core.excludesfile の設定は Nix (Home Manager) で管理されます。"
 
 echo ""
-echo "VSCode 本体と拡張機能は Homebrew (Brewfile) で管理されます。"
+echo "Homebrew アプリと VS Code 拡張機能は nix-darwin (hosts/mac.nix) で管理されます。"
 
 echo ""
-echo "シェルエイリアスは Nix (home-manager switch) で管理されます。"
+echo "シェルエイリアスは Nix (Home Manager) で管理されます。"
 echo ""
 echo "公開鍵を GitHub の Settings > SSH and GPG keys に登録してください。"
 echo "デフォルト鍵: cat ~/.ssh/id_ed25519.pub"

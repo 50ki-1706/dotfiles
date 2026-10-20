@@ -8,6 +8,16 @@
     }
     {
       action = "shell";
+      resource = "sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac";
+      effect = "ask";
+    }
+    {
+      action = "shell";
       resource = "rm -rf *";
       effect = "deny";
     }

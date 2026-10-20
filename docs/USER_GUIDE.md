@@ -18,7 +18,7 @@ Home Manager を設定の中心に置き、`home.nix` を入口として各モ�
 | --- | --- |
 | `home.nix` | Home Manager 設定の入口です。`modules/` と `hosts/` を明示的に読み込みます。 |
 | `modules/` | ツールごとの Home Manager モジュールと、配置する生の設定ファイルを管理します。OpenCode のエージェント設定、プロンプトも含みます。 |
-| `hosts/` | ホストやプラットフォーム固有の設定を管理します。 |
+| `hosts/` | `mac.nix` は `flake.nix` からのみ読み込む nix-darwin Mac ホスト、`default.nix` は空の Home Manager 拡張点です。 |
 | `packages/` | Nix パッケージ定義と SSH キー管理用の定義を管理します。 |
 | `scripts/` | Nix の導入、初期セットアップ、旧シンボリックリンクの移行などのセットアップスクリプトを管理します。 |
 | `skills/` | OpenCode およびエージェントが利用するスキル定義を集約します（リポジトリ固有スキルは `.agents/skills/` 配下）。 |
@@ -66,17 +66,27 @@ imports = [
 | `modules/vscode/` | VS Code の設定ファイルの配置を定義します。 |
 | `modules/opencode/` | OpenCode のパッケージ、エージェント設定、プロンプト、プラグイン配置を定義します。 |
 | `modules/skills/` | グローバルスキルの配置を定義します。 |
-| `hosts/` | `default.nix` は空の拡張点です。プラットフォーム差分は各ツールモジュールで `pkgs.stdenv.isDarwin` を使い、ホスト固有モジュールがある場合のみ import します。 |
+| `hosts/` | `mac.nix` は nix-darwin の Mac ホスト定義として `flake.nix` からのみ import します。`default.nix` は空の Home Manager 拡張点です。 |
 
 ### 3.2 設定の適用
 
-リポジトリのルートで、次のコマンドを実行します。
+初回の macOS bootstrap は、flake.lock に固定された `darwin-rebuild` app を使ってユーザー自身が実行します。現在インストール済みの nix-verify-gate は初回 bootstrap を保護しません。
 
 ```sh
-nix run home-manager -- switch --flake .#koki
+sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac
 ```
 
-このコマンドは、flake の `homeConfigurations."koki"` を対象に Home Manager の設定をビルドし、現在のユーザー環境へ適用します。Nix コードを変更した場合は、変更内容を確認したうえでこのコマンドを実行してください。
+以後の適用は、メインチェックアウトで検証後に次のコマンドを使います。
+
+```sh
+sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
+```
+
+適用前の darwin 構成ビルドでは、Home Manager の `./result` を上書きしないよう専用の出力リンクを使います。
+
+```sh
+nix build .#darwinConfigurations.mac.system --out-link result-darwin
+```
 
 ### 3.3 主な機能
 
@@ -198,11 +208,13 @@ v2 の `permissions` は `action`、`resource`、`effect` の順序付き配列�
 
 モデル fallback は設定済みの順序どおりに、provider.transport、provider.timeout、provider.internal、provider.rate-limit のいずれかが各モデルで 3 回続いた後に次を試します。OpenCode の retry 判断は変更せず、OpenCode Go は使用しません。
 
-端末 UI 設定の `~/.config/opencode/cli.json` は `modules/opencode/cli.nix` から Home Manager が生成・管理します。Home Manager が管理するようになった後は、アプリ内の TUI 設定変更（テーマピッカーや `/thinking` など）は永続化されない可能性があります。書き込みが失敗したり、管理されたリンクを通常ファイルへ置き換えたりする場合があり、その場合も次回の `home-manager switch` でリポジトリの内容に戻ります。設定を変更するときは `modules/opencode/cli.nix` を編集して switch してください。
+端末 UI 設定の `~/.config/opencode/cli.json` は `modules/opencode/cli.nix` から Home Manager が生成・管理します。Home Manager が管理するようになった後は、アプリ内の TUI 設定変更（テーマピッカーや `/thinking` など）は永続化されない可能性があります。書き込みが失敗したり、管理されたリンクを通常ファイルへ置き換えたりする場合があり、その場合も次回の `darwin-rebuild switch` でリポジトリの内容に戻ります。設定を変更するときは `modules/opencode/cli.nix` を編集して switch してください。
 
-`nix-verify-gate.js` は Nix 検証の順序ガードです。エージェント自身の完了宣言（現在のターンのアシスタントテキスト先頭行が `STATUS: COMPLETE` で始まること）を起点に、変更を含むチェックアウトのルートで `nix fmt` → `nix run home-manager -- build --flake .#koki` を完全一致のベアな単一コマンドとして成功させた証拠が揃うまで後続ステージを拒否し、欠けている前提と次に実行すべきコマンドを日本語で示します。`env` や `&`、`bash -c`、`&&` 連結などのラップ・複合形式は証拠にならず拒否されます。switch として受理されるのは `nix run home-manager -- switch --flake .#koki` と `home-manager switch --flake .#koki` の 2 形式のみで、いずれも検証対象 `.#koki` を固定します（`--flake` のない `home-manager switch` は対象未固定として拒否されます）。メインチェックアウト `/Users/koki/.dotfiles` のルート・branch `main` で同一セッション中に fmt と build の証拠が揃っている場合のみ許可候補となり、常に人間の承認（ask）に強制されます。人間の承認後も、実行直前にルートと branch を再確認し、成立しない場合は switch の起動を中止します（唯一のコマンド書き換えを伴う実行境界インターロック）。ガードは試行の監視のみで実行は強制せず、認識した変更操作（`rm`・`sed -i`・`git checkout`/`merge`/`restore`/`revert`/`switch`・`worktree` など）や `nix fmt` の再実行、編集系ツールの使用でセッションの検証証拠は保守的に破棄されます。
+`nix-verify-gate.js` は Nix 検証の順序ガードです。現在のターンのエージェント自身による完了宣言（先頭行が `STATUS: COMPLETE` で始まること）を起点に、変更を含むチェックアウトのルートで `nix fmt` → `nix run home-manager -- build --flake .#koki` → `nix build .#darwinConfigurations.mac.system --out-link result-darwin` をそれぞれ完全一致のベアな単一フォアグラウンドコマンドとして成功させた証拠が揃うまで後続ステージを拒否します。darwin build は `result-darwin` を使うため Home Manager の `./result` を上書きしません。`env`、`bash -c`、`&&`、パイプ、リダイレクトなどのラップ・複合形式は拒否され、証拠になりません。旧 `nix run home-manager -- switch --flake .#koki` と `home-manager switch --flake .#koki` は既存の証拠があっても deny され、nix-darwin への移行コマンドが案内されます。switch として ask になるのは2コマンドだけです。実際のコマンドは「3.2 設定の適用」を参照してください。
 
-設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki` を実行し、`result/home-files/.config/opencode/` の `opencode.json`、`AGENTS.md`、`cli.json`、`plugins/action-drift-monitor.js`、`plugins/model-fallback.js` を確認します。新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合だけ `nix run home-manager -- switch --flake .#koki` を実行します。
+宣言と3段階の検証証拠が同一セッションでメインチェックアウト `/Users/koki/.dotfiles` のルート・branch `main` に揃った場合のみ、switch は人間の承認（ask）に進みます。承認後も実行直前にルートと branch を再確認し、条件が変わっていれば起動を中止します。初回 bootstrap は現在インストール済みの gate が保護しないため、ユーザー自身が確認して実行します。ガードは試行の監視であり実行を強制しません。認識した変更操作（`rm`・`sed -i`・`git checkout`/`merge`/`restore`/`revert`/`switch`・`worktree` など）や `nix fmt` の再実行、編集系ツールの使用でセッションの検証証拠は保守的に破棄されます。
+
+設定変更後は `nix fmt`、`nix run home-manager -- build --flake .#koki`、`nix build .#darwinConfigurations.mac.system --out-link result-darwin` を実行します。Home Manager の `./result/home-files/.config/opencode/` から `opencode.json`、`AGENTS.md`、`cli.json`、`plugins/action-drift-monitor.js`、`plugins/model-fallback.js` を確認し、新規の参照ファイルは Git に追加してからビルドします。現環境への反映が必要な場合は、gate が認める条件を満たした上で「3.2 設定の適用」に記載したコマンドを実行します。
 
 ### 4.5 アクション空間のドリフト検出
 
@@ -232,11 +244,14 @@ nix run .#opencodeActionCheck -- --capture
 nix fmt
 nix run home-manager -- build --flake .#koki
 
-# 4. 候補 generation を検証（workdir は graphify-out があるリポジトリ実体を指定）
+# 4. darwin 構成を別の出力リンクへビルド
+nix build .#darwinConfigurations.mac.system --out-link result-darwin
+
+# 5. 候補 generation を検証（workdir は graphify-out があるリポジトリ実体を指定）
 nix run .#opencodeActionCheck -- --home ./result --workdir /Users/koki/.dotfiles
 
-# 5. switch はユーザーの明示依頼時のみ
-nix run home-manager -- switch --flake .#koki
+# 6. switch はユーザーの明示依頼時のみ
+sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
 ```
 
 修正手順の要点:
@@ -265,7 +280,7 @@ skills/<skill-name>/SKILL.md
 | `skills/orchestration/` | `skills/orchestration/SKILL.md` |
 | `skills/playwright-cli/` | `skills/playwright-cli/SKILL.md` |
 
-Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。リンクが作成済みであれば、リポジトリ内の `SKILL.md` を編集した内容がグローバルスキルへ即時反映されます。リンク自体の作成や再配置を変更した場合は、Home Manager の switch を再実行してください。
+Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills/` を `~/.agents/skills` から参照できるようにします。リンクが作成済みであれば、リポジトリ内の `SKILL.md` を編集した内容がグローバルスキルへ即時反映されます。リンク自体の作成や再配置を変更した場合は、`darwin-rebuild switch` を再実行してください。
 
 リポジトリ固有のスキルは `.agents/skills/<skill-name>/SKILL.md` に配置します（現在は `nix-verify` のみです）。これらは `.gitignore` の例外設定でバージョン管理しますが、`~/.agents/skills` へのリンク対象外で、グローバルには配備されません。リポジトリ固有のスキルを追加する場合も同じ場所に配置します。
 
@@ -278,7 +293,7 @@ Home Manager は `mkOutOfStoreSymlink` を使って、リポジトリの `skills
 利用前提として、CLI 本体を vendored スキルと同じバージョンで Nix 管理します。バージョンと 3 つの tarball URL・SRI ハッシュは `packages/playwright-cli.nix` に定義し、次のコマンドで導入します。
 
 ```sh
-nix run home-manager -- switch --flake .#koki
+sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
 playwright-cli install-browser
 ```
 
@@ -290,7 +305,7 @@ playwright-cli install-browser
 2. 生成された `.agents/skills/playwright-cli/` を `skills/playwright-cli/` へコピーし、`LICENSE`（上流に `NOTICE` があればそれも）を維持します。
 3. `diff -r <スクラッチ>/.agents/skills/playwright-cli skills/playwright-cli` で差分がないことを確認します。
 4. `packages/playwright-cli.nix` の `version` を新バージョンへ更新します。`playwright` と `playwright-core` の URL は、新バージョンの `@playwright/cli` のレジストリメタデータ（`dependencies`）に記載されたバージョンへ更新します。
-5. 3 つの URL の SRI ハッシュを `nix hash file <tarball>` などで取得して更新し、`nix run home-manager -- switch --flake .#koki` を実行します。
+5. 3 つの URL の SRI ハッシュを `nix hash file <tarball>` などで取得して更新し、検証後に `sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac` を実行します。
 6. ブラウザのリビジョンが変わった場合は `playwright-cli install-browser` を再実行します。
 
 `@latest` の導入や実行時のみの更新は、vendored スキルと CLI のバージョンを乖離させます。CLI のスキル整合チェックは実行ディレクトリ配下（`./.agents/skills/` など）だけを対象とするため、`~/.agents/skills` 経由で参照されるこのグローバル配備はチェックの対象外です。インストーラーは `--global` 付き、またはこのリポジトリ内で実行しないでください。`--global` は `~/.agents/skills` のリンクを通じて、リポジトリ内での実行は `.agents/skills/` と `.gitignore` への書き込みを通じて、それぞれ未追跡ファイルや意図しない差分を作業ツリーへ混入させます。
@@ -299,9 +314,10 @@ playwright-cli install-browser
 
 | スクリプト | 役割 |
 | --- | --- |
-| `scripts/install.sh` | Nix の確認・導入、アカウント設定、SSH キーの準備、Home Manager の switch までを行うメインセットアップスクリプトです。 |
+| `scripts/install.sh` | Nix の確認・導入、アカウント設定、SSH キーの準備、nix-darwin の初回 bootstrap までを行うメインセットアップスクリプトです。 |
 | `scripts/migrate-legacy-links.sh` | 旧レイアウトの Git ignore と VS Code のシンボリックリンクを、switch 前に安全に移行するスクリプトです。 |
 | `scripts/check-opencode-actions.sh` | OpenCode の action 空間のドリフトチェッカー本体です。単体実行もできますが、通常は flake の `packages.opencode-action-check.nix` から `nix run .#opencodeActionCheck` で実行します（python3 と固定版 OpenCode を同梱）。 |
+| `scripts/check-nix-verify-gate.mjs` | `node` で nix-verify-gate の順序・switch 制御を検証します。activation は行いません。 |
 
 メインスクリプトは zsh で実行します。
 
@@ -309,14 +325,14 @@ playwright-cli install-browser
 zsh scripts/install.sh
 ```
 
-`install.sh` は Home Manager の switch より前に、次の処理を行います。
+`install.sh` は nix-darwin の初回 bootstrap より前に、次の処理を行います。
 
 ```sh
 zsh scripts/migrate-legacy-links.sh
-nix run home-manager -- switch --flake .#koki
+sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac
 ```
 
-移行スクリプトは、対象が旧シンボリックリンクであることを確認してから削除します。安全でないリンク連鎖、別のリンク先、シンボリックリンクではないオブジェクトなどを検出した場合は、旧リンクを削除せずに中止します。移行に失敗した場合も、`install.sh` は switch を続行しません。
+移行スクリプトは、対象が旧シンボリックリンクであることを確認してから削除します。安全でないリンク連鎖、別のリンク先、シンボリックリンクではないオブジェクトなどを検出した場合は、旧リンクを削除せずに中止します。移行に失敗した場合も、`install.sh` は bootstrap を続行しません。
 
 ## 7. パッケージ管理
 
@@ -332,8 +348,8 @@ nix run home-manager -- switch --flake .#koki
 
 `packages/ssh-bootstrap.nix` は `flake.nix` の package/app として公開され、セットアップ時に `install.sh` から利用されます。SSH キーそのものをリポジトリへ保存するのではなく、必要な環境でこの SSH キーのプロビジョニング処理を実行する設計です。
 
-パッケージ定義を変更した場合は、内容を確認してから、リポジトリのルートで次の Home Manager コマンドを実行します。
+パッケージ定義を変更した場合は、内容を確認して検証を済ませてから、次の nix-darwin コマンドで適用します。
 
 ```sh
-nix run home-manager -- switch --flake .#koki
+sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
 ```
