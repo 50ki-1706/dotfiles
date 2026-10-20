@@ -9,7 +9,7 @@
 
   # macOSのネイティブアプリ用に~/Library/Fonts/HomeManagerへフォントをコピー
   # fontconfigベースのアプリはfonts.fontconfig.enableで対応
-  home.activation.installFonts = lib.mkIf pkgs.stdenv.isDarwin (
+  home.activation.installFonts = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
     lib.hm.dag.entryAfter [ "installPackages" ] ''
       FONT_DST="$HOME/Library/Fonts/HomeManager"
       rm -rf "$FONT_DST"
