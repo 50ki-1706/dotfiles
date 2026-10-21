@@ -1,4 +1,4 @@
-# Dangerous-command shell guards and secret-file read guards, shared across all profiles.
+# Shared shell, read, and MCP resource guards.
 {
   shellGuards = [
     {
@@ -161,4 +161,18 @@
     }
   ];
 
+  # Pinned OpenCode checks server names for list and `server:uri` for read.
+  # Keep Figma resources denied while its tools remain outside the baseline.
+  mcpResourceGuards = [
+    {
+      action = "opencode_list_mcp_resources";
+      resource = "figma*";
+      effect = "deny";
+    }
+    {
+      action = "opencode_read_mcp_resource";
+      resource = "figma*";
+      effect = "deny";
+    }
+  ];
 }

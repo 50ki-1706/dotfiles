@@ -1,6 +1,10 @@
 { pkgs }:
 let
   mcpPath = "/Users/koki/.nix-profile/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  mcpTimeout = {
+    startup = 60000;
+    catalog = 60000;
+  };
 in
 (import ./agents.nix)
 // {
@@ -28,6 +32,13 @@ in
     ];
   };
   mcp.servers = {
+    # Keep the `figma` credential ID and runtime OAuth callback defaults;
+    # the schema's redirect_uri default is incompatible with Figma.
+    figma = {
+      type = "remote";
+      url = "https://mcp.figma.com/mcp";
+      timeout = mcpTimeout;
+    };
     chrome-devtools = {
       type = "local";
       cwd = "/Users/koki/.config/opencode";
@@ -41,10 +52,7 @@ in
         PATH = "${pkgs.nodejs_24}/bin:${mcpPath}";
         CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS = "1";
       };
-      timeout = {
-        startup = 60000;
-        catalog = 60000;
-      };
+      timeout = mcpTimeout;
     };
     graphify = {
       type = "local";
@@ -61,10 +69,7 @@ in
       environment = {
         PATH = "${pkgs.uv}/bin:${mcpPath}";
       };
-      timeout = {
-        startup = 60000;
-        catalog = 60000;
-      };
+      timeout = mcpTimeout;
     };
   };
 }

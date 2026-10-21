@@ -1,5 +1,5 @@
 let
-  inherit (import ./guards.nix) shellGuards secretReadGuards;
+  inherit (import ./guards.nix) shellGuards secretReadGuards mcpResourceGuards;
   actions = import ./actions.nix;
 in
 {
@@ -142,7 +142,7 @@ let
   };
 
   # Emission order: blanket -> broad allows -> guards -> broad denies ->
-  # subagent list -> skill list.
+  # subagent list -> skill list -> MCP resource guards.
   emitted =
     (if denyAll then [ (rule "*" "*" "deny") ] else [ ])
     ++ allowIf "shell" opts.shell
@@ -177,7 +177,9 @@ let
     ++ denyIf "chrome-devtools*" opts.chromeDevtools
     ++ denyIf "opencode_*" opts.opencodeTools
     ++ namesRules "subagent" opts.subagent
-    ++ namesRules "skill" opts.skill;
+    ++ namesRules "skill" opts.skill
+    # Apply in every profile after broad allows (including general's).
+    ++ mcpResourceGuards;
 
   # Eval-time assertion: the actions this call site emits are a subset of the
   # baseline in actions.nix. Scope: action names of emitted rules only; name
