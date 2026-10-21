@@ -8,6 +8,7 @@
     ./modules/fonts
     ./modules/helix
     ./modules/ghostty
+    ./modules/herdr
     ./modules/git
     ./modules/shell
     ./modules/vscode

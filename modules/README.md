@@ -12,7 +12,8 @@
 | `ssh/` | GitHub 用 SSH キー・macOS Keychain |
 | `fonts/` | Nerd Font・fontconfig・macOS アプリ用フォント |
 | `helix/` | Helix・共通 LSP・プロジェクト formatter（[詳細](#helix)） |
-| `ghostty/` | Ghostty・herdr セッション起動 |
+| `ghostty/` | Ghostty 設定・herdr セッション起動 |
+| `herdr/` | Herdr 設定 |
 | `git/` | Git・共通 ignore |
 | `shell/` | Zsh・エイリアス・プロンプト |
 | `vscode/` | macOS 用 VS Code 設定・キーバインド |
