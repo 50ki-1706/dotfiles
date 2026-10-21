@@ -26,7 +26,9 @@
 
 標準ピッカーは `Space e`（ファイルツリー）、`Space f`（ファイル）、`Space /`（全文検索）、`Space b`（バッファ）、`Space d`（診断）、`Space D`（ワークスペース診断）です。共通 LSP は Nix で用意します。プロジェクトの `.helix/languages.toml` で言語設定やサーバーを上書きできますが、ツール自体は導入されません。共通サーバーは自動起動することがあるため、プロジェクトの実行ファイルが必要な場合は[プロジェクト開発環境](../docs/packages/README.md#プロジェクト開発環境)から `hx` を起動してください。
 
-[共通設定](helix/default.nix) の `manualFormatLanguages` にある言語は、保存時の自動整形が既定で無効です。`:fmt`（`:format` の別名）で手動整形できます。formatter と保存時整形はプロジェクトごとに設定できます。たとえば、プロジェクトが用意した Prettier を使う場合は、`.helix/languages.toml` に次のように記述します。
+[languages.toml](helix/languages.toml) にある言語は、保存時の自動整形が既定で無効です。`:fmt`（`:format` の別名）で手動整形できます。formatter と保存時整形はプロジェクトごとに設定できます。たとえば、プロジェクトが用意した Prettier を使う場合は、`.helix/languages.toml` に次のように記述します。
+
+Helix の `config.toml` と `languages.toml` は Ghostty・herdr と同様に、メイン checkout (`~/.dotfiles`) への out-of-store symlink で管理します。設定の編集はマージ後に `~/.dotfiles` 側で行い、テーマは Ghostty・herdr に合わせて Solarized Light を使用します。
 
 ```toml
 [[language]]

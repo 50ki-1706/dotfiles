@@ -1,44 +1,4 @@
-{ lib, pkgs, ... }:
-let
-  manualFormatLanguages = [
-    "html"
-    "css"
-    "scss"
-    "javascript"
-    "jsx"
-    "typescript"
-    "tsx"
-    "elm"
-    "go"
-    "gomod"
-    "gowork"
-    "python"
-    "toml"
-    "json"
-    "jsonc"
-    "json-ld"
-    "nix"
-  ];
-  typescriptLanguageServers = [
-    "typescript-language-server"
-    "tailwindcss-ls"
-  ];
-  languageServerOverrides = {
-    javascript = typescriptLanguageServers;
-    jsx = typescriptLanguageServers;
-    typescript = typescriptLanguageServers;
-    tsx = typescriptLanguageServers;
-    html = [
-      "vscode-html-language-server"
-      "tailwindcss-ls"
-    ];
-    css = [
-      "vscode-css-language-server"
-      "tailwindcss-ls"
-    ];
-    python = [ "pyright" ];
-  };
-in
+{ config, pkgs, ... }:
 {
   programs.helix = {
     enable = true;
@@ -52,33 +12,12 @@ in
       nil
       pyright
     ];
-
-    settings = {
-      theme = "catppuccin_mocha";
-      editor = {
-        cursor-shape = {
-          normal = "block";
-          insert = "bar";
-          select = "underline";
-        };
-        line-number = "relative";
-        bufferline = "always";
-        true-color = true;
-        idle-timeout = 400;
-        cursorline = true;
-        scrolloff = 10;
-      };
-    };
-
-    languages.language = map (
-      name:
-      {
-        inherit name;
-        auto-format = false;
-      }
-      // lib.optionalAttrs (builtins.hasAttr name languageServerOverrides) {
-        language-servers = languageServerOverrides.${name};
-      }
-    ) manualFormatLanguages;
   };
+
+  # リンク先は評価中のworktreeではなく、メインcheckoutの `${config.home.homeDirectory}/.dotfiles`。
+  xdg.configFile."helix/config.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/helix/config.toml";
+
+  xdg.configFile."helix/languages.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/helix/languages.toml";
 }
