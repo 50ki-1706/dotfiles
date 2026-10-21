@@ -1,4 +1,4 @@
-{ ollamaPkgs, ... }:
+{ ... }:
 {
   system.primaryUser = "koki";
   system.stateVersion = 7;
@@ -13,7 +13,6 @@
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = false;
-    extraSpecialArgs = { inherit ollamaPkgs; };
     users.koki = import ../home.nix;
   };
 
@@ -45,7 +44,6 @@
     casks = [
       "android-studio"
       "audacity"
-      "bambu-studio"
       "bitwarden"
       "bruno"
       "claude"
@@ -63,7 +61,6 @@
       "koki/hanon-player/hanon-player"
       "notion"
       "obsidian"
-      "onlyoffice"
       "openscad@snapshot"
       "stablyai/orca/orca"
       "raycast"

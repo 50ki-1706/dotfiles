@@ -21,7 +21,7 @@ in
   programs.opencode = {
     enable = true;
     package = pkgs.callPackage ../../packages/opencode.nix { };
-    settings = import ./opencode.nix;
+    settings = import ./opencode.nix { inherit pkgs; };
   };
 
   home.file.".config/opencode/AGENTS.md" = {
