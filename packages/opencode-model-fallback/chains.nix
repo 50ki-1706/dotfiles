@@ -7,7 +7,6 @@ let
       "opencode/deepseek-v4.1-flash-free#high"
     ];
     general = [
-      "opencode/deepseek-v4.1-flash-free#max"
       "xai/grok-build-0.1"
       "opencode/minimax-m3.1-flash-free#max"
     ];
