@@ -65,28 +65,6 @@ in
       "xhigh"
     ];
   };
-  # OpenCode Go
-  opencode-go.models = {
-    "deepseek-v4.1-flash".variants = mkVariants [
-      "low"
-      "high"
-      "max"
-    ];
-    "glm-5.3-flash".variants = mkVariants [
-      "low"
-      "high"
-      "max"
-    ];
-    # OpenCode Go currently exposes no reasoning effort variants for MiMo v2.6.
-    "mimo-v2.6-flash".variants = [ ];
-    "mimo-v2.6-pro".variants = [ ];
-    "qwen3.8-flash".variants = mkVariants [
-      "low"
-      "medium"
-      "xhigh"
-    ];
-  };
-
   # OpenAI
   openai.models = {
     "gpt-6.1-sol".variants = mkVariants [
