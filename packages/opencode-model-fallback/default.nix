@@ -5,13 +5,9 @@ in
 writeTextFile {
   name = "model-fallback";
   destination = "/model-fallback.js";
-  text =
-    builtins.replaceStrings
-      [ "@POLICY_SOURCE@" "@FALLBACK_CONFIG@" ]
-      [
-        (builtins.readFile ./policy.js)
-        (builtins.toJSON fallbackConfig)
-      ]
-      (builtins.readFile ./plugin.js)
-    + "\n// Generated from the fallback policy and validated Nix configuration.\n";
+  text = ''
+    import { createModelFallbackPlugin } from "${./.}/plugin.js"
+
+    export default createModelFallbackPlugin(${builtins.toJSON fallbackConfig})
+  '';
 }

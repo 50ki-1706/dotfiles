@@ -1,64 +1,14 @@
-const COMMUNICATION_FAILURES = new Set([
-  "provider.transport",
-  "provider.timeout",
-  "provider.internal",
-  "provider.rate-limit",
-])
+import { classifyFailure } from "./failures.js"
+import { sameModel, switchTarget } from "./models.js"
 
 export function createState() {
   return {
     cursor: 0,
     count: 0,
     lastFailureAt: 0,
-    pendingTerminal: false,
-    successLatched: false,
+    pendingTerminal: false, // Carry a terminal failure into the next retry run.
+    successLatched: false, // Remember success after compaction removes its message.
   }
-}
-
-function modelParts(model) {
-  if (typeof model === "string") {
-    const separator = model.indexOf("/")
-    if (separator < 1) return null
-
-    const providerID = model.slice(0, separator)
-    const rest = model.slice(separator + 1)
-    const variantSeparator = rest.indexOf("#")
-    const id = variantSeparator < 0 ? rest : rest.slice(0, variantSeparator)
-    const variant = variantSeparator < 0 ? undefined : rest.slice(variantSeparator + 1)
-    if (!id || variant === "") return null
-    return { providerID, id, variant }
-  }
-
-  if (!model || typeof model !== "object") return null
-  const providerID = model.providerID ?? model.provider
-  const id = model.id
-  if (typeof providerID !== "string" || typeof id !== "string") return null
-  const variant = typeof model.variant === "string" && model.variant !== "" ? model.variant : undefined
-  return { providerID, id, variant }
-}
-
-export function sameModel(left, right) {
-  const leftParts = modelParts(left)
-  const rightParts = modelParts(right)
-  return (
-    leftParts !== null &&
-    rightParts !== null &&
-    leftParts.providerID === rightParts.providerID &&
-    leftParts.id === rightParts.id &&
-    (leftParts.variant ?? "default") === (rightParts.variant ?? "default")
-  )
-}
-
-function switchTarget(model) {
-  const parts = modelParts(model)
-  if (!parts) return null
-  const target = { providerID: parts.providerID, id: parts.id }
-  if (parts.variant && parts.variant !== "default") target.variant = parts.variant
-  return target
-}
-
-export function isCommunicationFailure(type) {
-  return COMMUNICATION_FAILURES.has(type)
 }
 
 export function hasAssistantSuccess(messages, lastFailureAt) {
@@ -79,11 +29,20 @@ function unchanged(state) {
 }
 
 export function reduceFailure(state, input) {
-  const { event, sessionModel, chain, threshold, contextMessages = [], contextFailed = false, now } = input
+  const {
+    event,
+    sessionModel,
+    chain,
+    threshold,
+    contextMessages = [],
+    contextFailed = false,
+    now,
+  } = input
 
   if (!sameModel(event?.model, sessionModel)) return unchanged(state)
 
-  if (!isCommunicationFailure(event?.error?.type)) {
+  const failureType = classifyFailure(event?.error)
+  if (failureType === "other") {
     if (state.count === 0 && !state.pendingTerminal) return unchanged(state)
     return {
       state: { ...state, count: 0, pendingTerminal: false },
@@ -91,12 +50,14 @@ export function reduceFailure(state, input) {
     }
   }
 
-  if (!Array.isArray(chain) || !Number.isInteger(threshold) || threshold < 1) {
+  const immediate = failureType === "quota"
+  const activeThreshold = immediate ? 1 : threshold
+  if (!Array.isArray(chain) || !Number.isInteger(activeThreshold) || activeThreshold < 1) {
     return unchanged(state)
   }
   const selectedIndex = chain.findIndex((model) => sameModel(model, event.model))
   if (selectedIndex < 0) return unchanged(state)
-  if (contextFailed && !state.successLatched) return unchanged(state)
+  if (!immediate && contextFailed && !state.successLatched) return unchanged(state)
 
   const next = { ...state }
   if (selectedIndex !== next.cursor) {
@@ -110,15 +71,16 @@ export function reduceFailure(state, input) {
     next.pendingTerminal = false
   }
 
+  // OpenCode's first retry has attempt 2; preserve a preceding terminal failure across runs.
   if (event.attempt === 2 && !next.pendingTerminal) next.count = 0
   next.count += 1
   next.lastFailureAt = now
   next.successLatched = false
-  next.pendingTerminal = event.decision?.retry === false && next.count < threshold
+  next.pendingTerminal = event.decision?.retry === false && next.count < activeThreshold
 
   const nextModel = chain[next.cursor + 1]
   const requested =
-    next.count >= threshold && next.count % threshold === 0 && nextModel
+    next.count >= activeThreshold && next.count % activeThreshold === 0 && nextModel
       ? { index: next.cursor + 1, model: switchTarget(nextModel) }
       : null
 

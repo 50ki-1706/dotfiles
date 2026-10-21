@@ -1,13 +1,8 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import {
-  applySwitchResult,
-  createState,
-  reduceCompaction,
-  reduceFailure,
-  sameModel,
-} from "./policy.js"
+import { sameModel } from "../src/models.js"
+import { applySwitchResult, createState, reduceCompaction, reduceFailure } from "../src/policy.js"
 
 const threshold = 3
 const communicationError = { type: "provider.timeout" }
@@ -351,6 +346,73 @@ test("context failure does not count without a latched success", () => {
   const result = failure(state, chain, { contextFailed: true })
   assert.equal(result.state, state)
   assert.equal(result.requested, null)
+})
+
+test("an immediate message requests the next model on its first failure", () => {
+  const chain = ["xai/primary-test#high", "openai/fallback-test#max"]
+  const event = {
+    model: chain[0],
+    error: {
+      type: "unknown",
+      message: "personal-team-blocked:spending-limit: gRPC error: You have run out of credits...",
+    },
+    attempt: 1,
+    decision: { retry: true },
+  }
+  const result = reduceFailure(createState(), {
+    event,
+    sessionModel: chain[0],
+    chain,
+    threshold,
+    now: 1000,
+  })
+  assert.equal(result.requested.index, 1)
+  assert.deepEqual(result.requested.model, {
+    providerID: "openai",
+    id: "fallback-test",
+    variant: "max",
+  })
+})
+
+test("an immediate failure bypasses a context failure without a success latch", () => {
+  const chain = ["xai/primary-test#high", "openai/fallback-test#max"]
+  const result = failure(createState(), chain, { error: { type: "provider.quota" }, contextFailed: true })
+  assert.equal(result.requested.index, 1)
+})
+
+test("an immediate failure does not request a model after the chain is exhausted", () => {
+  const chain = ["xai/primary-test#high"]
+  const result = failure(createState(), chain, { error: { type: "provider.quota" } })
+  assert.equal(result.requested, null)
+})
+
+test("an immediate failure outside the chain is a complete no-op", () => {
+  const chain = ["xai/primary-test#high", "openai/fallback-test#max"]
+  const state = createState()
+  const result = failure(state, chain, { model: "xai/other-test#high", error: { type: "provider.quota" } })
+  assert.equal(result.state, state)
+  assert.equal(result.requested, null)
+})
+
+test("quota detection in the reducer needs no caller-supplied flag", () => {
+  const chain = ["xai/primary-test#high", "openai/fallback-test#max"]
+  const state = { ...createState(), count: 2, pendingTerminal: true }
+  const result = failure(state, chain, {
+    error: { type: "unknown", message: "personal-team-blocked:spending-limit: gRPC error" },
+  })
+  assert.equal(result.state.count, 3)
+  assert.equal(result.state.pendingTerminal, false)
+  assert.equal(result.requested.index, 1)
+})
+
+test("an immediate attempt 2 requests a model on the first failure even when retry is false", () => {
+  const chain = ["xai/primary-test#high", "openai/fallback-test#max"]
+  const result = failure(createState(), chain, {
+    attempt: 2,
+    retry: false,
+    error: { type: "provider.quota" },
+  })
+  assert.equal(result.requested.index, 1)
 })
 
 test("applySwitchResult commits the next cursor only when the switch succeeds", () => {
