@@ -1,3 +1,4 @@
+{ pkgs }:
 let
   mcpPath = "/Users/koki/.nix-profile/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 in
@@ -31,13 +32,13 @@ in
       type = "local";
       cwd = "/Users/koki/.config/opencode";
       command = [
-        "npx"
+        (pkgs.lib.getExe' pkgs.nodejs_24 "npx")
         "-y"
         "chrome-devtools-mcp@1.8.0"
         "--headless"
       ];
       environment = {
-        PATH = mcpPath;
+        PATH = "${pkgs.nodejs_24}/bin:${mcpPath}";
         CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS = "1";
       };
       timeout = {
@@ -48,7 +49,7 @@ in
     graphify = {
       type = "local";
       command = [
-        "uv"
+        (pkgs.lib.getExe pkgs.uv)
         "run"
         "--with"
         "graphifyy[mcp]"
@@ -58,7 +59,7 @@ in
         "./graphify-out/graph.json"
       ];
       environment = {
-        PATH = mcpPath;
+        PATH = "${pkgs.uv}/bin:${mcpPath}";
       };
       timeout = {
         startup = 60000;
