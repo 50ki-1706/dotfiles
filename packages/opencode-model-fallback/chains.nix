@@ -3,22 +3,23 @@ let
   fallbackLists = {
     spec = [
       "opencode/glm-5.3-flash-free#high"
+      "xai/grok-4.7#high"
       "opencode/deepseek-v4.1-flash-free#high"
-      "openai/gpt-6.1-sol#high"
     ];
     general = [
       "opencode/deepseek-v4.1-flash-free#max"
       "xai/grok-build-0.1"
+      "opencode/minimax-m3.1-flash-free#max"
     ];
     explore = [
       "opencode/deepseek-v4.1-flash-free#high"
       "opencode/mimo-v2.6-flash-free"
-      "openai/gpt-6-luna#high"
+      "opencode/beam-free#max"
     ];
     plan_review = [
-      "opencode/glm-5.3-flash-free#max"
       "opencode/deepseek-v4.1-flash-free#max"
-      "opencode/mimo-v2.6-flash-free"
+      "openai/gpt-6.1-sol#xhigh"
+      "xai/grok-4.7#high"
     ];
   };
   threshold = 3;
