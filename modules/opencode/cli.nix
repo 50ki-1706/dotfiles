@@ -1,7 +1,8 @@
 {
   "$schema" = "https://opencode.ai/v2/cli.json";
   theme = {
-    name = "orng";
+    name = "solarized";
+    mode = "light";
   };
   diffs = {
     wrap = "word";
