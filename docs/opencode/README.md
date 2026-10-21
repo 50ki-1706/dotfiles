@@ -36,6 +36,12 @@
 
 MCP は既知のツールだけを許可します。未知の action は拒否され、セッション中の個別承認では解除できません。[変更検出の手順](#アクション空間のドリフト検出) に従って確認してください。
 
+### Figma MCP
+
+remote MCP の接続先は `https://mcp.figma.com/mcp` です。OAuth はブラウザー経由のみで、認証情報は設定ファイル外に保存されます。将来有効化した後の再認証は `/mcps` または `opencode mcp auth figma` から行います。
+
+現時点では全エージェントで Figma ツールと server `figma` の list/read を拒否します。ツールの利用には `actions.nix` の変更承認が必要です。Figma 接続後は、server を省略した `list_mcp_resources` も呼び出し全体が拒否されます。他の server を指定した一覧取得は従来どおりです。
+
 ## 設定の変更先
 
 | 対象 | 参照先 |
@@ -87,6 +93,8 @@ nix run .#opencodeActionCheck
 | `2` | 判定保留（MCP 起動失敗・確認の省略など） |
 
 `--home ./result` は適用前の候補を検証し、`--capture` は候補 baseline を標準出力に出します。`--skip-introspection` で MCP の確認を省略し、`--mcp-timeout <秒>` で待ち時間を指定できます。
+
+checker は stdio サーバーだけを検査します。remote OAuth の `figma` は baseline のサーバー一覧・introspection allowlist に含めません。
 
 ### 修正手順
 

@@ -12,13 +12,14 @@
 # After a server upgrade, newly added tools stay denied until the captured names
 # are reviewed, approved, and written here (fail-closed by design).
 rec {
-  # Servers whose tools participate in drift checks.
+  # Servers whose tools participate in drift checks (stdio only).
   mcpServers = [
     "graphify"
     "chrome-devtools"
   ];
 
-  # Servers the checker may start for introspection. Keep in sync with opencode.nix.
+  # Servers the checker may start. Remote OAuth server `figma` has no stdio
+  # command, so adding it to either list would make checks inconclusive (exit 2).
   mcpIntrospectAllowlist = [
     "graphify"
     "chrome-devtools"
