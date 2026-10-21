@@ -1,6 +1,6 @@
 # はじめに
 
-macOS のシェル、エディタ、ターミナル、Git、SSH、CLI、アプリを管理する dotfiles です。システム設定には nix-darwin、ユーザー設定には Home Manager を使い、同じ構成を再適用できます。
+Apple Silicon macOS のシェル、エディタ、ターミナル、Git、SSH、CLI、アプリを管理する dotfiles です。システム設定には nix-darwin、ユーザー設定には Home Manager を使います。現在の構成はユーザー `koki`、配置先 `/Users/koki/.dotfiles` を前提とします。
 
 [OpenCode ハーネス](../opencode/README.md) では、調査・計画・実装・検証の役割と権限を分けます。設定・スクリプト・文書のいずれも、既存の仕組みを優先し、不要な追加と重複を避けます。
 

@@ -1,4 +1,5 @@
 /result
+/result-darwin
 accounts.csv
 /.agents/*
 !/.agents/skills/

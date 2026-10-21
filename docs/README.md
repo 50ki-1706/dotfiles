@@ -8,7 +8,7 @@
 - [OpenCode エージェントハーネス](opencode/README.md)
 - [スキルの管理](skills/README.md)
 - [初期設定・Git アカウント管理](scripts/README.md)
-- [パッケージ管理](packages/README.md)
+- [パッケージ・アプリ管理](packages/README.md)
 
 ## ディレクトリ情報
 

@@ -8,18 +8,18 @@
 
 ## エージェント構成
 
-| エージェント | 区分 | モデル | 役割 |
-| --- | --- | --- | --- |
-| `spec` | 独自 primary（既定） | `opencode-go/qwen3.8-flash#medium` | 日本語での対話・計画・確認・委譲 |
-| `general` | 組み込み subagent | `opencode-go/deepseek-v4.1-flash#max` | 実装・検証・承認済みのアーキテクチャ文書更新 |
-| `explore` | 組み込み subagent | `opencode/minimax-m3.1-flash-free#high` | 外部調査・アーキテクチャ理解・詳細なコード調査 |
-| `plan_review` | 独自 subagent | `openai/gpt-6-luna#max` | 計画・設計相談・重要な実装変更のレビュー |
+| エージェント | 区分 | 役割 |
+| --- | --- | --- |
+| `spec` | 独自 primary（既定） | 日本語での対話・計画・確認・委譲 |
+| `general` | 組み込み subagent | 実装・検証・承認済みのアーキテクチャ文書更新 |
+| `explore` | 組み込み subagent | 外部調査・アーキテクチャ理解・詳細なコード調査 |
+| `plan_review` | 独自 subagent | 計画・設計相談・重要な実装変更のレビュー |
 
 基本の流れは `spec → explore / plan_review → ユーザー確認 → general` です。浅い調査は `spec` が行い、委譲時に制約・調査の深さ・成果物・検証方法を指定します。重要な変更は実装後も `plan_review` で確認します。
 
 サブエージェントは再委譲しません。アーキテクチャ文書の更新は、計画に含めて承認された場合に `spec` から `general` へ直接依頼します。`plan_review` の最新結果が `STATUS: COMPLETE` なら、`spec` は質問前に日本語の実装計画を提示します（所定の見出しに従い、ツール呼び出しを伴わない本文のみ）。
 
-組み込みの `build`・`plan` も利用できます。旧名の `executer` は `general`、`deep_explore`・`internet_search` は `explore` に統合済みです。
+組み込みの `build`・`plan` も利用できます。各エージェントの既定モデルと切り替え順は、[設定の変更先](#設定の変更先) にある定義を参照してください。
 
 ## 権限と制約
 
@@ -28,7 +28,7 @@
 | `spec` | 読み取り・シェルを許可、編集は拒否 | Graphify | グローバル + プロジェクトで許可したもの | `explore`・`general`・`plan_review` |
 | `general` | 実装を許可、外部ディレクトリは拒否 | Graphify・Chrome DevTools | グローバルのみ | なし |
 | `explore` | 読み取り専用、シェルに制限 | Graphify | なし | なし |
-| `plan_review` | 読み取り可、シェルに制限、編集・質問は拒否 | Graphify | なし | なし |
+| `plan_review` | 読み取り専用、指示でシェルを禁止、編集・質問は拒否 | Graphify | なし | なし |
 
 グローバルスキルの許可対象は [スキル一覧](../../skills/README.md) の5つです。このリポジトリでは `spec` に `nix-verify` も許可します。スキルの利用許可と、`SKILL.md` 自体の読み取り権限は別です。
 
@@ -40,20 +40,20 @@ MCP は既知のツールだけを許可します。未知の action は拒否�
 
 | 対象 | 参照先 |
 | --- | --- |
-| エージェント・モデル選択 | `modules/opencode/agents.nix` |
-| モデル・推論強度 | `modules/opencode/providers.nix` |
-| 権限・共通制限 | `modules/opencode/permissions.nix`・`guards.nix` |
-| 許可する action・ツール | `modules/opencode/actions.nix` |
-| コマンド・MCP | `modules/opencode/opencode.nix` |
-| 指示・出力形式 | `modules/opencode/prompts/` |
-| テーマ・端末 UI | `modules/opencode/cli.nix` |
-| モデル切り替え | `packages/opencode-model-fallback/` |
-| プロジェクト固有の許可 | ルートの `opencode.json` |
-| OpenCode 本体のバージョン | `packages/opencode.nix` |
+| エージェント・既定モデル | [agents.nix](../../modules/opencode/agents.nix) |
+| モデル・推論強度 | [providers.nix](../../modules/opencode/providers.nix) |
+| 権限・共通制限 | [permissions.nix](../../modules/opencode/permissions.nix)・[guards.nix](../../modules/opencode/guards.nix) |
+| 許可する action・ツール | [actions.nix](../../modules/opencode/actions.nix) |
+| コマンド・MCP | [opencode.nix](../../modules/opencode/opencode.nix) |
+| 指示・出力形式 | [prompts/](../../modules/opencode/prompts/) |
+| テーマ・端末 UI | [cli.nix](../../modules/opencode/cli.nix) |
+| モデル切り替え順・失敗回数 | [chains.nix](../../packages/opencode-model-fallback/chains.nix) |
+| プロジェクト固有の許可 | [opencode.json](../../opencode.json) |
+| OpenCode 本体のバージョン | [opencode.nix](../../packages/opencode.nix) |
 
 `spec`・`plan_review` の指示は英語、`spec` のユーザー向け計画・質問・報告は日本語に統一します。共通の出力形式は `modules/opencode/prompts/output-format.md` を参照してください。
 
-推論強度はモデル ID 末尾の `#medium`・`#max` などで選びます。利用可能な値は `providers.nix` を確認してください。`opencode-go/mimo-v2.6-flash`・`opencode-go/mimo-v2.6-pro` は接尾辞を付けず、既定設定を使います。
+推論強度はモデル ID 末尾の `#medium`・`#max` などで選びます。利用可能な値は `providers.nix` を確認してください。`variants = [ ]` のモデルは接尾辞を付けず、既定設定を使います。
 
 モデルの自動切り替えは、通信エラー・タイムアウト・内部エラー・レート制限のいずれかが各モデルで3回続くと、設定順に次を試します。OpenCode の再試行判断は変えず、切り替え先に OpenCode Go は使いません。
 
