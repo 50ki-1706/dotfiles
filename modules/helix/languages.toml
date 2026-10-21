@@ -1,0 +1,74 @@
+[[language]]
+auto-format = false
+language-servers = ["vscode-html-language-server", "tailwindcss-ls"]
+name = "html"
+
+[[language]]
+auto-format = false
+language-servers = ["vscode-css-language-server", "tailwindcss-ls"]
+name = "css"
+
+[[language]]
+auto-format = false
+name = "scss"
+
+[[language]]
+auto-format = false
+language-servers = ["typescript-language-server", "tailwindcss-ls"]
+name = "javascript"
+
+[[language]]
+auto-format = false
+language-servers = ["typescript-language-server", "tailwindcss-ls"]
+name = "jsx"
+
+[[language]]
+auto-format = false
+language-servers = ["typescript-language-server", "tailwindcss-ls"]
+name = "typescript"
+
+[[language]]
+auto-format = false
+language-servers = ["typescript-language-server", "tailwindcss-ls"]
+name = "tsx"
+
+[[language]]
+auto-format = false
+name = "elm"
+
+[[language]]
+auto-format = false
+name = "go"
+
+[[language]]
+auto-format = false
+name = "gomod"
+
+[[language]]
+auto-format = false
+name = "gowork"
+
+[[language]]
+auto-format = false
+language-servers = ["pyright"]
+name = "python"
+
+[[language]]
+auto-format = false
+name = "toml"
+
+[[language]]
+auto-format = false
+name = "json"
+
+[[language]]
+auto-format = false
+name = "jsonc"
+
+[[language]]
+auto-format = false
+name = "json-ld"
+
+[[language]]
+auto-format = false
+name = "nix"

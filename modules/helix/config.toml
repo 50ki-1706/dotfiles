@@ -1,0 +1,14 @@
+theme = "solarized_light"
+
+[editor]
+bufferline = "always"
+cursorline = true
+idle-timeout = 400
+line-number = "relative"
+scrolloff = 10
+true-color = true
+
+[editor.cursor-shape]
+insert = "bar"
+normal = "block"
+select = "underline"
