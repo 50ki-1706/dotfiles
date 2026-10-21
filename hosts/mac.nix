@@ -89,7 +89,6 @@
       "esbenp.prettier-vscode"
       "github.vscode-github-actions"
       "github.vscode-pull-request-github"
-      "jetpack-io.devbox"
       "jnoortheen.nix-ide"
       "mechatroner.rainbow-csv"
       "ms-ceintl.vscode-language-pack-ja"
