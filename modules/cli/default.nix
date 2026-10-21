@@ -4,7 +4,6 @@
     pkgs.fzf
     pkgs.lazygit
     pkgs.bitwarden-cli
-    pkgs.devbox
     pkgs.devenv
     pkgs.ripgrep
     pkgs.yq-go
