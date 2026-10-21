@@ -17,7 +17,7 @@ Git ignore・VS Code 設定・グローバルスキルは、メインチェッ�
 sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac
 
 # 2回目以降
-sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
 ```
 
 初回コマンドの直接実行は、未認識の `/etc/bashrc` または `/etc/zshrc` があると中止します。退避方法は [初期設定](../scripts/README.md#初期設定) を参照してください。
