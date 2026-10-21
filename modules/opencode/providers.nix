@@ -26,6 +26,14 @@ in
       "high"
       "max"
     ];
+    # Recursive
+    "flint-40b-free".variants = mkVariants [
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
     # ZhipuAI
     "glm-5.3-flash-free".variants = mkVariants [
       "low"
