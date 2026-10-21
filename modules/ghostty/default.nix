@@ -11,6 +11,9 @@
     settings = {
       command = "direct:${lib.getExe pkgs.herdr} --session ghostty";
       font-family = "JetBrainsMono Nerd Font Mono";
+      theme = "iTerm2 Solarized Light";
+      background-opacity = 0.92;
+      background-opacity-cells = true;
     };
   };
 
