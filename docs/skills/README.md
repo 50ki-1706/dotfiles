@@ -21,7 +21,7 @@ playwright-cli install-browser
 
 ブラウザの保存先は `~/Library/Caches/ms-playwright` です。更新はスキルと CLI をセットで行います。
 
-1. リポジトリ外の一時ディレクトリで `npx -y @playwright/cli@<新バージョン> install --skills=agents` を実行します。
+1. リポジトリ外の一時ディレクトリで `nix shell nixpkgs#nodejs_24 --command npx -y @playwright/cli@<新バージョン> install --skills=agents` を実行します。
 2. 生成された `.agents/skills/playwright-cli/` を `skills/playwright-cli/` にコピーします。`LICENSE` と、上流にあれば `NOTICE` も残します。
 3. `diff -r --exclude=LICENSE --exclude=NOTICE <一時ディレクトリ>/.agents/skills/playwright-cli skills/playwright-cli` でスキル本体の一致を確認します。
 4. `packages/playwright-cli.nix` の `version` と3つの tarball URL を更新します。`playwright`・`playwright-core` の版は、選んだ `@playwright/cli` のレジストリメタデータの `dependencies` に合わせます。
