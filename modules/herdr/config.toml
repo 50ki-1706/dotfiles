@@ -1,0 +1,14 @@
+onboarding = false
+
+[theme]
+name = "solarized-light"
+auto_switch = false
+
+[ui]
+status_indicators = "symbols"
+
+[ui.sound]
+enabled = true
+
+[ui.toast]
+delivery = "off"

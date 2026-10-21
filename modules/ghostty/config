@@ -1,0 +1,5 @@
+command = direct:/Users/koki/.nix-profile/bin/herdr --session ghostty
+font-family = JetBrainsMono Nerd Font Mono
+theme = iTerm2 Solarized Light
+background-opacity = 0.92
+background-opacity-cells = true
