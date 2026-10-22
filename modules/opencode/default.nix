@@ -1,17 +1,11 @@
 { pkgs, ... }:
 let
   actions = import ./actions.nix;
-  baselineActions =
-    actions.coreActions
-    ++ actions.opencodeActions
-    ++ actions.mcpToolActions.graphify
-    ++ actions.mcpToolActions.chromeDevtools
-    ++ actions.mcpToolActions.figma;
   actionDriftMonitor = pkgs.writeTextFile {
     name = "action-drift-monitor";
     destination = "/action-drift-monitor.js";
     text =
-      builtins.replaceStrings [ "@BASELINE_ACTIONS@" ] [ (builtins.toJSON baselineActions) ] (
+      builtins.replaceStrings [ "@BASELINE_ACTIONS@" ] [ (builtins.toJSON actions.monitorActions) ] (
         builtins.readFile ./plugins/action-drift-monitor.js
       )
       + "\n// Resolved from a directory-resident store path.\n";

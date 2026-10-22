@@ -124,9 +124,9 @@ let
 
   guardsIf = guards: value: if value == "allow" || value == "guarded" then guards else [ ];
 
-  exactAllowIf =
-    value: names:
-    if value == "allow" then builtins.map (action: rule action "*" "allow") names else [ ];
+  allowActions = names: builtins.map (action: rule action "*" "allow") names;
+
+  exactAllowIf = value: names: if value == "allow" then allowActions names else [ ];
 
   # The wildcard deny must come before the exact grants in the same list: the
   # permission evaluator uses the LAST matching rule. Keeping the deny here (not
@@ -135,13 +135,15 @@ let
     value:
     if value == "inherit" then
       [ ]
-    else if value == "deny" then
-      [ (rule "figma*" "*" "deny") ]
     else
       [ (rule "figma*" "*" "deny") ]
-      ++ builtins.map (action: rule action "*" "allow") exact.figmaRead
-      ++ (
-        if value == "write" then builtins.map (action: rule action "*" "allow") exact.figmaWrite else [ ]
+      ++ allowActions (
+        if value == "write" then
+          exact.figmaRead ++ exact.figmaWrite
+        else if value == "read" then
+          exact.figmaRead
+        else
+          [ ]
       );
 
   # A name list always emits its wildcard deny first, also under denyAll, so

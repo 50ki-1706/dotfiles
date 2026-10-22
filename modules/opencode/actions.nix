@@ -233,22 +233,24 @@ rec {
     "subagent"
   ];
 
-  # Every action string any config layer can contain, including runtime wildcards.
-  # Drift checker: observed actions outside this set are additions (exit 1).
-  ruleActions =
+  # Concrete actions shared by the runtime monitor and the drift checker.
+  monitorActions =
     coreActions
     ++ opencodeActions
     ++ mcpToolActions.graphify
     ++ mcpToolActions.chromeDevtools
-    ++ mcpToolActions.figma
-    ++ [
-      "execute"
-      "browser"
-      "figma*"
-      "graphify*"
-      "chrome-devtools*"
-      "opencode_*"
-    ];
+    ++ mcpToolActions.figma;
+
+  # Every action string any config layer can contain, including runtime wildcards.
+  # Drift checker: observed actions outside this set are additions (exit 1).
+  ruleActions = monitorActions ++ [
+    "execute"
+    "browser"
+    "figma*"
+    "graphify*"
+    "chrome-devtools*"
+    "opencode_*"
+  ];
 
   # Actions the current repo config must emit; "opencode_*" is known but not
   # emitted (no opencodeTools = "deny" call site). Drift checker: missing

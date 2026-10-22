@@ -89,12 +89,7 @@ let
   ruleMatches = action: rule: wildcardMatch action rule.action && wildcardMatch "*" rule.resource;
 
   findLast =
-    predicate: list:
-    let
-      reversed = builtins.foldl' (accumulator: item: [ item ] ++ accumulator) [ ] list;
-      matches = builtins.filter predicate reversed;
-    in
-    if matches == [ ] then null else builtins.head matches;
+    predicate: list: builtins.foldl' (found: item: if predicate item then item else found) null list;
 
   effective =
     action: rules:
@@ -132,7 +127,6 @@ let
 
   figmaToolActions = [ "figma*" ] ++ expectedReads ++ expectedWrites;
   figmaToolRules = rules: builtins.filter (rule: builtins.elem rule.action figmaToolActions) rules;
-  ruleKeys = rules: builtins.map (rule: "${rule.action}|${rule.resource}|${rule.effect}") rules;
 
   wildcardDeny = {
     action = "figma*";
@@ -176,54 +170,40 @@ let
     ))
 
     (check "the default figma capability must behave as deny" (
-      ruleKeys (figmaToolRules defaultRules) == ruleKeys expectedDenyRules
+      figmaToolRules defaultRules == expectedDenyRules
     ))
     (check "figma=inherit must emit no Figma tool rules" (figmaToolRules inheritRules == [ ]))
     (check "figma=deny must emit only the wildcard deny" (
-      ruleKeys (figmaToolRules denyRules) == ruleKeys expectedDenyRules
+      figmaToolRules denyRules == expectedDenyRules
     ))
     (check "figma=read must emit wildcard deny then exactly seven read allows" (
-      ruleKeys (figmaToolRules readRules) == ruleKeys expectedReadRules
+      figmaToolRules readRules == expectedReadRules
     ))
     (check "figma=write must emit wildcard deny, seven reads, then the one write" (
-      ruleKeys (figmaToolRules writeRules) == ruleKeys expectedWriteRules
+      figmaToolRules writeRules == expectedWriteRules
     ))
 
-    (check "figma=allow must be rejected" (
-      throws (mk {
-        figma = "allow";
-      })
-    ))
-    (check "figma=guarded must be rejected" (
-      throws (mk {
-        figma = "guarded";
-      })
-    ))
-    (check "figma=[] must be rejected" (
-      throws (mk {
-        figma = [ ];
-      })
-    ))
-    (check "figma=[\"read\"] must be rejected" (
-      throws (mk {
-        figma = [ "read" ];
-      })
-    ))
-    (check "figma=1 must be rejected" (
-      throws (mk {
-        figma = 1;
-      })
-    ))
-    (check "figma=true must be rejected" (
-      throws (mk {
-        figma = true;
-      })
-    ))
-    (check "figma=null must be rejected" (
-      throws (mk {
-        figma = null;
-      })
-    ))
+  ]
+  ++
+    builtins.map
+      (
+        figma:
+        check "figma=${builtins.toJSON figma} must be rejected" (
+          throws (mk {
+            inherit figma;
+          })
+        )
+      )
+      [
+        "allow"
+        "guarded"
+        [ ]
+        [ "read" ]
+        1
+        true
+        null
+      ]
+  ++ [
     (check "unsupported wildcard patterns must not silently pass" (
       throws (wildcardMatch "figma_x" "figma[0-9]*")
     ))
