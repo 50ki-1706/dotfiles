@@ -80,7 +80,7 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "opencode/minimax-m3.1-flash-free#high";
+      model = "opencode/deepseek-v4.1-flash-free#high";
       description = "Deep-investigation subagent for external research, architecture understanding, and thorough codebase analysis; shallow lookups belong to spec.";
       system = builtins.readFile ./prompts/explore.md;
       permissions = mkPermissions {

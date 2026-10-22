@@ -8,10 +8,10 @@ let
     ];
     general = [
       "xai/grok-build-0.1"
-      "opencode/minimax-m3.1-flash-free#max"
+      "opencode/glm-5.3-flash-free#max"
     ];
     explore = [
-      "opencode/deepseek-v4.1-flash-free#high"
+      "opencode/glm-5.3-flash-free#high"
       "opencode/mimo-v2.6-flash-free"
       "opencode/beam-free#max"
     ];
