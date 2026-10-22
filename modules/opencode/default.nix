@@ -5,7 +5,8 @@ let
     actions.coreActions
     ++ actions.opencodeActions
     ++ actions.mcpToolActions.graphify
-    ++ actions.mcpToolActions.chromeDevtools;
+    ++ actions.mcpToolActions.chromeDevtools
+    ++ actions.mcpToolActions.figma;
   actionDriftMonitor = pkgs.writeTextFile {
     name = "action-drift-monitor";
     destination = "/action-drift-monitor.js";

@@ -18,6 +18,11 @@ in
   #   "deny"    -> { <action>, "*", "deny" } (wildcard for MCP capabilities).
   #   "inherit" -> emit nothing; resolves through the blanket deny (when
   #                denyAll = true) or the base/global layers otherwise.
+  # Figma is string-only and accepts only "read", "write", "deny", "inherit".
+  # "read" emits a `figma*` wildcard deny, then the exact documented read
+  # actions; "write" adds the single approved Code Connect mapping action.
+  # "deny" emits only the wildcard deny; "inherit" emits nothing. There is no
+  # Figma wildcard allow. The exact names are documented, not live-captured.
   # subagent/skill also accept a non-empty list of allowed names; "allow" is
   # rejected. Package managers, servers, and drift checks share actions.nix as
   # the single source of truth for action names.
@@ -39,6 +44,7 @@ in
   execute ? "deny",
   graphify ? "deny",
   chromeDevtools ? "deny",
+  figma ? "deny",
 }:
 let
   # The capability contract is closed: invalid values fail at evaluation time.
@@ -72,6 +78,21 @@ let
       throw "permissions.nix: ${name} does not support \"guarded\" (only shell and read do)"
     else
       throw "permissions.nix: ${name} must be \"allow\", \"deny\", or \"inherit\" (got ${builtins.toJSON value})";
+
+  checkedFigmaEnum =
+    name: value:
+    if
+      builtins.isString value
+      && builtins.elem value [
+        "read"
+        "write"
+        "deny"
+        "inherit"
+      ]
+    then
+      value
+    else
+      throw "permissions.nix: ${name} must be \"read\", \"write\", \"deny\", or \"inherit\" (got ${builtins.toJSON value})";
 
   checkedNames =
     name: value:
@@ -107,6 +128,22 @@ let
     value: names:
     if value == "allow" then builtins.map (action: rule action "*" "allow") names else [ ];
 
+  # The wildcard deny must come before the exact grants in the same list: the
+  # permission evaluator uses the LAST matching rule. Keeping the deny here (not
+  # in the trailing denyIf section) also means "write" cannot reopen other tools.
+  figmaRules =
+    value:
+    if value == "inherit" then
+      [ ]
+    else if value == "deny" then
+      [ (rule "figma*" "*" "deny") ]
+    else
+      [ (rule "figma*" "*" "deny") ]
+      ++ builtins.map (action: rule action "*" "allow") exact.figmaRead
+      ++ (
+        if value == "write" then builtins.map (action: rule action "*" "allow") exact.figmaWrite else [ ]
+      );
+
   # A name list always emits its wildcard deny first, also under denyAll, so
   # that unknown names stay denied regardless of the surrounding layers.
   namesRules =
@@ -121,6 +158,8 @@ let
     opencode = actions.opencodeActions;
     graphify = sorted actions.mcpToolActions.graphify;
     chromeDevtools = sorted actions.mcpToolActions.chromeDevtools;
+    figmaRead = sorted actions.figmaReadActions;
+    figmaWrite = sorted actions.figmaWriteActions;
   };
 
   opts = {
@@ -137,12 +176,13 @@ let
     execute = checkedPlainEnum "execute" execute;
     graphify = checkedPlainEnum "graphify" graphify;
     chromeDevtools = checkedPlainEnum "chromeDevtools" chromeDevtools;
+    figma = checkedFigmaEnum "figma" figma;
     subagent = checkedNames "subagent" subagent;
     skill = checkedNames "skill" skill;
   };
 
-  # Emission order: blanket -> broad allows -> guards -> broad denies ->
-  # subagent list -> skill list -> MCP resource guards.
+  # Emission order: blanket -> broad allows -> exact MCP grants -> guards ->
+  # broad denies -> subagent list -> skill list -> MCP resource guards.
   emitted =
     (if denyAll then [ (rule "*" "*" "deny") ] else [ ])
     ++ allowIf "shell" opts.shell
@@ -158,6 +198,7 @@ let
     ++ exactAllowIf opts.opencodeTools exact.opencode
     ++ exactAllowIf opts.graphify exact.graphify
     ++ exactAllowIf opts.chromeDevtools exact.chromeDevtools
+    ++ figmaRules opts.figma
     ++ guardsIf shellGuards opts.shell
     ++ guardsIf baseReadMirrors opts.read
     ++ guardsIf secretReadGuards opts.read

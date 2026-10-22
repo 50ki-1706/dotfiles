@@ -19,16 +19,16 @@
 
 サブエージェントは再委譲しません。アーキテクチャ文書の更新は、計画に含めて承認された場合に `spec` から `general` へ直接依頼します。`plan_review` の最新結果が `STATUS: COMPLETE` なら、`spec` は質問前に日本語の実装計画を提示します（所定の見出しに従い、ツール呼び出しを伴わない本文のみ）。
 
-組み込みの `build`・`plan` も利用できます。各エージェントの既定モデルと切り替え順は、[設定の変更先](#設定の変更先) にある定義を参照してください。
+組み込みの `build`・`plan` も利用できます。各エージェントの既定モデルと切り替え順は、[設定の変更先](#設定の変更先) にある定義を参照してください。Figma の読み取り権限はグローバル設定で全エージェント（組み込みを含む）に付与します。
 
 ## 権限と制約
 
 | エージェント | ファイル・シェル | MCP | スキル | 委譲先 |
 | --- | --- | --- | --- | --- |
-| `spec` | 読み取り・シェルを許可、編集は拒否 | Graphify | グローバル + プロジェクトで許可したもの | `explore`・`general`・`plan_review` |
-| `general` | 実装を許可、外部ディレクトリは拒否 | Graphify・Chrome DevTools | グローバルのみ | なし |
-| `explore` | 読み取り専用、シェルに制限 | Graphify | なし | なし |
-| `plan_review` | 読み取り専用、指示でシェルを禁止、編集・質問は拒否 | Graphify | なし | なし |
+| `spec` | 読み取り・シェルを許可、編集は拒否 | Graphify・Figma（読み取り） | グローバル + プロジェクトで許可したもの | `explore`・`general`・`plan_review` |
+| `general` | 実装を許可、外部ディレクトリは拒否 | Graphify・Chrome DevTools・Figma（読み取り + Code Connect マッピング追加） | グローバルのみ | なし |
+| `explore` | 読み取り専用、シェルに制限 | Graphify・Figma（読み取り） | なし | なし |
+| `plan_review` | 読み取り専用、指示でシェルを禁止、編集・質問は拒否 | Graphify・Figma（読み取り） | なし | なし |
 
 グローバルスキルの許可対象は [スキル一覧](../../skills/README.md) の5つです。このリポジトリでは `spec` に `nix-verify` も許可します。スキルの利用許可と、`SKILL.md` 自体の読み取り権限は別です。
 
@@ -38,9 +38,62 @@ MCP は既知のツールだけを許可します。未知の action は拒否�
 
 ### Figma MCP
 
-remote MCP の接続先は `https://mcp.figma.com/mcp` です。OAuth はブラウザー経由のみで、認証情報は設定ファイル外に保存されます。将来有効化した後の再認証は `/mcps` または `opencode mcp auth figma` から行います。
+remote MCP の接続先は `https://mcp.figma.com/mcp` です。Figma だけ `codemode = false` にして読み取りツールを直接公開します。`spec` は `execute` を拒否したまま Figma を参照できます。他の local server の codemode 既定値は変更しません。
 
-現時点では全エージェントで Figma ツールと server `figma` の list/read を拒否します。ツールの利用には `actions.nix` の変更承認が必要です。Figma 接続後は、server を省略した `list_mcp_resources` も呼び出し全体が拒否されます。他の server を指定した一覧取得は従来どおりです。
+OAuth はブラウザー経由のみで、認証情報は設定ファイル外に保存されます。反映後の初回認証・再認証は `/mcps` または `opencode mcp auth figma` から行います。
+
+許可する action は `actions.nix` の次の8個だけです。読み取り7個は全エージェント、書き込み1個は `general` のみに付与します。
+
+| 種別 | action |
+| --- | --- |
+| 読み取り | `figma_get_design_context`・`figma_get_metadata`・`figma_get_screenshot`・`figma_get_variable_defs`・`figma_get_figjam`・`figma_get_code_connect_map`・`figma_whoami` |
+| 書き込み | `figma_add_code_connect_map`（Code Connect マッピング追加のみ） |
+
+`use_figma` による canvas 編集・削除・任意コード実行、コード・アーカイブ・ファイル・UI のアップロード、課金・クレジット消費のある action、未レビューのツールは許可しません。`figma*` の allow は作らず、各権限リストの先頭に `figma*` deny を置いてから exact allow を並べます。未知・除外 action は fail-closed で拒否されます。
+
+この8個は公式ドキュメントのツール名に基づく documented-not-live の allowlist で、remote OAuth の `figma` は checker の stdio introspection 対象外です。live の `tools/list` や実呼び出しは未検証です。上流で名前が変わった場合は未知 action として拒否されるため、接続後に `opencode mcp list` と承認済みの読み取りで確認し、必要なら live capture とユーザー承認を経て baseline を更新してください。認証・接続状態だけではツール名を保証しません。
+
+Figma の list/read resource は引き続き拒否します。ツール action の許可と resource 列挙は独立です。`list_mcp_resources` を server 省略で呼ぶと Figma を含むため呼び出し全体が拒否されます。他の server を列挙する場合は `server` に `graphify` などを明示してください。`read_mcp_resource` の `figma` URI も拒否されます。
+
+公式: [Tools and prompts](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/)、[Write to canvas](https://developers.figma.com/docs/figma-mcp-server/write-to-canvas/)、[Local server installation](https://developers.figma.com/docs/figma-mcp-server/local-server-installation/)。
+
+### プロジェクト固有の MCP
+
+MCP server の定義はプロジェクトの `opencode.json` の `mcp.servers.<name>` にも置けます。local server の `command` 配列、`cwd`、`environment`、`codemode` はプロジェクト側で指定でき、バイナリもプロジェクト内のラッパーで構いません。グローバルな server 登録は必須ではありません。
+
+権限は `agents.<id>.permissions` に exact action で書きます。設定プラグインは全ドキュメントの top-level `permissions` を各エージェントの agent 固有ルールより先に結合し、権限評価は最後に一致したルールを採用します。そのため、プロジェクトの top-level allow は後続の agent 固有 `denyAll` の blanket deny や個別 deny を打ち消せず、全エージェントで有効になる保証もありません。プロジェクト固有 MCP の許可は `agents.<id>.permissions` に置き、グローバルな agent ルールより後に評価される exact allow にしてください。この節は MCP 権限の指針であり、top-level allow を一律に禁止するものではありません（既存の `opencode.json` にも skill allow があります）。
+
+現行の action-drift-monitor は `actions.nix` から生成したグローバル baseline に載っている exact action しか通しません。プロジェクト側で allow しても、未知 action は permission.evaluate で拒否されます。したがってプロジェクト固有 server を使うには、その action 名をレビュー・承認済みのうえ `actions.nix` の `ruleActions` と monitor baseline に追加する必要があります。server のグローバル登録やグローバルな権限付与は不要です。
+
+checker の `ruleActions` は「既知」の集合で、観測された未知 action は追加（exit 1）です。`expectedRuleActions` は「現行リポジトリ設定が必ず出力する」集合で、欠落は削除（exit 1）です。将来プロジェクト固有 action を既知にするだけの場合、次のどちらかが必要です。
+
+- グローバル設定に exact の deny ルールを出力して観測可能にし、`expectedRuleActions` を満たす。
+- その action を `expectedRuleActions` から除外する。
+
+これは generic な optional baseline の設計変更であり、現時点では実装しません。Figma は `figma*` deny と8個の exact action を出力するため `expectedRuleActions` に含まれます。全エージェントで `figma = "inherit"` にすると出力が消え、削除 drift になります。
+
+**条件付き:** 以下は将来の generic 対応が承認された場合の最小例で、現行 monitor のままではそのまま使えません（`myproj_get_thing` が baseline 未登録なら拒否されます）。
+
+```jsonc
+{
+  "mcp": {
+    "servers": {
+      "myproj": {
+        "type": "local",
+        "command": ["/Users/koki/bin/myproj-mcp"],
+        "codemode": false
+      }
+    }
+  },
+  "agents": {
+    "general": {
+      "permissions": [
+        { "action": "myproj_get_thing", "resource": "*", "effect": "allow" }
+      ]
+    }
+  }
+}
+```
 
 ## 設定の変更先
 
@@ -94,7 +147,7 @@ nix run .#opencodeActionCheck
 
 `--home ./result` は適用前の候補を検証し、`--capture` は候補 baseline を標準出力に出します。`--skip-introspection` で MCP の確認を省略し、`--mcp-timeout <秒>` で待ち時間を指定できます。
 
-checker は stdio サーバーだけを検査します。remote OAuth の `figma` は baseline のサーバー一覧・introspection allowlist に含めません。
+checker は stdio サーバーだけを検査します。remote OAuth の `figma` は baseline のサーバー一覧・introspection allowlist に含めないため、Figma の action 名は live 検証されません。`figma` の documented-not-live な名前は [Figma MCP](#figma-mcp) の説明に従って別途確認してください。
 
 ### 修正手順
 

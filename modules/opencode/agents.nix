@@ -26,6 +26,7 @@ in
     skill = commonSkills;
     graphify = "deny";
     chromeDevtools = "deny";
+    figma = "read";
   };
   # Ordered fallback chains are validated against these primary models in packages/opencode-model-fallback/chains.nix.
   agents = {
@@ -55,6 +56,7 @@ in
         execute = "inherit";
         graphify = "allow";
         chromeDevtools = "inherit";
+        figma = "read";
       };
     };
     general = {
@@ -76,6 +78,7 @@ in
         execute = "allow";
         graphify = "allow";
         chromeDevtools = "allow";
+        figma = "write";
       };
     };
     explore = {
@@ -100,6 +103,7 @@ in
         execute = "allow";
         graphify = "allow";
         chromeDevtools = "inherit";
+        figma = "read";
       };
     };
     plan_review = {
@@ -124,6 +128,7 @@ in
         execute = "allow";
         graphify = "allow";
         chromeDevtools = "inherit";
+        figma = "read";
       };
     };
   };
