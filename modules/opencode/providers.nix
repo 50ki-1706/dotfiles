@@ -42,8 +42,6 @@ in
     ];
     # TypeSafe. No catalog data on reasoning efforts.
     "jev-1.13-free".variants = [ ];
-    # Meituan. Zen exposes a reasoning toggle, not effort values.
-    "longcat-2.5-preview-free".variants = [ ];
     # Xiaomi. Zen exposes no reasoning effort variants.
     "mimo-v2.6-flash-free".variants = [ ];
     # MiniMax
