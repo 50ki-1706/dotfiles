@@ -30,10 +30,6 @@
         clone_target = "file:///Users/koki/Dev/mywork/eigo-no-hanon/homebrew-tap";
         trusted = true;
       }
-      {
-        name = "stablyai/orca";
-        trusted = true;
-      }
     ];
 
     brews = [
@@ -62,7 +58,6 @@
       "notion"
       "obsidian"
       "openscad@snapshot"
-      "stablyai/orca/orca"
       "raycast"
       "spotify"
       "steam"

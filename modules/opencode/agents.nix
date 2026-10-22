@@ -1,9 +1,6 @@
 let
   commonSkills = [
     "gh-cli"
-    "computer-use"
-    "orca-cli"
-    "orchestration"
     "playwright-cli"
   ];
   mkPermissions = import ./permissions.nix;
