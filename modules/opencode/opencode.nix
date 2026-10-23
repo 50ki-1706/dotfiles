@@ -37,6 +37,7 @@ in
     figma = {
       type = "remote";
       url = "https://mcp.figma.com/mcp";
+      codemode = false;
       timeout = mcpTimeout;
     };
     chrome-devtools = {

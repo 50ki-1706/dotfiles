@@ -162,7 +162,8 @@
   ];
 
   # Pinned OpenCode checks server names for list and `server:uri` for read.
-  # Keep Figma resources denied while its tools remain outside the baseline.
+  # Keep Figma resources denied: the tool action grants in actions.nix are
+  # independent of resource enumeration, and list-without-server stays denied.
   mcpResourceGuards = [
     {
       action = "opencode_list_mcp_resources";

@@ -11,6 +11,10 @@
 # Re-capture with: nix run .#opencodeActionCheck -- --capture
 # After a server upgrade, newly added tools stay denied until the captured names
 # are reviewed, approved, and written here (fail-closed by design).
+#
+# Figma is the exception: its remote OAuth server cannot be introspected over
+# stdio, so its names below are documented-not-live (official docs URLs cited).
+# Review them like live-captured names; a live tools/list is still unverified.
 rec {
   # Servers whose tools participate in drift checks (stdio only).
   mcpServers = [
@@ -23,6 +27,26 @@ rec {
   mcpIntrospectAllowlist = [
     "graphify"
     "chrome-devtools"
+  ];
+
+  # Figma remote MCP actions, documented-not-live (no stdio introspection).
+  # Source: https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/
+  figmaReadActions = [
+    "figma_get_code_connect_map"
+    "figma_get_design_context"
+    "figma_get_figjam"
+    "figma_get_metadata"
+    "figma_get_screenshot"
+    "figma_get_variable_defs"
+    "figma_whoami"
+  ];
+
+  # The only approved Figma write: add a Code Connect mapping. `use_figma` and
+  # other canvas/plugin writes are excluded because they can delete nodes, run
+  # arbitrary code, and may be usage-priced.
+  # Source: https://developers.figma.com/docs/figma-mcp-server/write-to-canvas/
+  figmaWriteActions = [
+    "figma_add_code_connect_map"
   ];
 
   # Tools under the `opencode` namespace that appear as rule actions.
@@ -81,6 +105,7 @@ rec {
       "chrome-devtools_upload_file"
       "chrome-devtools_wait_for"
     ];
+    figma = figmaReadActions ++ figmaWriteActions;
   };
 
   # Builtin tools and the permission action each asserts (or gates, for execute).
@@ -208,20 +233,24 @@ rec {
     "subagent"
   ];
 
-  # Every action string any config layer can contain, including runtime wildcards.
-  # Drift checker: observed actions outside this set are additions (exit 1).
-  ruleActions =
+  # Concrete actions shared by the runtime monitor and the drift checker.
+  monitorActions =
     coreActions
     ++ opencodeActions
     ++ mcpToolActions.graphify
     ++ mcpToolActions.chromeDevtools
-    ++ [
-      "execute"
-      "browser"
-      "graphify*"
-      "chrome-devtools*"
-      "opencode_*"
-    ];
+    ++ mcpToolActions.figma;
+
+  # Every action string any config layer can contain, including runtime wildcards.
+  # Drift checker: observed actions outside this set are additions (exit 1).
+  ruleActions = monitorActions ++ [
+    "execute"
+    "browser"
+    "figma*"
+    "graphify*"
+    "chrome-devtools*"
+    "opencode_*"
+  ];
 
   # Actions the current repo config must emit; "opencode_*" is known but not
   # emitted (no opencodeTools = "deny" call site). Drift checker: missing
