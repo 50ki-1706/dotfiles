@@ -6,6 +6,13 @@ let
       id = e;
       settings.reasoningEffort = e;
     }) efforts;
+  # OpenRouter は reasoningEffort ではなく settings.reasoning.effort を使う。
+  mkOpenRouterVariants =
+    efforts:
+    map (e: {
+      id = e;
+      settings.reasoning.effort = e;
+    }) efforts;
 in
 {
   # OpenCode Zen free
@@ -84,5 +91,37 @@ in
       "xhigh"
     ];
     "grok-build-0.1".variants = mkVariants [ ];
+  };
+  # OpenRouter free coding/subagent shortlist.
+  # https://openrouter.ai/api/v1/models checked 2026-10-23.
+  openrouter.models = {
+    # Thinking Machines
+    "thinkingmachines/inkling-small:free".variants = mkOpenRouterVariants [
+      "none"
+      "minimal"
+      "low"
+      "medium"
+      "high"
+      "max"
+    ];
+    # NVIDIA. none も reasoning effort の値として指定する。
+    "nvidia/nemotron-3-ultra-550b-a55b:free".variants = mkOpenRouterVariants [
+      "none"
+      "medium"
+      "high"
+    ];
+    # Recursive. 固定中の 2.0.22 snapshot はメタデータ未収載のため、既定の
+    # text+image, 200k/32k を明示値で補う。variants=[] は fallback の自動生成だけを
+    # 防ぎ、後でカタログが更新された場合の variants は保持する。
+    "recursive/flint-v1.0:free" = {
+      limit = {
+        context = 262144;
+        output = 235929;
+      };
+      capabilities.input = [ "text" ];
+      variants = [ ];
+    };
+    # Cohere
+    "cohere/north-mini-code:free".variants = [ ];
   };
 }
