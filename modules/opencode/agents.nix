@@ -28,7 +28,9 @@ in
     chromeDevtools = "deny";
     figma = "read";
   };
-  # Ordered fallback chains are validated against these primary models in packages/opencode-model-fallback/chains.nix.
+  # Keep Japanese dialogue/planning on Sol; use Zen free primaries only for workers.
+  # Review uses a separate model so it provides another perspective.
+  # Ordered fallback chains are validated in packages/opencode-model-fallback/chains.nix.
   agents = {
     spec = {
       mode = "primary";
@@ -83,7 +85,7 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "opencode/deepseek-v4.1-flash-free#high";
+      model = "opencode/mimo-v2.6-flash-free";
       description = "Deep-investigation subagent for external research, architecture understanding, and thorough codebase analysis; shallow lookups belong to spec.";
       system = builtins.readFile ./prompts/explore.md;
       permissions = mkPermissions {
@@ -108,7 +110,7 @@ in
     };
     plan_review = {
       mode = "subagent";
-      model = "opencode/glm-5.3-flash-free#max";
+      model = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free#high";
       description = "Reviews plans, difficult design decisions, and consequential changes using read-only evidence.";
       system = builtins.readFile ./prompts/plan_review.md;
       permissions = mkPermissions {
