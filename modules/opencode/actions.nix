@@ -1,8 +1,10 @@
 # OpenCode permission action space: single source of truth for action names.
 #
-# Captured from the pinned OpenCode v2.0.22 source tree
+# Original capture from the OpenCode v2.0.22 source tree
 # (github.com/anomalyco/opencode commit 527f0b931d1f9b3ebd34e106c51b31ce5db5b075).
 # `source` fields cite file:line under packages/ of that tree.
+# Reviewed against v2.1.4: worktree_remove reuses edit (recorded below).
+# New worktree_create/list actions remain outside the grants and monitor baseline.
 #
 # MCP tool names are live-captured (initialize -> tools/list over stdio, never
 # tools/call) against the servers configured in ./opencode.nix. Registered action
@@ -194,6 +196,11 @@ rec {
       name = "models";
       action = "opencode_models";
       source = "packages/core/src/tool/plugin/opencode.ts:135 (namespace opencode)";
+    }
+    {
+      name = "worktree_remove";
+      action = "edit";
+      source = "packages/core/src/tool/plugin/opencode.ts:182,187,192-199 (v2.1.4, namespace opencode)";
     }
     {
       name = "browser";
