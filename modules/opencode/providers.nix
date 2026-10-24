@@ -9,6 +9,10 @@ let
     }) efforts;
 in
 {
+  # Catalog metadata from OpenCode v2.1.4's config-free /api/model listing,
+  # checked 2026-10-24 with current auth retained. Not an inference test.
+  # Empty variant lists preserve catalog variants: Cohere inherits boolean
+  # reasoning.enabled none/thinking, not reasoning.effort.
   # OpenCode Zen free
   opencode.models = {
     # Reflection
@@ -41,8 +45,6 @@ in
       "high"
       "max"
     ];
-    # TypeSafe. No catalog data on reasoning efforts.
-    "jev-1.13-free".variants = [ ];
     # Xiaomi. Zen exposes no reasoning effort variants.
     "mimo-v2.6-flash-free".variants = [ ];
     # NVIDIA. Lightning exposes no reasoning effort variants.
@@ -59,7 +61,6 @@ in
   # OpenAI
   openai.models = {
     "gpt-6.1-sol".variants = mkVariants "reasoningEffort" [
-      "none"
       "low"
       "medium"
       "high"
@@ -78,13 +79,12 @@ in
   # xAI
   xai.models = {
     "grok-4.7".variants = mkVariants "reasoningEffort" [
-      "none"
       "low"
       "medium"
       "high"
       "xhigh"
     ];
-    "grok-build-0.1".variants = mkVariants "reasoningEffort" [ ];
+    "grok-build-0.1".variants = [ ];
   };
   # OpenRouter free coding/subagent shortlist.
   # https://openrouter.ai/api/v1/models checked 2026-10-23.
@@ -104,17 +104,8 @@ in
       "medium"
       "high"
     ];
-    # Recursive. 固定中の 2.0.22 snapshot はメタデータ未収載のため、既定の
-    # text+image, 200k/32k を明示値で補う。variants=[] は fallback の自動生成だけを
-    # 防ぎ、後でカタログが更新された場合の variants は保持する。
-    "recursive/flint-v1.0:free" = {
-      limit = {
-        context = 262144;
-        output = 235929;
-      };
-      capabilities.input = [ "text" ];
-      variants = [ ];
-    };
+    # Recursive
+    "recursive/flint-v1.0:free".variants = [ ];
     # Cohere
     "cohere/north-mini-code:free".variants = [ ];
   };
