@@ -11,6 +11,13 @@ let
       + "\n// Resolved from a directory-resident store path.\n";
   };
   modelFallback = pkgs.callPackage ../../packages/opencode-model-fallback { };
+  writingRulesRouter = pkgs.writeTextFile {
+    name = "writing-rules-router";
+    destination = "/writing-rules-router.js";
+    text =
+      builtins.replaceStrings [ "@LANGUAGE_RULES@" ] [ (builtins.toJSON (import ./prompts/languages)) ]
+        (builtins.readFile ./plugins/writing-rules-router.js);
+  };
 in
 {
   programs.opencode = {
@@ -25,6 +32,10 @@ in
   };
   home.file.".config/opencode/plugins/spec-question-guard.js" = {
     source = ./plugins/spec-question-guard.js;
+    force = true;
+  };
+  home.file.".config/opencode/plugins/writing-rules-router.js" = {
+    source = "${writingRulesRouter}/writing-rules-router.js";
     force = true;
   };
   # Keep generated plugins directory-resident; OpenCode 2.0.22 cannot resolve a bare store-file source.
