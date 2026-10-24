@@ -25,6 +25,35 @@ test("registers the pinned SDK execute.before hook", async () => {
   assert.equal(typeof await harness(), "function")
 })
 
+test("setup waits for asynchronous hook registration before becoming ready", async () => {
+  let before
+  let release
+  let ready = false
+  const registration = new Promise((resolve) => { release = resolve })
+  const setup = plugin.setup({ tool: {
+    async hook(name, callback) {
+      assert.equal(name, "execute.before")
+      await registration
+      before = callback
+    },
+  } }).then(() => { ready = true })
+  await Promise.resolve()
+  await Promise.resolve()
+  assert.equal(ready, false, "setup must remain pending until the hook is registered")
+  assert.equal(before, undefined)
+  release()
+  await setup
+  assert.equal(ready, true)
+  assert.throws(() => before(event("opencode_worktree_remove")), /Automatic worktree removal is disabled/)
+})
+
+test("setup propagates asynchronous hook registration rejection", async () => {
+  const failure = new Error("registration unavailable")
+  await assert.rejects(plugin.setup({ tool: {
+    async hook() { throw failure },
+  } }), (error) => error === failure)
+})
+
 test("direct and Code Mode native calls reject every agent and force setting before the executor", async () => {
   const before = await harness()
   let executed = 0
