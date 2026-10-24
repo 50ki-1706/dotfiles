@@ -32,6 +32,10 @@ in
       template = builtins.readFile ./commands/create-pr.md;
       description = "セッションの変更からConventional Commits形式のタイトルでPRを作成";
     };
+    codex-refactor = {
+      template = builtins.readFile ./commands/codex-refactor.md;
+      description = "セッションの変更をCodexでリファクタリング";
+    };
   };
   watcher = {
     ignore = [
