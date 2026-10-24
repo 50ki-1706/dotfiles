@@ -9,6 +9,20 @@ in
 (import ./agents.nix)
 // {
   update = "disable";
+  # Keep long-running orchestration within context while retaining recent
+  # requirements, reviewed plans, and worker results. Leave buffer model-scaled.
+  compaction = {
+    auto = true;
+    keep.tokens = 20000;
+  };
+  # Full oversized output remains on disk for targeted follow-up reads.
+  tool_output = {
+    max_lines = 2000;
+    max_bytes = 51200;
+  };
+  snapshots = true;
+  # Root (depth 0) may delegate; workers (depth 1) may not delegate again.
+  experimental.subagent_depth = 1;
   commands = {
     commit = {
       template = builtins.readFile ./commands/commit.md;

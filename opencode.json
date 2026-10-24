@@ -9,6 +9,11 @@
       "permissions": [
         { "action": "skill", "resource": "nix-verify", "effect": "allow" }
       ]
+    },
+    "general": {
+      "permissions": [
+        { "action": "skill", "resource": "nix-verify", "effect": "allow" }
+      ]
     }
   }
 }

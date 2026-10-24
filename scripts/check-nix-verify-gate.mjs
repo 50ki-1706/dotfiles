@@ -404,6 +404,35 @@ async function testUnrelatedSudoRemainsDenied() {
   }
 }
 
+async function testMutatingToolsInvalidateEvidence() {
+  currentBranch = "main"
+  for (const tool of ["edit", "write", "patch", "opencode_worktree_remove"]) {
+    const harness = await makeHarness()
+    await recordAllBuildEvidence(harness)
+    await harness.hooks.tool["execute.before"]({
+      tool,
+      sessionID: harness.sessionID,
+      messageID: `message-${++callNumber}`,
+      id: `tool-${callNumber}`,
+      agent: AGENT,
+      input: {},
+    })
+    assertDenied(await harness.run(HM_BUILD), `${tool} must invalidate fmt evidence`)
+    assertDenied(await harness.run(DARWIN_SWITCH), `${tool} must invalidate switch evidence`)
+    await recordAllBuildEvidence(harness)
+    assertAsk(await harness.run(DARWIN_SWITCH), `${tool} permits switch after full revalidation`)
+  }
+
+  const readOnly = await makeHarness()
+  await recordAllBuildEvidence(readOnly)
+  await readOnly.hooks.tool["execute.before"]({
+    tool: "opencode_worktree_list",
+    sessionID: readOnly.sessionID,
+    input: {},
+  })
+  assertAsk(await readOnly.run(DARWIN_SWITCH), "listing worktrees preserves verification evidence")
+}
+
 try {
   await testExactSwitchesRequireFullEvidence()
   await testDeclarationAndEvidenceOrder()
@@ -412,6 +441,7 @@ try {
   await testLegacySwitchesAreDeniedWithMigrationMessage()
   await testNonCanonicalSwitchesAreDenied()
   await testWrappersAndMutationDoNotProvideEvidence()
+  await testMutatingToolsInvalidateEvidence()
   await testUnrelatedSudoRemainsDenied()
   console.log("check-nix-verify-gate: all tests passed")
 } finally {

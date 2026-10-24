@@ -34,9 +34,9 @@
 //   live branch is still main.
 // - Any recognized mutation (rm/mv/cp/..., sed -i, perl -i, git mutations
 //   including worktree/clone/restore/switch/revert, file redirects) clears the
-//   whole session's evidence independently of stage matching. Edit-family tool
-//   attempts clear it too. A fmt attempt clears it as well, because fmt can
-//   change files; build and switch attempts do not clear.
+//   whole session's evidence independently of stage matching. Edit-family and
+//   worktree removal tool attempts clear it too. A fmt attempt clears it as
+//   well, because fmt can change files; build and switch attempts do not clear.
 // - Internal errors on matched attempts deny (fail-closed); unmatched
 //   commands and other permission actions are left untouched.
 //
@@ -136,7 +136,8 @@ const GIT_TOKEN_RE = /(?:^|[\s;&|("'`(])git\b/
 const GIT_MUTATION_SUBCOMMAND_RE =
   /\b(?:apply|am|checkout|merge|pull|reset|restore|revert|stash|rebase|switch|cherry-pick|worktree|clone)\b/
 const REDIRECT_RE = />>?/g
-const EDIT_FAMILY = new Set(["edit", "write", "patch"])
+// OpenCode 2.1.4's optional worktree removal tool also uses the edit permission.
+const EDIT_FAMILY = new Set(["edit", "write", "patch", "opencode_worktree_remove"])
 const REQUIRED_TOOL_IDS = ["shell", "edit", "write", "patch"]
 
 const CALL_TTL_MS = 5 * 60 * 1000
