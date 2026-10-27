@@ -56,9 +56,26 @@ in
       "xhigh"
     ];
   };
-  # OpenAI
+  # OpenAI featured models.
+  # https://platform.openai.com/docs/models and https://models.dev/api.json
+  # openai provider, checked 2026-10-27. Efforts match each catalog
+  # reasoning_options effort list.
   openai.models = {
+    "gpt-6-astra".variants = mkVariants "reasoningEffort" [
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
     "gpt-6.1-sol".variants = mkVariants "reasoningEffort" [
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
+    "gpt-6.1-terra".variants = mkVariants "reasoningEffort" [
       "none"
       "low"
       "medium"
