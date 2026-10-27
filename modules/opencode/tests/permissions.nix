@@ -1,4 +1,4 @@
-# Pure Nix regression test for the approved Figma permission plan.
+# Pure Nix regression test for agent roles and the Figma permission plan.
 #
 # Run: nix eval --json --file modules/opencode/tests/permissions.nix
 #
@@ -57,12 +57,12 @@ let
     "figma_weave_upload_asset"
     "figma_write_to_canvas"
   ];
-  agentNames = [
-    "spec"
+  workerNames = [
     "general"
     "explore"
     "plan_review"
   ];
+  agentNames = [ "spec" ] ++ workerNames;
 
   sorted = builtins.sort (left: right: left < right);
 
@@ -86,17 +86,27 @@ let
     else
       action == pattern;
 
-  ruleMatches = action: rule: wildcardMatch action rule.action && wildcardMatch "*" rule.resource;
+  ruleMatches =
+    action: resource: rule:
+    wildcardMatch action rule.action && wildcardMatch resource rule.resource;
 
   findLast =
     predicate: list: builtins.foldl' (found: item: if predicate item then item else found) null list;
 
-  effective =
-    action: rules:
+  effectiveFor =
+    action: resource: rules:
     let
-      found = findLast (ruleMatches action) rules;
+      found = findLast (ruleMatches action resource) rules;
     in
     if found == null then "ask" else found.effect;
+
+  effective = action: effectiveFor action "*";
+  delegateEffect = effectiveFor "subagent";
+
+  # Role checks for generic commands ignore narrowly scoped shell guards.
+  # This helper does not validate resource-specific guard exceptions.
+  unscopedEffect =
+    action: rules: effective action (builtins.filter (rule: rule.resource == "*") rules);
 
   indexOfFirst =
     predicate: list:
@@ -258,8 +268,46 @@ let
     )
   ) scopes
   ++ [
+    (check "spec must be able to make light edits" (effective "edit" (scopeRules "spec") == "allow"))
     (check "spec execute must remain denied" (effective "execute" (scopeRules "spec") == "deny"))
-  ];
+    (check "spec must be able to ask for missing information" (
+      effective "question" (scopeRules "spec") == "allow"
+    ))
+    (check "general must be able to edit, execute code, and run ordinary shell commands" (
+      effective "edit" (scopeRules "general") == "allow"
+      && effective "execute" (scopeRules "general") == "allow"
+      && unscopedEffect "shell" (scopeRules "general") == "allow"
+    ))
+    (check "spec may delegate only to the three configured workers" (
+      builtins.all (name: delegateEffect name (scopeRules "spec") == "allow") workerNames
+      && delegateEffect "unknown_worker" (scopeRules "spec") == "deny"
+      &&
+        sorted (
+          builtins.map (rule: rule.resource) (
+            builtins.filter (rule: rule.action == "subagent" && rule.effect == "allow") (scopeRules "spec")
+          )
+        ) == sorted workerNames
+    ))
+  ]
+  ++
+    builtins.concatMap
+      (name: [
+        (check "${name} must not edit files" (effective "edit" (scopeRules name) == "deny"))
+        (check "${name} must not run ordinary shell commands" (
+          unscopedEffect "shell" (scopeRules name) == "deny"
+        ))
+      ])
+      [
+        "explore"
+        "plan_review"
+      ]
+  ++ builtins.concatMap (name: [
+    (check "${name} must be a subagent" (agents.agents.${name}.mode == "subagent"))
+    (check "${name} must not question the user directly" (
+      effective "question" (scopeRules name) == "deny"
+    ))
+    (check "${name} must not delegate further" (effective "subagent" (scopeRules name) == "deny"))
+  ]) workerNames;
 
   failures = builtins.filter (failure: failure != null) checks;
 in

@@ -45,6 +45,10 @@ in
     source = ./plugins/nix-verify-gate.js;
     force = true;
   };
+  home.file.".config/opencode/plugins/worktree-removal-guard.js" = {
+    source = ./plugins/worktree-removal-guard.js;
+    force = true;
+  };
   home.file.".config/opencode/cli.json" = {
     text = builtins.toJSON (import ./cli.nix);
     force = true;
