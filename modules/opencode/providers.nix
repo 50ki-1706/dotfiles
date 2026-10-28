@@ -58,9 +58,27 @@ in
       "xhigh"
     ];
   };
-  # OpenAI
+  # OpenAI featured models.
+  # https://platform.openai.com/docs/models and https://models.dev/api.json
+  # openai provider, checked 2026-10-28. Efforts match each catalog
+  # reasoning_options effort list.
   openai.models = {
+    "gpt-6-astra".variants = mkVariants "reasoningEffort" [
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
     "gpt-6.1-sol".variants = mkVariants "reasoningEffort" [
+      "low"
+      "medium"
+      "high"
+      "xhigh"
+      "max"
+    ];
+    "gpt-6.1-terra".variants = mkVariants "reasoningEffort" [
+      "none"
       "low"
       "medium"
       "high"
@@ -76,7 +94,9 @@ in
       "max"
     ];
   };
-  # xAI
+  # xAI. https://docs.x.ai/docs/models and https://models.dev/api.json
+  # xai provider, checked 2026-10-28. grok-4.7 accepts low, medium, high,
+  # and xhigh. "none" is not a supported effort.
   xai.models = {
     "grok-4.7".variants = mkVariants "reasoningEffort" [
       "low"
@@ -87,9 +107,18 @@ in
     "grok-build-0.1".variants = [ ];
   };
   # OpenRouter free coding/subagent shortlist.
-  # https://openrouter.ai/api/v1/models checked 2026-10-23.
+  # https://openrouter.ai/api/v1/models checked 2026-10-28.
   openrouter.models = {
-    # Thinking Machines
+    # Thinking Machines. Full Inkling (41B active / 975B), same effort ladder.
+    "thinkingmachines/inkling:free".variants = mkVariants "reasoning" [
+      "none"
+      "minimal"
+      "low"
+      "medium"
+      "high"
+      "max"
+    ];
+    # Thinking Machines. Smaller, more efficient sibling (12B active / 276B).
     "thinkingmachines/inkling-small:free".variants = mkVariants "reasoning" [
       "none"
       "minimal"
