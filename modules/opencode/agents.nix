@@ -4,6 +4,7 @@ let
     "playwright-cli"
   ];
   mkPermissions = import ./permissions.nix;
+  mkPrompt = import ./prompts/mk-prompt.nix;
 in
 {
   "$schema" = "https://opencode.ai/config.json";
@@ -36,7 +37,10 @@ in
       mode = "primary";
       model = "openai/gpt-6.1-sol#xhigh";
       description = "Orchestrates work in Japanese, handles light research and small edits, presents reviewed plans, and continues execution without plan approval.";
-      system = builtins.readFile ./prompts/spec.md;
+      system = mkPrompt [
+        ./prompts/spec.md
+        ./prompts/writing.md
+      ];
       permissions = mkPermissions {
         denyAll = true;
         shell = "allow";
@@ -65,7 +69,10 @@ in
       mode = "subagent";
       model = "opencode/deepseek-v4.1-flash-free#max";
       description = "Executes delegated commands, code, implementation, verification, and other operational work outside deep research and plan review.";
-      system = builtins.readFile ./prompts/general.md;
+      system = mkPrompt [
+        ./prompts/general.md
+        ./prompts/writing.md
+      ];
       permissions = mkPermissions {
         denyAll = true;
         shell = "allow";
