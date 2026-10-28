@@ -11,7 +11,7 @@ let
   # Reserve xAI for the final review fallback to leave capacity for grokbot.
   fallbackLists = {
     spec = [
-      "openrouter/thinkingmachines/inkling-small:free#high"
+      "openrouter/thinkingmachines/inkling:free#high"
       "openrouter/recursive/flint-v1.0:free"
       "opencode/beam-free#max"
     ];
@@ -21,7 +21,7 @@ let
       "openai/gpt-6.1-sol#high"
     ];
     explore = [
-      "openrouter/thinkingmachines/inkling-small:free#high"
+      "openrouter/thinkingmachines/inkling:free#high"
       "openrouter/cohere/north-mini-code:free"
       "openai/gpt-6-luna#high"
     ];
