@@ -2,7 +2,8 @@
 //
 // The baseline is generated at deploy time (modules/opencode/default.nix) from
 // modules/opencode/actions.nix: core asserted actions, the `opencode` namespace
-// tools, and the live-captured MCP tool names. Any permission.evaluate event
+// tools, live-captured stdio MCP names, and documented-not-live Figma names.
+// Any permission.evaluate event
 // for an action outside the baseline is denied (fail-closed), so a new upstream
 // tool cannot silently execute before the drift is reviewed and approved.
 //

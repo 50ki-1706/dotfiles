@@ -17,9 +17,9 @@
 // Rules:
 // - The first stage unlocks only after an assistant record in the current turn
 //   starts (first non-empty line) with "STATUS: COMPLETE" and its `agent`
-//   matches the expected agent. Details may follow on the same line or on
-//   later lines. Tool parts, subagent outputs, and mid-text citations do not
-//   count.
+//   matches the permission event agent, or the correlated execute.before agent
+//   when the event has none. Missing identity fails closed. Details may follow;
+//   tool parts, subagent outputs, and mid-text citations do not count.
 // - Stage permission attempts must be bare exact commands. Allowed forms:
 //   fmt = "nix fmt"; HM build = "nix run home-manager -- build --flake .#koki";
 //   darwin build = "nix build .#darwinConfigurations.mac.system --out-link result-darwin";
@@ -48,7 +48,8 @@
 // replaced with an echoing `false` so nothing is activated. This applies to
 // recognized switch attempts only and never touches any other command.
 //
-// Pinned runtime shape (verified; evidence preserved in .probe-shape/):
+// Historical v2.0.22 runtime shape (evidence preserved in .probe-shape/;
+// the current pin is v2.1.4):
 // @opencode/client@2.0.22 dist/promise/generated/types.d.ts:3300
 // (SessionMessageInfo union), :2529-2542 (SessionMessageUser carries `text`
 // and `type:"user"`), :3232-3245 (SessionMessageAssistant carries
@@ -82,15 +83,7 @@
 //   evidence or block a stage.
 // - Backgrounded commands produce no evidence (their execute.after metadata
 //   carries status "running").
-// - Agent identity is fail-closed: the expected agent is the permission event
-//   agent, else the agent recorded on the correlated tool call from
-//   execute.before. A declaration counts only from an assistant record whose
-//   `agent` matches; when neither source has an agent id the attempt is
-//   treated as undeclared and denied.
-// - The declaration line must START with "STATUS: COMPLETE" (prefix match on
-//   the first non-empty line), so detail after it on the same line is fine.
-//
-// TODO: capture the live adversarial spell-battery (L3) after this lands on
+// TODO(adversarial-spell-battery): capture the live L3 battery after this lands on
 // main and fold confirmed exotic spellings into the scanners.
 
 import { spawnSync as nodeSpawnSync } from "node:child_process"

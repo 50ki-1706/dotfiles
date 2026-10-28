@@ -6,7 +6,7 @@
 # Reviewed against v2.1.4: worktree_remove reuses edit (recorded below).
 # New worktree_create/list actions remain outside the grants and monitor baseline.
 #
-# MCP tool names are live-captured (initialize -> tools/list over stdio, never
+# Stdio MCP tool names are live-captured (initialize -> tools/list, never
 # tools/call) against the servers configured in ./opencode.nix. Registered action
 # name = `<sanitize(server)>_<sanitize(tool)>` with [^a-zA-Z0-9_-] -> "_"
 # (packages/core/src/tool/mcp.ts:16-17, registered in runtime.ts:274-280).
@@ -62,7 +62,7 @@ rec {
     "opencode_models" # tool/plugin/opencode.ts:135
   ];
 
-  # Full registered action names for MCP tools (live-captured, sorted).
+  # Registered MCP action names; stdio names are live-captured and sorted.
   mcpToolActions = {
     graphify = [
       "graphify_get_community"
