@@ -160,6 +160,232 @@ let
   readRules = mk { figma = "read"; };
   writeRules = mk { figma = "write"; };
 
+  # Literal expectations remain independent of the guard definitions.
+  expectedShellGuards = [
+    {
+      action = "shell";
+      resource = "sudo *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "rm -rf *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "chmod 777 *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "chmod -R 777 *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "chown -R *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "dd *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "shutdown *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "reboot *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "halt *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "curl * | sh";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "curl * | bash";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "wget * | sh";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "wget * | bash";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "git reset --hard *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "git clean *";
+      effect = "deny";
+    }
+    {
+      action = "shell";
+      resource = "git push*";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "brew install *";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "brew uninstall *";
+      effect = "ask";
+    }
+    {
+      action = "shell";
+      resource = "nix run home-manager -- switch *";
+      effect = "ask";
+    }
+  ];
+  expectedReadGuards = [
+    {
+      action = "read";
+      resource = "*.env";
+      effect = "ask";
+    }
+    {
+      action = "read";
+      resource = "*.env.*";
+      effect = "ask";
+    }
+    {
+      action = "read";
+      resource = "*.env.example";
+      effect = "allow";
+    }
+    {
+      action = "read";
+      resource = ".env";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = ".env.*";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "**/.env";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "**/.env.*";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = ".env.example";
+      effect = "allow";
+    }
+    {
+      action = "read";
+      resource = "**/.env.example";
+      effect = "allow";
+    }
+    {
+      action = "read";
+      resource = "*.key";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "*.pem";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "id_rsa*";
+      effect = "deny";
+    }
+    {
+      action = "read";
+      resource = "**/id_rsa*";
+      effect = "deny";
+    }
+  ];
+  expectedMcpGuards = [
+    {
+      action = "opencode_list_mcp_resources";
+      resource = "figma*";
+      effect = "deny";
+    }
+    {
+      action = "opencode_read_mcp_resource";
+      resource = "figma*";
+      effect = "deny";
+    }
+  ];
+  guardActions = [
+    "shell"
+    "read"
+    "opencode_list_mcp_resources"
+    "opencode_read_mcp_resource"
+  ];
+  guardRules = rules: builtins.filter (rule: builtins.elem rule.action guardActions) rules;
+  broadRule = action: effect: {
+    inherit action effect;
+    resource = "*";
+  };
+  expectedProfile =
+    profile:
+    (
+      if profile == "allow" then
+        [
+          (broadRule "shell" "allow")
+          (broadRule "read" "allow")
+        ]
+      else
+        [ ]
+    )
+    ++ (
+      if profile == "allow" || profile == "guarded" then
+        expectedShellGuards ++ expectedReadGuards
+      else
+        [ ]
+    )
+    ++ (
+      if profile == "deny" then
+        [
+          (broadRule "shell" "deny")
+          (broadRule "read" "deny")
+        ]
+      else
+        [ ]
+    )
+    ++ expectedMcpGuards;
+
   throws = expression: !(builtins.tryEval (builtins.deepSeq expression true)).success;
 
   check = message: condition: if condition then null else message;
@@ -194,6 +420,30 @@ let
     ))
 
   ]
+  ++
+    builtins.map
+      (
+        profile:
+        let
+          rules = mk {
+            shell = profile;
+            read = profile;
+          };
+          mcpGuardCount = builtins.length expectedMcpGuards;
+          trailingRules = builtins.genList (
+            index: builtins.elemAt rules (builtins.length rules - mcpGuardCount + index)
+          ) mcpGuardCount;
+        in
+        check "${profile} must emit the exact ordered shell, read, and trailing MCP guards" (
+          guardRules rules == expectedProfile profile && trailingRules == expectedMcpGuards
+        )
+      )
+      [
+        "allow"
+        "guarded"
+        "inherit"
+        "deny"
+      ]
   ++
     builtins.map
       (
