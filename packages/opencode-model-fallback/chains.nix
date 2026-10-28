@@ -18,17 +18,17 @@ let
     general = [
       "openrouter/recursive/flint-v1.0:free"
       "openrouter/cohere/north-mini-code:free"
-      "openai/gpt-6.1-sol#high"
+      "xai/grok-build-0.1"
     ];
     explore = [
       "openrouter/thinkingmachines/inkling:free#high"
       "openrouter/cohere/north-mini-code:free"
-      "openai/gpt-6-luna#high"
+      "xai/grok-build-0.1"
     ];
     plan_review = [
-      "openai/gpt-6-luna#max"
-      "opencode/glm-5.3-flash-free#max"
+      "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free#high"
       "xai/grok-4.7#high"
+      "openai/gpt-6.1-terra#medium"
     ];
   };
   threshold = 3;

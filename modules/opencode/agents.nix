@@ -67,7 +67,7 @@ in
     };
     general = {
       mode = "subagent";
-      model = "opencode/deepseek-v4.1-flash-free#max";
+      model = "openai/gpt-6.1-terra#medium";
       description = "Executes delegated commands, code, implementation, verification, and other operational work outside deep research and plan review.";
       system = mkPrompt [
         ./prompts/general.md
@@ -95,7 +95,7 @@ in
     };
     explore = {
       mode = "subagent";
-      model = "opencode/mimo-v2.6-flash-free";
+      model = "openai/gpt-6.1-terra#medium";
       description = "Deep-investigation subagent for external research, architecture understanding, and thorough codebase analysis; shallow lookups belong to spec.";
       system = builtins.readFile ./prompts/explore.md;
       permissions = mkPermissions {
@@ -120,7 +120,7 @@ in
     };
     plan_review = {
       mode = "subagent";
-      model = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free#high";
+      model = "opencode/glm-5.3-flash-free#max";
       description = "Reviews implementation plans for completeness, feasibility, and validation; provides read-only design and consequential change reviews when requested.";
       system = builtins.readFile ./prompts/plan_review.md;
       permissions = mkPermissions {
