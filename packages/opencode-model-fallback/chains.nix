@@ -3,12 +3,13 @@ let
   agentModels = agentConfig.agents;
   # Account budgets, shared across each provider's free models:
   # OpenRouter: 1,000 requests/day, 20/minute; Zen: 200 requests/day.
-  # Only general/explore start on Zen; spec/review use it only as a late fallback.
+  # general and explore start on openai/gpt-6.1-terra#medium.
+  # plan_review starts on Zen; spec uses Zen only as a late fallback.
   # Each model step, including tool-result continuations, consumes another request.
-  # Keep spec on Sol for Japanese dialogue and review on a separate OpenRouter model.
-  # Workers try OpenRouter free models before OpenAI, which carries work after free caps.
+  # Keep spec on Sol for Japanese dialogue. Review starts on a separate Zen model.
+  # Workers start on OpenAI. Their fallbacks are OpenRouter free models, then xAI.
   # Three distinct fallback models cover model-specific outages; shared caps remain shared.
-  # Reserve xAI for the final review fallback to leave capacity for grokbot.
+  # xAI is the last general/explore fallback and the second plan_review fallback.
   fallbackLists = {
     spec = [
       "openrouter/thinkingmachines/inkling:free#high"
