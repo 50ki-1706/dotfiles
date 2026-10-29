@@ -18,6 +18,19 @@ let
       builtins.replaceStrings [ "@LANGUAGE_RULES@" ] [ (builtins.toJSON (import ./prompts/languages)) ]
         (builtins.readFile ./plugins/writing-rules-router.js);
   };
+  # OpenCode 2.0.22 failed to resolve generated bare store-file sources.
+  # Keep directory-resident paths; this historical failure does not establish
+  # that the current pin has the same limitation. The monitor's appended comment
+  # changes its store path to avoid a cached rejection on later activation; it
+  # does not prove that a running service will recover.
+  pluginSources = {
+    "spec-question-guard.js" = ./plugins/spec-question-guard.js;
+    "writing-rules-router.js" = "${writingRulesRouter}/writing-rules-router.js";
+    "model-fallback.js" = "${modelFallback}/model-fallback.js";
+    "action-drift-monitor.js" = "${actionDriftMonitor}/action-drift-monitor.js";
+    "nix-verify-gate.js" = ./plugins/nix-verify-gate.js;
+    "worktree-removal-guard.js" = ./plugins/worktree-removal-guard.js;
+  };
 in
 {
   programs.opencode = {
@@ -26,42 +39,22 @@ in
     settings = import ./opencode.nix { inherit pkgs; };
   };
 
-  home.file.".config/opencode/AGENTS.md" = {
-    text = builtins.readFile ./AGENTS.md + "\n" + builtins.readFile ./prompts/output-format.md;
-    force = true;
-  };
-  home.file.".config/opencode/plugins/spec-question-guard.js" = {
-    source = ./plugins/spec-question-guard.js;
-    force = true;
-  };
-  home.file.".config/opencode/plugins/writing-rules-router.js" = {
-    source = "${writingRulesRouter}/writing-rules-router.js";
-    force = true;
-  };
-  # Keep generated plugins directory-resident; OpenCode 2.0.22 cannot resolve a bare store-file source.
-  home.file.".config/opencode/plugins/model-fallback.js" = {
-    source = "${modelFallback}/model-fallback.js";
-    force = true;
-  };
-  # Do not use `home.file.text`: Home Manager emits a bare /nix/store/<hash>-*.js
-  # object, which the running OpenCode 2.0.22 service fails to resolve.
-  # The trailing generated comment is intentional: a later activation is not
-  # guaranteed to reuse the cached rejection. It does not prove the running
-  # service will recover.
-  home.file.".config/opencode/plugins/action-drift-monitor.js" = {
-    source = "${actionDriftMonitor}/action-drift-monitor.js";
-    force = true;
-  };
-  home.file.".config/opencode/plugins/nix-verify-gate.js" = {
-    source = ./plugins/nix-verify-gate.js;
-    force = true;
-  };
-  home.file.".config/opencode/plugins/worktree-removal-guard.js" = {
-    source = ./plugins/worktree-removal-guard.js;
-    force = true;
-  };
-  home.file.".config/opencode/cli.json" = {
-    text = builtins.toJSON (import ./cli.nix);
-    force = true;
-  };
+  home.file =
+    pkgs.lib.mapAttrs' (filename: source: {
+      name = ".config/opencode/plugins/${filename}";
+      value = {
+        inherit source;
+        force = true;
+      };
+    }) pluginSources
+    // {
+      ".config/opencode/AGENTS.md" = {
+        text = builtins.readFile ./AGENTS.md + "\n" + builtins.readFile ./prompts/output-format.md;
+        force = true;
+      };
+      ".config/opencode/cli.json" = {
+        text = builtins.toJSON (import ./cli.nix);
+        force = true;
+      };
+    };
 }

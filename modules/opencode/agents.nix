@@ -29,8 +29,8 @@ in
     chromeDevtools = "deny";
     figma = "read";
   };
-  # Keep Japanese dialogue/planning on Sol; use Zen free primaries only for workers.
-  # Review uses a separate model so it provides another perspective.
+  # Keep Japanese dialogue/planning on Sol; general and explore use OpenAI Terra.
+  # Review uses a separate Zen model for another perspective.
   # Ordered fallback chains are validated in packages/opencode-model-fallback/chains.nix.
   agents = {
     spec = {
