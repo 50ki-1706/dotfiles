@@ -13,7 +13,7 @@ in
   # checked 2026-10-24 with current auth retained. Not an inference test.
   # Empty variant lists preserve catalog variants: Cohere inherits boolean
   # reasoning.enabled none/thinking, not reasoning.effort.
-  # OpenCode Zen free
+  # OpenCode Zen free. https://opencode.ai/zen/v1/models checked 2026-10-29.
   opencode.models = {
     # Reflection
     "beam-free".variants = mkVariants "reasoningEffort" [
@@ -45,6 +45,8 @@ in
       "high"
       "max"
     ];
+    # TypeSafe. Decision model; models.dev has no effort list.
+    "jev-1.13-free".variants = [ ];
     # Xiaomi. Zen exposes no reasoning effort variants.
     "mimo-v2.6-flash-free".variants = [ ];
     # NVIDIA. Lightning exposes no reasoning effort variants.
