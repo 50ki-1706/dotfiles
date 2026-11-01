@@ -13,7 +13,7 @@ in
   # checked 2026-10-24 with current auth retained. Not an inference test.
   # Empty variant lists preserve catalog variants: Cohere inherits boolean
   # reasoning.enabled none/thinking, not reasoning.effort.
-  # OpenCode Zen free. https://opencode.ai/zen/v1/models checked 2026-10-31.
+  # OpenCode Zen free. https://opencode.ai/zen/v1/models checked 2026-11-01.
   opencode.models = {
     # Reflection
     "beam-free".variants = mkVariants "reasoningEffort" [
@@ -60,7 +60,7 @@ in
   };
   # OpenAI featured models.
   # https://platform.openai.com/docs/models and https://models.dev/api.json
-  # openai provider, checked 2026-10-31. Efforts match each catalog
+  # openai provider, checked 2026-11-01. Efforts match each catalog
   # reasoning_options effort list.
   openai.models = {
     "gpt-6-astra".variants = mkVariants "reasoningEffort" [
@@ -95,7 +95,7 @@ in
     ];
   };
   # xAI. https://docs.x.ai/docs/models and https://models.dev/api.json
-  # xai provider, checked 2026-10-31. grok-4.7 accepts low, medium, high,
+  # xai provider, checked 2026-11-01. grok-4.7 accepts low, medium, high,
   # and xhigh. "none" is not a supported effort.
   xai.models = {
     "grok-4.7".variants = mkVariants "reasoningEffort" [
@@ -107,7 +107,7 @@ in
     "grok-build-0.1".variants = [ ];
   };
   # OpenRouter free coding/subagent shortlist.
-  # https://openrouter.ai/api/v1/models checked 2026-10-31.
+  # https://openrouter.ai/api/v1/models checked 2026-11-01.
   openrouter.models = {
     # Thinking Machines. Full Inkling (41B active / 975B), same effort ladder.
     "thinkingmachines/inkling:free".variants = mkVariants "reasoning" [
@@ -140,8 +140,5 @@ in
     "recursive/flint-v1.0:free".variants = [ ];
     # Cohere
     "cohere/north-mini-code:free".variants = [ ];
-    # Poolside. Laguna S 2.1 coding agent (8B active / 118B), 70.2% on
-    # Terminal-Bench 2.1, 262k context, tools. models.dev has no effort list.
-    "poolside/laguna-s-2.1:free".variants = [ ];
   };
 }
