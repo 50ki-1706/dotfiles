@@ -13,7 +13,7 @@ in
   # checked 2026-10-24 with current auth retained. Not an inference test.
   # Empty variant lists preserve catalog variants: Cohere inherits boolean
   # reasoning.enabled none/thinking, not reasoning.effort.
-  # OpenCode Zen free. https://opencode.ai/zen/v1/models checked 2026-11-01.
+  # OpenCode Zen free. https://opencode.ai/zen/v1/models checked 2026-11-03.
   opencode.models = {
     # Reflection
     "beam-free".variants = mkVariants "reasoningEffort" [
@@ -56,6 +56,12 @@ in
       "medium"
       "high"
       "xhigh"
+    ];
+    # Pulse
+    "pulse-alpha-free".variants = mkVariants "reasoningEffort" [
+      "low"
+      "high"
+      "max"
     ];
   };
   # OpenAI featured models.
