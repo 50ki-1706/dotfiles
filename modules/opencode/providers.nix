@@ -122,26 +122,8 @@ in
     "grok-build-0.1".variants = [ ];
   };
   # OpenRouter free coding/subagent shortlist.
-  # https://openrouter.ai/api/v1/models checked 2026-11-01.
+  # https://openrouter.ai/api/v1/models checked 2026-11-05.
   openrouter.models = {
-    # Thinking Machines. Full Inkling (41B active / 975B), same effort ladder.
-    "thinkingmachines/inkling:free".variants = mkVariants "reasoning" [
-      "none"
-      "minimal"
-      "low"
-      "medium"
-      "high"
-      "max"
-    ];
-    # Thinking Machines. Smaller, more efficient sibling (12B active / 276B).
-    "thinkingmachines/inkling-small:free".variants = mkVariants "reasoning" [
-      "none"
-      "minimal"
-      "low"
-      "medium"
-      "high"
-      "max"
-    ];
     # NVIDIA. none も reasoning effort の値として指定する。
     "nvidia/nemotron-3-ultra-550b-a55b:free".variants = mkVariants "reasoning" [
       "none"

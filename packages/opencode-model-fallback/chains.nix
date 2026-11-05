@@ -12,7 +12,7 @@ let
   # xAI is the last general/explore fallback and the second plan_review fallback.
   fallbackLists = {
     spec = [
-      "openrouter/thinkingmachines/inkling:free#high"
+      "openrouter/nvidia/nemotron-3.5-super-vl:free"
       "openrouter/recursive/flint-v1.0:free"
       "opencode/beam-free#max"
     ];
@@ -22,7 +22,7 @@ let
       "xai/grok-build-0.1"
     ];
     explore = [
-      "openrouter/thinkingmachines/inkling:free#high"
+      "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free#high"
       "openrouter/cohere/north-mini-code:free"
       "xai/grok-build-0.1"
     ];
