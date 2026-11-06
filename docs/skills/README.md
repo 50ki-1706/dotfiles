@@ -4,10 +4,16 @@
 | --- | --- | --- |
 | グローバル | `skills/<skill-name>/SKILL.md` | `~/.agents/skills` から参照。配置済みなら編集は即時反映 |
 | リポジトリ固有 | `.agents/skills/<skill-name>/SKILL.md` | このリポジトリ内のみ（現在は `nix-verify`） |
+| Home Manager 管理の OpenCode 用 | `~/.config/opencode/skills/git-surgeon/SKILL.md` | 固定した `git-surgeon` の公式ソースから配置 |
+| Home Manager 管理の OpenCode 用 | `~/.config/opencode/skills/pr/` | 固定した上流ソースから本文・クレジット・ライセンスを配置 |
 
 [スキル一覧](../../skills/README.md) を確認し、新規追加の前にモデルや既存のエージェント設定で代替できないか検討してください。追加時は目的と実行方針を最小限に記述します。リポジトリ固有スキルは `.gitignore` の例外として管理し、グローバルには配備しません。
 
 リンクの作成・配置を変更した場合は、[設定の適用](../home-manager/README.md#設定の適用) が必要です。worktree からの参照先は [変更後の検証](../home-manager/README.md#変更後の検証) を確認してください。
+
+`git-surgeon` はローカルの `skills/` には複製しません。Home Manager 管理外の環境では `git-surgeon install-skill --opencode` を使えます。管理された不変リンクにはインストーラーを実行しないでください。用途は [`/publish`](../opencode/publish.md) を参照してください。
+
+`pr` は [記事](https://www.aihero.dev/skills-pr)で紹介された[上流ソース](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/pr)を固定します。固定 revision とハッシュの正本は [default.nix](../../modules/opencode/default.nix) です。更新時は上流の本文、スキルディレクトリの `CREDITS.md`、ルートの MIT `LICENSE` を同じ revision から取得し、ハッシュを更新して検証します。ローカルに複製せず、`~/.agents/skills` に配置しません。PR 本文ではリポジトリのテンプレートと入力制約が汎用スキルより優先されます。
 
 ## Playwright CLI の導入・更新
 

@@ -12,6 +12,8 @@ Homebrew の項目は nix-darwin の適用時に導入します。現在の `onA
 
 mise のグローバル設定は使わず、プロジェクト単位のバージョン固定は `.mise.toml` で指定できます。
 
+[git-surgeon](https://github.com/raine/git-surgeon) は上流 flake からグローバルに導入します。v0.1.17 のリリースタグには flake がないため、flake を含むコミットを [flake.nix](../../flake.nix) と [flake.lock](../../flake.lock) で固定しています。更新は Nix で行い、Nix ストアに書き込む `git-surgeon update` は使いません。
+
 パッケージの変更後は [nix-verify](../../.agents/skills/nix-verify/SKILL.md) で検証し、[設定の適用](../home-manager/README.md#設定の適用) に従って反映します。
 
 ## プロジェクト開発環境

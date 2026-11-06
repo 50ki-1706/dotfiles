@@ -11,6 +11,21 @@ let
       + "\n// Resolved from a directory-resident store path.\n";
   };
   modelFallback = pkgs.callPackage ../../packages/opencode-model-fallback { };
+  gitSurgeonSkill = "${pkgs.git-surgeon.src}/skills/git-surgeon/SKILL.md";
+  prSource = pkgs.fetchFromGitHub {
+    owner = "mattpocock";
+    repo = "skills";
+    rev = "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d";
+    hash = "sha256-3vhd77xfZjKUYJsIwPFevIZPUAzUgZXr0RYj5NQrBwk=";
+  };
+  publishPlugin = pkgs.runCommand "opencode-publish-plugin" { } ''
+    mkdir -p "$out"
+    cp ${./plugins/publish}/*.ts "$out/"
+    rm -f "$out/"*.test.ts
+    cp ${./commands/publish.md} "$out/instructions.md"
+    cp ${gitSurgeonSkill} "$out/official-skill.md"
+    cp ${prSource}/skills/engineering/pr/SKILL.md "$out/pr-skill.md"
+  '';
   writingRulesRouter = pkgs.writeTextFile {
     name = "writing-rules-router";
     destination = "/writing-rules-router.js";
@@ -30,6 +45,7 @@ let
     "action-drift-monitor.js" = "${actionDriftMonitor}/action-drift-monitor.js";
     "nix-verify-gate.js" = ./plugins/nix-verify-gate.js;
     "worktree-removal-guard.js" = ./plugins/worktree-removal-guard.js;
+    "publish.ts" = "${publishPlugin}/index.ts";
   };
 in
 {
@@ -48,6 +64,22 @@ in
       };
     }) pluginSources
     // {
+      ".config/opencode/skills/git-surgeon/SKILL.md" = {
+        source = gitSurgeonSkill;
+        force = true;
+      };
+      ".config/opencode/skills/pr/SKILL.md" = {
+        source = "${prSource}/skills/engineering/pr/SKILL.md";
+        force = true;
+      };
+      ".config/opencode/skills/pr/CREDITS.md" = {
+        source = "${prSource}/skills/engineering/pr/CREDITS.md";
+        force = true;
+      };
+      ".config/opencode/skills/pr/LICENSE" = {
+        source = "${prSource}/LICENSE";
+        force = true;
+      };
       ".config/opencode/AGENTS.md" = {
         text = builtins.readFile ./AGENTS.md + "\n" + builtins.readFile ./prompts/output-format.md;
         force = true;
