@@ -2,17 +2,23 @@
   "$schema": "https://opencode.ai/config.json",
   "permissions": [
     { "action": "skill", "resource": "*", "effect": "deny" },
-    { "action": "skill", "resource": "nix-verify", "effect": "allow" }
+    { "action": "skill", "resource": "nix-verify", "effect": "allow" },
+    { "action": "skill", "resource": "git-surgeon", "effect": "allow" },
+    { "action": "skill", "resource": "pr", "effect": "allow" }
   ],
   "agents": {
     "spec": {
       "permissions": [
-        { "action": "skill", "resource": "nix-verify", "effect": "allow" }
+        { "action": "skill", "resource": "nix-verify", "effect": "allow" },
+        { "action": "skill", "resource": "git-surgeon", "effect": "allow" },
+        { "action": "skill", "resource": "pr", "effect": "allow" }
       ]
     },
     "general": {
       "permissions": [
-        { "action": "skill", "resource": "nix-verify", "effect": "allow" }
+        { "action": "skill", "resource": "nix-verify", "effect": "allow" },
+        { "action": "skill", "resource": "git-surgeon", "effect": "allow" },
+        { "action": "skill", "resource": "pr", "effect": "allow" }
       ]
     }
   }

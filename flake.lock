@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "git-surgeon": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791662132,
+        "narHash": "sha256-oWrPbQHa9IVlhFnJen/lf/DS73/zNTyBeh/Gb3ioaSo=",
+        "owner": "raine",
+        "repo": "git-surgeon",
+        "rev": "ecf6dc42172ba757cc03bce1800ba1db45779f46",
+        "type": "github"
+      },
+      "original": {
+        "owner": "raine",
+        "repo": "git-surgeon",
+        "rev": "ecf6dc42172ba757cc03bce1800ba1db45779f46",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -59,6 +80,7 @@
     },
     "root": {
       "inputs": {
+        "git-surgeon": "git-surgeon",
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs"

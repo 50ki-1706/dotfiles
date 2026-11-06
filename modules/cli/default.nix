@@ -3,6 +3,7 @@
   home.packages = [
     pkgs.fzf
     pkgs.lazygit
+    pkgs.git-surgeon
     pkgs.bitwarden-cli
     pkgs.devenv
     pkgs.ripgrep

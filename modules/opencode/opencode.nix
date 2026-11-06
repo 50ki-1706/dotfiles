@@ -24,14 +24,6 @@ in
   # Root (depth 0) may delegate; workers (depth 1) may not delegate again.
   experimental.subagent_depth = 1;
   commands = {
-    commit = {
-      template = builtins.readFile ./commands/commit.md;
-      description = "セッションの変更をConventional Commitsでコミット";
-    };
-    create-pr = {
-      template = builtins.readFile ./commands/create-pr.md;
-      description = "セッションの変更からConventional Commits形式のタイトルでPRを作成";
-    };
     codex-refactor = {
       template = builtins.readFile ./commands/codex-refactor.md;
       description = "セッションの変更をCodexでリファクタリング";
