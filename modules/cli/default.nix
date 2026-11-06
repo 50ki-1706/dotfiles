@@ -8,6 +8,7 @@
     pkgs.ripgrep
     pkgs.yq-go
     pkgs.claude-code
+    pkgs.mistral-vibe
     pkgs.herdr
     (pkgs.callPackage ../../packages/playwright-cli.nix { })
   ];
