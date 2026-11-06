@@ -2,23 +2,52 @@
 
 ## What this is / isn’t
 
-macOS の開発環境を Nix で管理する個人用 dotfiles。
+私が普段使用するdotfiles
+### 対象OS
+- Mac OS
+### 使用端末
+- Mac Book Air M5 32gb
 
 ## What’s inside
 
-- [シェル・エディタ・ターミナル・CLI の設定](modules/README.md)
-- [macOS・アプリの設定](hosts/README.md)
-- [複数の Git アカウント・SSH キーの管理](docs/scripts/README.md#git-アカウント管理)
-- [OpenCode ハーネス](docs/opencode/README.md)と[エージェント用スキル](skills/README.md)
-- [初期設定・移行・検証スクリプト](scripts/README.md)
+- [シェル・エディタ・ターミナル・CLI の設定](modules/)は Nix・Home Manager で管理します。
+- [macOS とアプリの設定](hosts/mac.nix)は nix-darwin・Homebrew で管理します。
+- [独自パッケージと固定バージョン](packages/)を定義します。
+- [初期設定・アカウント管理スクリプト](scripts/)で Git アカウントと SSH キーを扱います。
+- OpenCode の設定は [opencode.nix](modules/opencode/opencode.nix)、権限は [permissions.nix](modules/opencode/permissions.nix) にあります。[グローバルスキル](skills/)は `skills/`、このリポジトリ固有のスキルは `.agents/skills/` にあります。
 
 ## Installation
 
-このリポジトリを `~/.dotfiles` に取得し、実行します。
+事前に次を用意してください。
+
+- Homebrew。
+- Mac App Store へのサインイン。
+- [hosts/mac.nix](hosts/mac.nix) が参照するローカル tap `/Users/koki/Dev/mywork/eigo-no-hanon/homebrew-tap`。
+
+このリポジトリを `~/.dotfiles` に取得し、対話ターミナルで実行します。Nix が未導入の場合は、スクリプトからインストールできます。
 
 ```sh
 cd ~/.dotfiles
 zsh scripts/install.sh
 ```
+## Apply Changes
 
-詳しい手順は [初期設定](docs/scripts/README.md#初期設定)、導入後の変更は [設定の適用](docs/home-manager/README.md#設定の適用) を参照してください。その他は [ドキュメント一覧](docs/README.md) にまとめています。
+Nix が読み込む新規ファイルは、検証前に `git add <ファイル>` で追跡対象にします。コミットは不要で、追跡済みファイルの編集は未ステージでも反映されます。
+
+1. 適用前チェック
+```sh
+cd /Users/koki/.dotfiles
+nix fmt
+nix run home-manager -- build --flake .#koki
+nix build .#darwinConfigurations.mac.system --out-link result-darwin
+```
+2. 変更を適用(mainブランチ)
+```sh
+sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac
+```
+3. アカウントの設定のみ変更したい場合
+```sh
+zsh -c 'source scripts/lib/accounts.sh; parse_accounts accounts.csv'
+```
+
+`accounts.csv` は Git 管理外のまま用意してください。未作成・空・空行やコメントのみの場合、生成済みアカウント設定を削除します（SSH キーは残ります）。
