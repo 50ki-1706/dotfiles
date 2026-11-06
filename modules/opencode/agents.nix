@@ -1,6 +1,8 @@
 let
   commonSkills = [
     "gh-cli"
+    "git-surgeon"
+    "pr"
     "playwright-cli"
   ];
   mkPermissions = import ./permissions.nix;

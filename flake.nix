@@ -3,6 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    git-surgeon = {
+      url = "github:raine/git-surgeon/ecf6dc42172ba757cc03bce1800ba1db45779f46";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,6 +22,7 @@
     {
       self,
       nixpkgs,
+      git-surgeon,
       home-manager,
       nix-darwin,
     }:
@@ -32,7 +37,14 @@
           inherit system overlays;
           config.allowUnfree = true;
         };
-      darwinPkgs = mkPkgs { system = "aarch64-darwin"; };
+      darwinPkgs = mkPkgs {
+        system = "aarch64-darwin";
+        overlays = [
+          (_final: prev: {
+            git-surgeon = git-surgeon.packages.${prev.stdenv.hostPlatform.system}.default;
+          })
+        ];
+      };
       # ssh-bootstrap・formatter・appを両システムで公開し、homeConfigurationsはaarch64-darwin固定。
       forAllSystems = nixpkgs.lib.genAttrs [
         "aarch64-darwin"
