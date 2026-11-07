@@ -1,0 +1,98 @@
+--- a/vibe/app_server/_session_resources.py
++++ b/vibe/app_server/_session_resources.py
+@@ -294,22 +294,28 @@
+         self, entry_id: str | None = None, *, attach: bool = True
+     ) -> SessionForkResponse:
+         client = await self._connection.connect()
+-        response = validate_wire(
+-            SessionForkResponse,
+-            await client.request(
+-                "session/fork",
+-                SessionForkParams(
+-                    source_session_id=self._state.session_id,
+-                    entry_id=entry_id,
+-                    attach=attach,
+-                ),
+-            ),
+-        )
+-        if attach:
++        params = SessionForkParams(
++            source_session_id=self._state.session_id, entry_id=entry_id, attach=attach
++        )
++        if not attach:
++            return validate_wire(
++                SessionForkResponse, await client.request("session/fork", params)
++            )
++
++        adopted: SessionForkResponse | None = None
++
++        def _adopt(raw_response: dict[str, object]) -> None:
++            nonlocal adopted
++            response = validate_wire(SessionForkResponse, raw_response)
+             self._state.projection.replace_state(response.state)
+             self._state.reset_usage_baseline()
+             self._connection.mark_session_attached()
+-        return response
++            adopted = response
++
++        await client.request("session/fork", params, response_boundary=_adopt)
++        if adopted is None:
++            raise RuntimeError("Session fork response was not adopted")
++        return adopted
+-
++
+     async def _fetch_history_page(
+         self,
+--- a/tests/app_server/backend_contract/test_worktree_start.py
++++ b/tests/app_server/backend_contract/test_worktree_start.py
+@@ -28,6 +28,7 @@
+ from vibe.app_server._model import validate_wire
+ from vibe.app_server._process_services import ProcessServices
+ from vibe.app_server._worktree_session import SessionWorktrees, WorktreeResolution
++from vibe.app_server.client import AppServerClient
+ from vibe.app_server.events import CallbackRequested
+ from vibe.app_server.models import (
+     CompletedEffectState,
+@@ -44,6 +45,8 @@
+     ClientCapabilities,
+     NewWorktreeInput,
+     RuntimeMutationResponse,
++    SessionForkParams,
++    SessionForkResponse,
+     SessionOptions,
+     TurnStartParams,
+     TurnStartResponse,
+@@ -172,6 +175,25 @@
+         assert trust_store is not trusted_folders_manager
+         assert trusted_folders_manager.is_trusted(tmp_path) is not True
+         assert (cwd / "file.txt").read_text() == ("HELLO\n" if trusted else "hello\n")
++        original_request = AppServerClient.request
++        attached_forks = 0
++
++        async def observe_fork(client, method, params=None, **kwargs):
++            nonlocal attached_forks
++            result = await original_request(client, method, params, **kwargs)
++            if (
++                client is connection.client
++                and method == "session/fork"
++                and isinstance(params, SessionForkParams)
++                and params.attach
++            ):
++                response = validate_wire(SessionForkResponse, result)
++                assert session.state.session.id == response.state.session.id
++                assert session.state.session.cwd == response.state.session.cwd
++                attached_forks += 1
++            return result
++
++        monkeypatch.setattr(AppServerClient, "request", observe_fork)
+         await session.resources.sessions.fork()
+         fork_cwd = _cwd(session)
+         assert fork_cwd != cwd
+@@ -190,6 +212,7 @@
+             assert (relocated_child / "file.txt").read_text() == (
+                 "HELLO\n" if trusted else "hello\n"
+             )
++        assert attached_forks == (2 if relocate else 1)
+         assert trusted_folders_manager.is_trusted(tmp_path) is not True
+     finally:
+         await connection.host.close()

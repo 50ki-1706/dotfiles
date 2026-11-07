@@ -1,0 +1,46 @@
+diff --git a/tests/app_server/backend_contract/test_turns.py b/tests/app_server/backend_contract/test_turns.py
+--- a/tests/app_server/backend_contract/test_turns.py
++++ b/tests/app_server/backend_contract/test_turns.py
+@@ -802,8 +802,10 @@ async def test_steering_adds_a_public_user_message_to_an_active_turn(
+     turn = asyncio.create_task(consume_turn())
+     try:
+         await asyncio.wait_for(started.wait(), timeout=5)
+-        active_turn = backend_contract_session.state.latest_turn
+-        assert active_turn is not None
++        # The provider can start before the client receives the turn reply.
++        async with asyncio.timeout(5):
++            while (active_turn := backend_contract_session.state.latest_turn) is None:
++                await asyncio.sleep(0.01)
+         await backend_contract_session.inject_user_context(
+             "follow up", as_message=True, client_message_id="steer-user"
+         )
+diff --git a/tests/app_server/test_run_channel.py b/tests/app_server/test_run_channel.py
+--- a/tests/app_server/test_run_channel.py
++++ b/tests/app_server/test_run_channel.py
+@@ -98,12 +98,13 @@ async def test_a_malformed_open_frame_names_its_fields_and_never_their_values() -> None:
+     *Assert*: The stream ends with a protocol error naming each field; neither
+     its message nor its traceback holds a secret.
+     """
++    numeric_sentinel = 984731625096182734650918273465
+     frame = {
+         "channelId": "1",
+         "message": {"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+         "open": _open(
+             config="sk-config-secret",
+             apiKey="sk-extra-secret",
+-            credentials={"GOOD_KEY": "sk-good-secret", "BAD_KEY": 42},
++            credentials={"GOOD_KEY": "sk-good-secret", "BAD_KEY": numeric_sentinel},
+         ),
+     }
+@@ -114,5 +115,10 @@ async def test_a_malformed_open_frame_names_its_fields_and_never_their_values() -> None:
+     for field in ("open.config", "open.apiKey", "open.credentials.BAD_KEY"):
+         assert field in str(error)
+     rendered = "".join(traceback.format_exception(error))
+-    for secret in ("sk-config-secret", "sk-extra-secret", "sk-good-secret", "42"):
++    for secret in (
++        "sk-config-secret",
++        "sk-extra-secret",
++        "sk-good-secret",
++        str(numeric_sentinel),
++    ):
+         assert secret not in rendered
