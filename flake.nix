@@ -30,10 +30,9 @@
       mkPkgs =
         {
           system,
-          source ? nixpkgs,
           overlays ? [ ],
         }:
-        import source {
+        import nixpkgs {
           inherit system overlays;
           config.allowUnfree = true;
         };
@@ -42,6 +41,17 @@
         overlays = [
           (_final: prev: {
             git-surgeon = git-surgeon.packages.${prev.stdenv.hostPlatform.system}.default;
+            mistral-vibe = prev.mistral-vibe.overridePythonAttrs (old: {
+              patches = (old.patches or [ ]) ++ [
+                ./packages/mistral-vibe-tests.patch
+                ./packages/mistral-vibe-fork.patch
+              ];
+            });
+            deepseek-harness = prev.deepseek-harness.overrideAttrs (old: {
+              meta = old.meta // {
+                platforms = old.meta.platforms ++ [ "aarch64-darwin" ];
+              };
+            });
           })
         ];
       };

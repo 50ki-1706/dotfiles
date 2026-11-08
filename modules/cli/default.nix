@@ -11,6 +11,7 @@
     pkgs.claude-code
     pkgs.mistral-vibe
     pkgs.herdr
+    pkgs.deepseek-harness
     (pkgs.callPackage ../../packages/playwright-cli.nix { })
   ];
 }
