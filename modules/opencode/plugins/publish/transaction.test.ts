@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, writeFile, readFile, chmod, appendFile, access } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile, readFile, chmod, appendFile, access, utimes, stat, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { commitHunks, inspectHunks, showHunk } from './transaction.ts';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { commitHunks, inspectHunks, showHunk, readIndexSnapshot, writeIndexSnapshot } from './transaction.ts';
 import { run } from './runner.ts';
 
 test('real surgeon previews staged and untracked changes without altering real index', async () => {
@@ -440,4 +442,78 @@ test('real surgeon commits selected hunk and preserves unrelated staged content'
     assert.equal((await git(['show', ':two'])).trim(), 'staged');
     assert.match(await git(['diff', '--cached']), /staged/);
   } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+test('racy unselected changes remain visible through preview and index installation', async () => {
+  const cwd = await mkdtemp('/private/tmp/opencode/publish-racy-');
+  const permission = async () => {};
+  const git = (args: string[]) => run(cwd, 'git', args, permission);
+  const stamp = 1600000000;
+  try {
+    await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+    // Reproduce Git's racy timestamp case without depending on wall-clock timing or ctime.
+    await git(['config', 'core.trustctime', 'false']);
+    await writeFile(join(cwd, 'racy'), 'old\n'); await utimes(join(cwd, 'racy'), stamp, stamp);
+    await writeFile(join(cwd, 'selected'), 'old\n');
+    await git(['add', 'racy', 'selected']); await git(['commit', '-m', 'chore: initial']);
+    const index = join(cwd, '.git/index'); await utimes(index, stamp, stamp);
+    await writeFile(join(cwd, 'racy'), 'new\n'); await utimes(join(cwd, 'racy'), stamp, stamp);
+    await writeFile(join(cwd, 'selected'), 'new\n');
+    const before = await readFile(index);
+    const preview = await inspectHunks(cwd, permission);
+    assert.ok(preview.state.status.includes(' M racy'));
+    const racyId = preview.hunks.match(/^([a-zA-Z0-9_-]+) racy\s/m)?.[1]; assert.ok(racyId);
+    assert.match(await showHunk(cwd, racyId, permission), /new/);
+    assert.deepEqual(await readFile(index), before);
+    const id = preview.hunks.match(/^([a-zA-Z0-9_-]+) selected\s/m)?.[1]; assert.ok(id);
+    await commitHunks(cwd, [id], 'fix: selected', permission);
+    assert.equal(Math.floor((await stat(index)).mtimeMs / 1000), stamp);
+    assert.match(await git(['status', '--porcelain=v1']), / M racy/);
+    assert.equal(await readFile(join(cwd, 'racy'), 'utf8'), 'new\n');
+    const again = await inspectHunks(cwd, permission);
+    const next = again.hunks.match(/^([a-zA-Z0-9_-]+) racy\s/m)?.[1]; assert.ok(next);
+    assert.match(await showHunk(cwd, next, permission), /new/);
+    await commitHunks(cwd, [next], 'fix: racy', permission);
+    assert.equal(await git(['show', 'HEAD:racy']), 'new\n');
+  } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+test('index snapshots preserve conservative timestamps and reject zero, future and symlink sources', async () => {
+  const dir = await mkdtemp('/private/tmp/opencode/publish-snapshot-');
+  const source = join(dir, 'source'); const copy = join(dir, 'copy');
+  try {
+    await writeFile(source, 'index');
+    await utimes(source, 1600000000.75, 1600000000.75);
+    const snapshot = await readIndexSnapshot(source);
+    await writeIndexSnapshot(copy, snapshot);
+    assert.deepEqual(await readFile(copy), snapshot.bytes);
+    assert.equal((await stat(copy)).mtimeMs, 1600000000000);
+    assert.ok((await stat(copy)).mtimeMs <= (await stat(source)).mtimeMs);
+    await utimes(source, 0, 0);
+    await assert.rejects(readIndexSnapshot(source), /Unsupported index timestamp/);
+    const future = Math.floor(Date.now() / 1000) + 10;
+    await utimes(source, future, future);
+    await assert.rejects(readIndexSnapshot(source), /Unsupported index timestamp/);
+    for (const [i, mtimeSeconds] of [0, 1.5, NaN, Infinity, future].entries()) {
+      const target = join(dir, `invalid-${i}`);
+      await assert.rejects(writeIndexSnapshot(target, { bytes: snapshot.bytes, mtimeSeconds }), /Unsupported index timestamp/);
+      await assert.rejects(access(target), { code: 'ENOENT' });
+    }
+    await assert.rejects(readIndexSnapshot(dir), /Unsupported index file/);
+    await symlink(source, join(dir, 'link'));
+    await assert.rejects(readIndexSnapshot(join(dir, 'link')), /Index snapshot changed during read/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('index snapshot rejects a FIFO without blocking or reading it', async () => {
+  const dir = await mkdtemp('/private/tmp/opencode/publish-fifo-');
+  const fifo = join(dir, 'index');
+  const execute = promisify(execFile);
+  try {
+    await execute('mkfifo', [fifo]);
+    const code = `const { readIndexSnapshot } = await import(process.argv[1]);
+try { await readIndexSnapshot(process.argv[2]); process.exitCode = 1; }
+catch (error) { if (error.message !== 'Unsupported index file') throw error; }`;
+    await execute(process.execPath, ['--input-type=module', '-e', code, new URL('./transaction.ts', import.meta.url).href, fifo], { timeout: 5000 });
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

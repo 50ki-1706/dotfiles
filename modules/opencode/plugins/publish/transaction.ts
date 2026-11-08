@@ -1,8 +1,51 @@
 import { assertSafePath, run, validateSelection, authorizeHeadRecovery, type Permission } from './runner.ts';
-import { lstat, mkdtemp, mkdir, rm, readFile, writeFile, open, rename } from 'node:fs/promises';
+import { lstat, mkdtemp, mkdir, rm, readFile, writeFile, open, rename, utimes } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+
+export type IndexSnapshot = { bytes: Buffer; mtimeSeconds: number };
+
+function validateIndexTimestamp(seconds: number): void {
+  if (!Number.isSafeInteger(seconds) || seconds < 1 || seconds > Math.floor((Date.now() + 1000) / 1000))
+    throw new Error('Unsupported index timestamp');
+}
+
+/** Capture index bytes with their whole-second, floored modification time. */
+export async function readIndexSnapshot(path: string): Promise<IndexSnapshot> {
+  let file: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const before = await file.stat({ bigint: true });
+    if (!before.isFile()) throw new Error('Unsupported index file');
+    const bytes = await file.readFile();
+    const after = await file.stat({ bigint: true });
+    const current = await lstat(path, { bigint: true });
+    const same = (a: typeof before, b: typeof before) => a.isFile() && b.isFile()
+      && a.dev === b.dev && a.ino === b.ino && a.size === b.size
+      && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs;
+    if (!same(before, after) || !same(before, current) || BigInt(bytes.length) !== before.size)
+      throw new Error('Index snapshot changed during read');
+    // A newer copy can disable Git's racy-index content checks.
+    const seconds = before.mtimeNs / 1000000000n;
+    const mtimeSeconds = Number(seconds);
+    validateIndexTimestamp(mtimeSeconds);
+    if (before.mtimeNs > BigInt(Date.now() + 1000) * 1000000n) throw new Error('Unsupported index timestamp');
+    return { bytes, mtimeSeconds };
+  } catch (error) {
+    if (error instanceof Error && ['Unsupported index timestamp', 'Unsupported index file'].includes(error.message)) throw error;
+    throw new Error('Index snapshot changed during read');
+  } finally { await file?.close(); }
+}
+
+export async function writeIndexSnapshot(path: string, snapshot: IndexSnapshot): Promise<void> {
+  validateIndexTimestamp(snapshot.mtimeSeconds);
+  try {
+    await writeFile(path, snapshot.bytes);
+    // utimes requires an access time; Git's index checks depend on modification time.
+    await utimes(path, snapshot.mtimeSeconds, snapshot.mtimeSeconds);
+  } catch { throw new Error('Index snapshot write failed'); }
+}
 
 export type RepositoryState = {
   root: string;
@@ -29,7 +72,7 @@ export async function inspectRepository(cwd: string, permission: Permission, sig
   return { root, branch, head, status };
 }
 
-async function preview<T>(cwd: string, permission: Permission, untracked: string[], signal: AbortSignal | undefined, action: (state: RepositoryState, env: NodeJS.ProcessEnv, snapshot: NodeJS.ProcessEnv, initialize: () => Promise<void>, initialIndex: Buffer) => Promise<T>): Promise<T> {
+async function preview<T>(cwd: string, permission: Permission, untracked: string[], signal: AbortSignal | undefined, action: (state: RepositoryState, env: NodeJS.ProcessEnv, snapshot: NodeJS.ProcessEnv, initialize: () => Promise<void>, initialIndex: IndexSnapshot) => Promise<T>): Promise<T> {
   if (!Array.isArray(untracked) || new Set(untracked).size !== untracked.length) throw new Error('Invalid untracked paths');
   await mkdir('/private/tmp/opencode', { recursive: true });
   const dir = await mkdtemp('/private/tmp/opencode/publish-index-');
@@ -39,10 +82,9 @@ async function preview<T>(cwd: string, permission: Permission, untracked: string
     const root = (await run(cwd, 'git', ['rev-parse', '--show-toplevel'], permission, { signal })).trim();
     const indexPath = resolve(root, (await run(root, 'git', ['rev-parse', '--git-path', 'index'], permission, { signal })).trim());
     await permission('read', [indexPath]);
-    if (!(await lstat(indexPath)).isFile()) throw new Error('Unsupported index file');
-    const initialIndex = await readFile(indexPath);
+    const initialIndex = await readIndexSnapshot(indexPath);
     // Isolate Git reads: commands can internally write the index even with optional locks disabled.
-    await writeFile(snapshot.GIT_INDEX_FILE, initialIndex);
+    await writeIndexSnapshot(snapshot.GIT_INDEX_FILE, initialIndex);
     const state = await inspectRepository(cwd, permission, signal, snapshot);
     for (const entry of state.status) {
       const path = entry.slice(3);
@@ -124,14 +166,13 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
       if (exists) throw new Error('Git operation in progress');
     }
     await permission('read', [indexPath]);
-    if (!(await lstat(indexPath)).isFile()) throw new Error('Unsupported index file');
-    const original = await readFile(indexPath);
-    if (!original.equals(initialIndex)) throw Object.assign(new Error('Repository changed before commit: indexBytes'), { mismatches: ['indexBytes'] });
+    const original = await readIndexSnapshot(indexPath);
+    if (!original.bytes.equals(initialIndex.bytes)) throw Object.assign(new Error('Repository changed before commit: indexBytes'), { mismatches: ['indexBytes'] });
     const originalIndex = `${env.GIT_INDEX_FILE}.original`;
-    await writeFile(originalIndex, original);
+    await writeIndexSnapshot(originalIndex, original);
     const indexEnv = { GIT_INDEX_FILE: originalIndex };
     const validationEnv = { GIT_INDEX_FILE: `${env.GIT_INDEX_FILE}.validation` };
-    await writeFile(validationEnv.GIT_INDEX_FILE, original);
+    await writeIndexSnapshot(validationEnv.GIT_INDEX_FILE, original);
     const flags = await git(['ls-files', '-v', '-z'], validationEnv);
     if (flags.split('\0').filter(Boolean).some((entry) => !entry.startsWith('H '))) throw new Error('Unsupported index flags');
     for (const args of [['diff', '--raw', '-z', '--find-renames', state.head], ['diff', '--raw', '-z', '--find-renames', '--cached', state.head]]) {
@@ -207,7 +248,7 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
     let installed = false;
     try {
       const now = await inspectRepository(state.root, permission, signal, validationEnv);
-      const mismatches = [now.root !== state.root && 'root', now.head !== state.head && 'head', now.branch !== state.branch && 'branch', JSON.stringify(now.status) !== JSON.stringify(state.status) && 'status', !(await readFile(indexPath)).equals(original) && 'indexBytes', await fingerprint() !== worktreeHash && 'worktree'].filter(Boolean);
+      const mismatches = [now.root !== state.root && 'root', now.head !== state.head && 'head', now.branch !== state.branch && 'branch', JSON.stringify(now.status) !== JSON.stringify(state.status) && 'status', !(await readFile(indexPath)).equals(original.bytes) && 'indexBytes', await fingerprint() !== worktreeHash && 'worktree'].filter(Boolean);
       if (mismatches.length) throw Object.assign(new Error(`Repository changed before commit: ${mismatches.join(', ')}`), { mismatches });
       try {
         attempted = true;
@@ -224,15 +265,16 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
       const after = await inspectRepository(state.root, permission, signal, validationEnv);
       const known = new Set(state.status.map((entry) => entry.slice(3)));
       if (after.status.some((entry) => !known.has(entry.slice(3)))) throw Object.assign(new Error('New worktree changes after commit: status'), { mismatches: ['status'] });
-      const postMismatches = [after.root !== state.root && 'root', parent !== state.head && 'parent', tree !== candidate && 'tree', actualMessage !== message && 'message', currentBranch !== state.branch && 'branch', !(await readFile(indexPath)).equals(original) && 'indexBytes', await fingerprint() !== worktreeHash && 'worktree'].filter(Boolean);
+      const postMismatches = [after.root !== state.root && 'root', parent !== state.head && 'parent', tree !== candidate && 'tree', actualMessage !== message && 'message', currentBranch !== state.branch && 'branch', !(await readFile(indexPath)).equals(original.bytes) && 'indexBytes', await fingerprint() !== worktreeHash && 'worktree'].filter(Boolean);
       if (postMismatches.length) throw Object.assign(new Error(`Post-commit validation failed: ${postMismatches.join(', ')}`), { mismatches: postMismatches });
       if ((await realGit(['rev-parse', '--verify', 'HEAD'])).trim() !== sha) throw Object.assign(new Error('HEAD changed after commit: head'), { mismatches: ['head'] });
       await lock.writeFile(await readFile(originalIndex));
+      await lock.utimes(original.mtimeSeconds, original.mtimeSeconds);
       await lock.close();
       await rename(lockPath, indexPath);
       ownsLock = false;
       installed = true;
-      await writeFile(validationEnv.GIT_INDEX_FILE, await readFile(indexPath));
+      await writeIndexSnapshot(validationEnv.GIT_INDEX_FILE, await readIndexSnapshot(indexPath));
       return { sha, message, state: await inspectRepository(state.root, permission, signal, validationEnv) };
     } catch (error) {
       if (attempted) {

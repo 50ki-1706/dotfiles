@@ -1,10 +1,10 @@
 import { constants } from 'node:fs';
-import { lstat, mkdtemp, open, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdtemp, open, readdir, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseTemplate, type Template } from './template.ts';
 import { assertSafePath, run, type Permission } from './runner.ts';
-import { inspectRepository, type RepositoryState } from './transaction.ts';
+import { inspectRepository, readIndexSnapshot, writeIndexSnapshot, type IndexSnapshot, type RepositoryState } from './transaction.ts';
 
 /** Discover one unambiguous GitHub pull request template within the repository. */
 export async function discoverTemplate(root: string, permission: Permission): Promise<Template> {
@@ -149,13 +149,12 @@ export async function syncMain(
   const git = (args: string[], p = permission) => run(root, 'git', args, p, { signal });
   const readIndex = async () => {
     await permission('read', [indexPath!]);
-    if (!(await lstat(indexPath!)).isFile()) throw new Error('Unsupported index file');
-    return readFile(indexPath!);
+    return readIndexSnapshot(indexPath!);
   };
-  const snapshot = async (bytes: Buffer) => {
+  const snapshot = async (bytes: IndexSnapshot) => {
     const path = join(dir!, 'index');
     // Git status may refresh its index, so all inspection uses a disposable copy.
-    await writeFile(path, bytes);
+    await writeIndexSnapshot(path, bytes);
     await permission('read', [path]);
     return inspectRepository(root, permission, signal, { GIT_INDEX_FILE: path });
   };
@@ -167,12 +166,12 @@ export async function syncMain(
       catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     }
   };
-  const check = async (head: string, bytes: Buffer) => {
+  const check = async (head: string, bytes: IndexSnapshot) => {
     const state = await snapshot(bytes);
     if (resolve(state.root) !== resolve(root) || state.branch !== expected.branch || state.head !== head || state.status.length)
       throw new Error('Repository root, branch, HEAD, or clean state changed');
     await noOperation();
-    if (!(await readIndex()).equals(bytes)) throw new Error('Index changed');
+    if (!(await readIndex()).bytes.equals(bytes.bytes)) throw new Error('Index changed');
     return state;
   };
   try {
@@ -208,14 +207,14 @@ export async function syncMain(
     const postIndex = await readIndex();
     const state = await check(targetHead, postIndex);
     await git(['merge-base', '--is-ancestor', expected.head, targetHead]);
-    if (!(await readIndex()).equals(postIndex)) throw new Error('Index changed during verification');
+    if (!(await readIndex()).bytes.equals(postIndex.bytes)) throw new Error('Index changed during verification');
     return { before, state };
   } catch (error) {
     if (attempted && dir && indexPath) {
       try {
         const bytes = await readIndex();
         const state = await snapshot(bytes);
-        if (resolve(state.root) === resolve(root) && (await readIndex()).equals(bytes)) observed = state;
+        if (resolve(state.root) === resolve(root) && (await readIndex()).bytes.equals(bytes.bytes)) observed = state;
       } catch { /* The repository could not be safely observed. */ }
     }
     throw new SyncError(error instanceof Error ? error.message : String(error), attempted, observed, error);

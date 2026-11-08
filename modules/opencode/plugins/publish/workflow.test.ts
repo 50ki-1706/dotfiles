@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rename, rm, symlink, writeFile, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
@@ -333,5 +333,28 @@ test('sync reports a post-merge hook mutation as attempted and observed', async 
       assert.ok(error.observed?.status.length);
       return true;
     });
+  });
+});
+
+test('sync refuses a racy dirty index before requesting merge permission', async () => {
+  await syncFixture(async ({ repo, old, target, git }) => {
+    // Align cached file and index seconds so Git must hash the same-size edit.
+    const stamp = 1600000000;
+    await git('config', 'core.trustctime', 'false');
+    await utimes(join(repo, 'file'), stamp, stamp);
+    await git('add', 'file');
+    await utimes(join(repo, '.git/index'), stamp, stamp);
+    await writeFile(join(repo, 'file'), 'bad\n');
+    await utimes(join(repo, 'file'), stamp, stamp);
+    const index = await readFile(join(repo, '.git/index'));
+    let mergePermission = false;
+    await assert.rejects(syncMain(repo, { branch: 'main', head: old }, target, async (action, resources) => {
+      if (action === 'shell' && resources[0].startsWith('git merge --ff-only')) mergePermission = true;
+    }), (error: unknown) => error instanceof SyncError && !error.attempted);
+    assert.equal(mergePermission, false);
+    assert.equal(await git('rev-parse', 'HEAD'), old);
+    assert.equal(await readFile(join(repo, 'file'), 'utf8'), 'bad\n');
+    assert.deepEqual(await readFile(join(repo, '.git/index')), index);
+    assert.equal(await git('ls-remote', 'origin', 'refs/heads/main'), `${target}\trefs/heads/main`);
   });
 });
