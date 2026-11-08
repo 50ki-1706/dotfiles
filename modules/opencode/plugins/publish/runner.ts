@@ -64,8 +64,15 @@ async function execute(
 
 export async function run(cwd: string, executable: 'git' | 'git-surgeon' | 'gh', args: string[], permission: Permission, options: { signal?: AbortSignal; env?: NodeJS.ProcessEnv; timeout?: number } = {}): Promise<string> {
   const quote = (arg: string) => /^[a-zA-Z0-9_./:=+,-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", "'\\''")}'`;
-  await permission('shell', [[executable, ...args].map(quote).join(' ')]);
-  return execute(cwd, executable, args, options);
+  const tagged = (error: unknown, commandStarted: boolean) => Object.assign(error instanceof Error && Object.isExtensible(error) ? error : new Error(String(error), { cause: error }), { commandStarted });
+  let commandStarted = false;
+  try {
+    await permission('shell', [[executable, ...args].map(quote).join(' ')]);
+    commandStarted = true;
+    return await execute(cwd, executable, args, options);
+  } catch (error) {
+    throw tagged(error, commandStarted);
+  }
 }
 
 export async function authorizeHeadRecovery(cwd: string, permission: Permission): Promise<() => Promise<string>> {

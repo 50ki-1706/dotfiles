@@ -11,8 +11,8 @@ export type RepositoryState = {
   status: string[];
 };
 
-export async function inspectRepository(cwd: string, permission: Permission, signal?: AbortSignal): Promise<RepositoryState> {
-  const git = (args: string[]) => run(cwd, 'git', args, permission, { signal });
+export async function inspectRepository(cwd: string, permission: Permission, signal?: AbortSignal, env?: NodeJS.ProcessEnv): Promise<RepositoryState> {
+  const git = (args: string[]) => run(cwd, 'git', args, permission, { signal, env });
   const root = (await git(['rev-parse', '--show-toplevel'])).trim();
   await permission('read', [root]);
   const branch = (await git(['symbolic-ref', '--quiet', '--short', 'HEAD'])).trim();
@@ -29,49 +29,75 @@ export async function inspectRepository(cwd: string, permission: Permission, sig
   return { root, branch, head, status };
 }
 
-async function preview<T>(cwd: string, permission: Permission, untracked: string[], signal: AbortSignal | undefined, action: (state: RepositoryState, env: NodeJS.ProcessEnv) => Promise<T>): Promise<T> {
+async function preview<T>(cwd: string, permission: Permission, untracked: string[], signal: AbortSignal | undefined, action: (state: RepositoryState, env: NodeJS.ProcessEnv, snapshot: NodeJS.ProcessEnv, initialize: () => Promise<void>, initialIndex: Buffer) => Promise<T>): Promise<T> {
   if (!Array.isArray(untracked) || new Set(untracked).size !== untracked.length) throw new Error('Invalid untracked paths');
-  const state = await inspectRepository(cwd, permission, signal);
-  for (const entry of state.status) {
-    const path = entry.slice(3);
-    assertSafePath(path);
-    let current = state.root;
-    for (const segment of path.split('/')) {
-      current = join(current, segment);
-      const info = await lstat(current).catch((error: NodeJS.ErrnoException) => {
-        if (error.code === 'ENOENT') return null;
-        throw error;
-      });
-      if (info?.isSymbolicLink()) throw new Error('Symlinks are unsupported');
-    }
-  }
-  for (const path of untracked) {
-    assertSafePath(path);
-    if (!state.status.includes(`?? ${path}`)) throw new Error('Path is not an untracked file');
-  }
-  await permission('read', state.status.map((entry) => join(state.root, entry.slice(3))));
-  const paths = state.status.map((entry) => entry.slice(3));
-  if (paths.length) {
-    const attrs = (await run(state.root, 'git', ['check-attr', '-z', 'diff', 'merge', '--', ...paths], permission, { signal })).split('\0');
-    for (let i = 2; i < attrs.length; i += 3) {
-      if (attrs[i] !== 'unspecified') throw new Error('Custom diff or merge attributes are unsupported');
-    }
-  }
   await mkdir('/private/tmp/opencode', { recursive: true });
   const dir = await mkdtemp('/private/tmp/opencode/publish-index-');
   const env = { GIT_INDEX_FILE: join(dir, 'index') };
+  const snapshot = { GIT_INDEX_FILE: join(dir, 'snapshot') };
   try {
-    await run(state.root, 'git', ['read-tree', state.head], permission, { env, signal });
-    if (untracked.length) await run(state.root, 'git', ['add', '-N', '--', ...untracked], permission, { env, signal });
-    return await action(state, env);
+    const root = (await run(cwd, 'git', ['rev-parse', '--show-toplevel'], permission, { signal })).trim();
+    const indexPath = resolve(root, (await run(root, 'git', ['rev-parse', '--git-path', 'index'], permission, { signal })).trim());
+    await permission('read', [indexPath]);
+    if (!(await lstat(indexPath)).isFile()) throw new Error('Unsupported index file');
+    const initialIndex = await readFile(indexPath);
+    // Isolate Git reads: commands can internally write the index even with optional locks disabled.
+    await writeFile(snapshot.GIT_INDEX_FILE, initialIndex);
+    const state = await inspectRepository(cwd, permission, signal, snapshot);
+    for (const entry of state.status) {
+      const path = entry.slice(3);
+      assertSafePath(path);
+      let current = state.root;
+      for (const segment of path.split('/')) {
+        current = join(current, segment);
+        const info = await lstat(current).catch((error: NodeJS.ErrnoException) => {
+          if (error.code === 'ENOENT') return null;
+          throw error;
+        });
+        if (info?.isSymbolicLink()) throw new Error('Symlinks are unsupported');
+      }
+    }
+    for (const path of untracked) {
+      assertSafePath(path);
+      if (!state.status.includes(`?? ${path}`)) throw new Error('Path is not an untracked file');
+    }
+    await permission('read', state.status.map((entry) => join(state.root, entry.slice(3))));
+    const stagedAdds = state.status.filter((entry) => entry[0] === 'A').map((entry) => entry.slice(3));
+    if (stagedAdds.length) {
+      const entries = (await run(state.root, 'git', ['ls-files', '--stage', '-z', '--', ...stagedAdds], permission, { env: snapshot, signal })).split('\0').filter(Boolean);
+      if (entries.some((entry) => !/^100(644|755) [a-f0-9]+ 0\t/.test(entry))) throw new Error('Unsupported file type');
+      const stats = await run(state.root, 'git', ['diff', '--no-ext-diff', '--no-textconv', '--cached', '--numstat', '-z', state.head, '--', ...stagedAdds], permission, { env: snapshot, signal });
+      if (stats.split('\0').some((line) => /^-\t-\t/.test(line))) throw new Error('Binary changes are unsupported');
+    }
+    const intentPaths = [...stagedAdds, ...untracked];
+    for (const path of intentPaths) {
+      const file = await open(join(state.root, path), constants.O_RDONLY | constants.O_NOFOLLOW);
+      try {
+        if (!(await file.stat()).isFile()) throw new Error('Unsupported file type');
+        if ((await file.readFile()).includes(0)) throw new Error('Binary changes are unsupported');
+      } finally { await file.close(); }
+    }
+    const paths = state.status.map((entry) => entry.slice(3));
+    if (paths.length) {
+      const attrs = (await run(state.root, 'git', ['check-attr', '-z', 'diff', 'merge', '--', ...paths], permission, { signal })).split('\0');
+      for (let i = 2; i < attrs.length; i += 3) {
+        if (attrs[i] !== 'unspecified') throw new Error('Custom diff or merge attributes are unsupported');
+      }
+    }
+    const initialize = async () => {
+      await run(state.root, 'git', ['read-tree', state.head], permission, { env, signal });
+      if (intentPaths.length) await run(state.root, 'git', ['add', '-N', '--', ...intentPaths], permission, { env, signal });
+    };
+    await initialize();
+    return await action(state, env, snapshot, initialize, initialIndex);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 }
 
 export async function inspectHunks(cwd: string, permission: Permission, untracked: string[] = [], signal?: AbortSignal): Promise<{ state: RepositoryState; hunks: string; stagedDiff: string }> {
-  return preview(cwd, permission, untracked, signal, async (state, env) => {
-    const stagedDiff = await run(state.root, 'git', ['-c', 'diff.external=', 'diff', '--no-ext-diff', '--no-textconv', '--cached', '--no-renames'], permission, { signal });
+  return preview(cwd, permission, untracked, signal, async (state, env, snapshot) => {
+    const stagedDiff = await run(state.root, 'git', ['-c', 'diff.external=', 'diff', '--no-ext-diff', '--no-textconv', '--cached', '--no-renames'], permission, { env: snapshot, signal });
     const hunks = await run(state.root, 'git-surgeon', ['hunks', '--full'], permission, { env, signal });
     return { state, hunks, stagedDiff };
   });
@@ -85,7 +111,7 @@ export async function showHunk(cwd: string, id: string, permission: Permission, 
 export async function commitHunks(cwd: string, ids: string[], message: string, permission: Permission, untracked: string[] = [], signal?: AbortSignal): Promise<{ sha: string; message: string; state: RepositoryState }> {
   validateSelection(ids, message);
   if (ids.some((id) => id.includes(':')) && ids.length !== 1) throw new Error('Line ranges require one hunk');
-  return preview(cwd, permission, untracked, signal, async (state, env) => {
+  return preview(cwd, permission, untracked, signal, async (state, env, _snapshot, initialize, initialIndex) => {
     const git = (args: string[], index = env) => run(state.root, 'git', args, permission, { env: index, signal });
     const realGit = (args: string[]) => run(state.root, 'git', args, permission, { signal });
     const indexPath = resolve(state.root, (await realGit(['rev-parse', '--git-path', 'index'])).trim());
@@ -100,10 +126,16 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
     await permission('read', [indexPath]);
     if (!(await lstat(indexPath)).isFile()) throw new Error('Unsupported index file');
     const original = await readFile(indexPath);
-    const flags = await realGit(['ls-files', '-v', '-z']);
+    if (!original.equals(initialIndex)) throw Object.assign(new Error('Repository changed before commit: indexBytes'), { mismatches: ['indexBytes'] });
+    const originalIndex = `${env.GIT_INDEX_FILE}.original`;
+    await writeFile(originalIndex, original);
+    const indexEnv = { GIT_INDEX_FILE: originalIndex };
+    const validationEnv = { GIT_INDEX_FILE: `${env.GIT_INDEX_FILE}.validation` };
+    await writeFile(validationEnv.GIT_INDEX_FILE, original);
+    const flags = await git(['ls-files', '-v', '-z'], validationEnv);
     if (flags.split('\0').filter(Boolean).some((entry) => !entry.startsWith('H '))) throw new Error('Unsupported index flags');
     for (const args of [['diff', '--raw', '-z', '--find-renames', state.head], ['diff', '--raw', '-z', '--find-renames', '--cached', state.head]]) {
-      const raw = await realGit(args);
+      const raw = await git(args, validationEnv);
       for (const part of raw.split('\0')) {
         if (!part.startsWith(':')) continue;
         const match = part.match(/^:(\d+) (\d+) [a-f0-9]+ [a-f0-9]+ ([A-Z])/);
@@ -111,7 +143,7 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
       }
     }
     for (const args of [['diff', '--numstat', '-z', state.head], ['diff', '--numstat', '-z', '--cached', state.head]]) {
-      if ((await realGit(args)).split('\0').some((line) => /^-\t-\t/.test(line))) throw new Error('Binary changes are unsupported');
+      if ((await git(args, validationEnv)).split('\0').some((line) => /^-\t-\t/.test(line))) throw new Error('Binary changes are unsupported');
     }
     const fingerprint = async () => {
       const hash = createHash('sha256');
@@ -142,21 +174,29 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
       return hash.digest('hex');
     };
     const worktreeHash = await fingerprint();
-    const originalIndex = `${env.GIT_INDEX_FILE}.original`;
-    await writeFile(originalIndex, original);
-    const indexEnv = { GIT_INDEX_FILE: originalIndex };
     const originalTree = (await git(['write-tree'], indexEnv)).trim();
     const range = ids[0].split(':');
     const stageArgs = range.length === 2 ? ['stage', range[0], '--lines', range[1]] : ['stage', ...ids];
     await run(state.root, 'git-surgeon', stageArgs, permission, { env, signal });
     const candidate = (await git(['write-tree'])).trim();
+    const selectedPaths = new Set((await git(['diff', '--cached', '--name-only', '-z', '--no-renames', state.head])).split('\0').filter(Boolean));
+    const stagedAdds = new Set(state.status.filter((entry) => entry[0] === 'A').map((entry) => entry.slice(3)));
+    const mergeEnv = { GIT_INDEX_FILE: `${env.GIT_INDEX_FILE}.merge` };
+    await git(['read-tree', candidate], mergeEnv);
+    // Reconcile a new file using its original staged blob, not an add/add merge
+    // against the selected worktree version. The actual commit keeps candidate.
+    for (const entry of (await git(['ls-files', '--stage', '-z'], indexEnv)).split('\0').filter(Boolean)) {
+      const match = entry.match(/^(\d+) ([a-f0-9]+) 0\t([\s\S]+)$/);
+      if (match && stagedAdds.has(match[3]) && selectedPaths.has(match[3])) await git(['update-index', '--add', '--cacheinfo', match[1], match[2], match[3]], mergeEnv);
+    }
+    const mergeCandidate = (await git(['write-tree'], mergeEnv)).trim();
     const originalCommit = (await git(['commit-tree', originalTree, '-p', state.head, '-m', 'index snapshot'])).trim();
-    const candidateCommit = (await git(['commit-tree', candidate, '-p', state.head, '-m', 'candidate snapshot'])).trim();
+    const candidateCommit = (await git(['commit-tree', mergeCandidate, '-p', state.head, '-m', 'candidate snapshot'])).trim();
     const merged = (await git(['merge-tree', '--write-tree', '--merge-base', state.head, originalCommit, candidateCommit])).trim().split('\n')[0];
     if (!/^[a-f0-9]{40,64}$/.test(merged)) throw new Error('Index reconciliation failed');
+    // This copy becomes the reconciled index installed only after validation.
     await git(['read-tree', merged], indexEnv);
-    await git(['read-tree', state.head]);
-    if (untracked.length) await git(['add', '-N', '--', ...untracked]);
+    await initialize();
     await permission('shell', [`git-surgeon commit ${ids.join(' ')} -m '${message.replaceAll("'", "'\\''")}'`]);
     const recoverHead = await authorizeHeadRecovery(state.root, permission);
     const lockPath = `${indexPath}.lock`;
@@ -166,8 +206,9 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
     let ownsLock = true;
     let installed = false;
     try {
-      const now = await inspectRepository(state.root, permission, signal);
-      if (now.head !== state.head || now.branch !== state.branch || JSON.stringify(now.status) !== JSON.stringify(state.status) || !(await readFile(indexPath)).equals(original) || await fingerprint() !== worktreeHash) throw new Error('Repository changed before commit');
+      const now = await inspectRepository(state.root, permission, signal, validationEnv);
+      const mismatches = [now.root !== state.root && 'root', now.head !== state.head && 'head', now.branch !== state.branch && 'branch', JSON.stringify(now.status) !== JSON.stringify(state.status) && 'status', !(await readFile(indexPath)).equals(original) && 'indexBytes', await fingerprint() !== worktreeHash && 'worktree'].filter(Boolean);
+      if (mismatches.length) throw Object.assign(new Error(`Repository changed before commit: ${mismatches.join(', ')}`), { mismatches });
       try {
         attempted = true;
         await run(state.root, 'git-surgeon', ['commit', ...ids, '-m', message], permission, { env, signal });
@@ -180,21 +221,23 @@ export async function commitHunks(cwd: string, ids: string[], message: string, p
       const tree = (await realGit(['rev-parse', `${sha}^{tree}`])).trim();
       const actualMessage = (await realGit(['show', '-s', '--format=%B', sha])).trimEnd();
       const currentBranch = (await realGit(['symbolic-ref', '--quiet', '--short', 'HEAD'])).trim();
-      const after = await inspectRepository(state.root, permission, signal);
+      const after = await inspectRepository(state.root, permission, signal, validationEnv);
       const known = new Set(state.status.map((entry) => entry.slice(3)));
-      if (after.status.some((entry) => !known.has(entry.slice(3)))) throw new Error('New worktree changes after commit');
-      if (parent !== state.head || tree !== candidate || actualMessage !== message || currentBranch !== state.branch || !(await readFile(indexPath)).equals(original) || await fingerprint() !== worktreeHash) throw new Error('Post-commit validation failed');
-      if ((await realGit(['rev-parse', '--verify', 'HEAD'])).trim() !== sha) throw new Error('HEAD changed after commit');
+      if (after.status.some((entry) => !known.has(entry.slice(3)))) throw Object.assign(new Error('New worktree changes after commit: status'), { mismatches: ['status'] });
+      const postMismatches = [after.root !== state.root && 'root', parent !== state.head && 'parent', tree !== candidate && 'tree', actualMessage !== message && 'message', currentBranch !== state.branch && 'branch', !(await readFile(indexPath)).equals(original) && 'indexBytes', await fingerprint() !== worktreeHash && 'worktree'].filter(Boolean);
+      if (postMismatches.length) throw Object.assign(new Error(`Post-commit validation failed: ${postMismatches.join(', ')}`), { mismatches: postMismatches });
+      if ((await realGit(['rev-parse', '--verify', 'HEAD'])).trim() !== sha) throw Object.assign(new Error('HEAD changed after commit: head'), { mismatches: ['head'] });
       await lock.writeFile(await readFile(originalIndex));
       await lock.close();
       await rename(lockPath, indexPath);
       ownsLock = false;
       installed = true;
-      return { sha, message, state: await inspectRepository(state.root, permission, signal) };
+      await writeFile(validationEnv.GIT_INDEX_FILE, await readFile(indexPath));
+      return { sha, message, state: await inspectRepository(state.root, permission, signal, validationEnv) };
     } catch (error) {
       if (attempted) {
         const failure = new Error(`Commit ${sha ? `created (${sha})` : 'status uncertain'}; index ${installed ? 'installed' : 'not installed'}: ${String(error)}`);
-        Object.assign(failure, { createdSha: sha ?? null, indexInstalled: installed, commitStatus: sha ? 'created' : 'uncertain' });
+        Object.assign(failure, { createdSha: sha ?? null, indexInstalled: installed, commitStatus: sha ? 'created' : 'uncertain', ...((error as { mismatches?: string[] }).mismatches ? { mismatches: (error as { mismatches: string[] }).mismatches } : {}) });
         throw failure;
       }
       throw error;

@@ -15,7 +15,7 @@ type Context = {
   tool: { transform(callback: (editor: Editor) => void): Promise<Registration>; reload(): Promise<void> };
   session: { get(input: { sessionID: string }): Promise<{ location: { directory: string } }>; prompt(input: any): Promise<unknown> };
   skill: { list(input: { location: { directory: string } }): Promise<{ data: { id: string; path: string; content: string }[] }> };
-  permission: { assert(input: any): Promise<void> };
+  permission: { assert(input: any): Promise<void>; hook(name: 'evaluate', callback: (event: any) => void): void };
 };
 type Operations = {
   inspectRepository: typeof transaction.inspectRepository;
@@ -24,11 +24,13 @@ type Operations = {
   commitHunks: (cwd: string, ids: string[], message: string, permission: Permission, untracked?: string[], signal?: AbortSignal) => Promise<{ sha: string; message: string; state: State }>;
   discoverTemplate: typeof workflow.discoverTemplate;
   publishBranch: typeof workflow.publishBranch;
+  syncMain: typeof workflow.syncMain;
 };
 type Resources = { instructions: string; officialSkill: string; trustedSkillPath?: string; prSkill?: string; trustedPrSkillPath?: string };
 type Options = { loadResources?: (includePrSkill: boolean) => Promise<Resources>; operations?: Operations };
 type Snapshot = { state: State; hunks: string; stagedDiff: string };
-type SessionState = { state: State; template: Template; untracked: string[]; commits: { sha: string; message: string }[]; admission: Promise<void>; snapshot?: Snapshot; shown: Set<string> };
+type SessionState = { state: State; template: Template; untracked: string[]; commits: { sha: string; message: string }[]; admission: Promise<void>; snapshot?: Snapshot; shown: Set<string>; retry: workflow.PublishRetry };
+const createdCounts = (count: number) => ({ invocationCreatedCount: count, count });
 
 const object = (value: unknown, keys: string[]): Record<string, any> => {
   if (!value || typeof value !== 'object' || Array.isArray(value) || ![Object.prototype, null].includes(Object.getPrototypeOf(value)) || Reflect.ownKeys(value).length !== keys.length || keys.some((key) => !Object.hasOwn(value, key))) throw new Error('Invalid input keys');
@@ -46,6 +48,16 @@ export function createPublishPlugin(options: Options = {}) {
       const sessions = new Map<string, SessionState>();
       const generations = new Map<string, object>();
       const locks = new Map<string, Promise<void>>();
+      const syncApprovals = new Set<{ context: ToolContext; entry: SessionState; targetHead: string }>();
+      ctx.permission.hook('evaluate', (event) => {
+        const pending = [...syncApprovals].find(({ context }) => context.sessionID === event.sessionID && event.source?.messageID === context.messageID && event.source?.id === context.id);
+        if (!pending || event.effect === 'deny' || event.action !== 'shell'
+          || event.agent && event.agent !== pending.context.agent || event.resources?.length !== 1
+          || event.resources[0] !== `git merge --ff-only --no-edit ${pending.targetHead}`) return;
+        if (sessions.get(event.sessionID) !== pending.entry) { event.effect = 'deny'; event.message = 'Publish session replaced'; return; }
+        event.effect = 'ask';
+        event.message = `Fast-forward approval: ${pending.entry.state.root} (${pending.entry.state.branch}) ${pending.entry.state.head} → ${pending.targetHead}`;
+      });
       let currentSchema: Record<string, unknown> = schema({ title: string, fingerprint: string, body: string });
       const locked = async <T>(root: string, action: () => Promise<T>): Promise<T> => {
         const previous = locks.get(root) ?? Promise.resolve();
@@ -115,18 +127,50 @@ export function createPublishPlugin(options: Options = {}) {
             const p = permission(context.sessionID, context);
             try {
               const result = await ops.commitHunks(entry.state.root, ids, message, p, entry.untracked, context.signal);
-              if (result.state.root !== entry.state.root || result.state.branch !== entry.state.branch || result.state.head !== result.sha) throw new Error(`Commit created (${result.sha}); unexpected commit state`);
+              if (result.state.root !== entry.state.root || result.state.branch !== entry.state.branch || result.state.head !== result.sha) throw Object.assign(new Error(`Commit created (${result.sha}); unexpected commit state`), { createdSha: result.sha, commitStatus: 'created' });
               entry.state = result.state; entry.commits.push({ sha: result.sha, message: result.message });
+              entry.untracked = entry.untracked.filter((path) => result.state.status.includes(`?? ${path}`));
               entry.snapshot = undefined; entry.shown.clear();
-              return { ...result, count: entry.commits.length, commits: entry.commits };
+              return { ...result, ...createdCounts(entry.commits.length), commits: entry.commits };
             } catch (error) {
+              if (!(error as { commitStatus?: string })?.commitStatus) throw error;
               if (sessions.get(context.sessionID) === entry) sessions.delete(context.sessionID);
               const detail = error instanceof Error ? error.message : String(error);
-              const sha = detail.match(/Commit created \(([a-f0-9]{40,64})\)/)?.[1];
+              const sha = (error as { createdSha?: string | null }).createdSha;
               const createdUnverified = sha ? { sha, message: null, requestedMessage: message } : null;
               const commits = createdUnverified ? [...entry.commits, createdUnverified] : entry.commits;
-              throw new Error(`Commit outcome requires /publish rerun: ${JSON.stringify({ error: detail, commits, count: commits.length, createdUnverified, residualLastObserved: entry.state.status })}`);
+              const { commitStatus, indexInstalled, mismatches } = error as { commitStatus?: string; indexInstalled?: boolean; mismatches?: string[] };
+              throw new Error(`Commit outcome requires /publish rerun: ${JSON.stringify({ error: detail, commitStatus, indexInstalled, mismatches, commits, ...createdCounts(commits.length), createdUnverified, residualLastObserved: entry.state.status })}`);
             }
+          });
+        }));
+        editor.add(tool('publish_sync_main', 'Fast-forward a clean bound branch to an exact origin/main SHA after human approval; inspect and show again afterwards.', schema({ expectedHead: string, targetHead: string }), async (input, context) => {
+          const { expectedHead, targetHead } = object(input, ['expectedHead', 'targetHead']);
+          if (![expectedHead, targetHead].every((sha) => typeof sha === 'string' && /^[a-f0-9]{40,64}$/.test(sha))) throw new Error('Invalid synchronization HEAD');
+          const entry = await bound(context);
+          return locked(entry.state.root, async () => {
+            if (sessions.get(context.sessionID) !== entry) throw new Error('Publish session replaced');
+            if (expectedHead !== entry.state.head) throw new Error('Synchronization HEAD does not match publish binding');
+            const p = permission(context.sessionID, context);
+            await p('edit', [entry.state.root]);
+            same(entry, await ops.inspectRepository(entry.state.root, p, context.signal));
+            const before = entry.state;
+            const pending = { context, entry, targetHead };
+            syncApprovals.add(pending);
+            const syncPermission: Permission = async (action, resources) => {
+              await p(action, resources);
+              if (sessions.get(context.sessionID) !== entry) throw new Error('Publish session replaced');
+            };
+            try {
+              const result = await ops.syncMain(before.root, { branch: before.branch, head: before.head }, targetHead, syncPermission, context.signal);
+              if (sessions.get(context.sessionID) !== entry || result.state.root !== before.root || result.state.branch !== before.branch || result.state.head !== targetHead || result.state.status.length) throw new Error('Unexpected synchronization result');
+              entry.state = result.state; entry.untracked = []; entry.snapshot = undefined; entry.shown.clear();
+              return { ...result, reviewRequired: true, commits: entry.commits, ...createdCounts(entry.commits.length) };
+            } catch (error) {
+              const attempted = error instanceof workflow.SyncError ? error.attempted : true;
+              if (attempted && sessions.get(context.sessionID) === entry) sessions.delete(context.sessionID);
+              throw new Error(`Synchronization incomplete: ${JSON.stringify({ error: error instanceof Error ? error.message : String(error), attempted, before, observed: error instanceof workflow.SyncError ? error.observed : null, commits: entry.commits, ...createdCounts(entry.commits.length), reviewRequired: true })}`);
+            } finally { syncApprovals.delete(pending); }
           });
         }));
         const publish = (mode: 'main' | 'pr') => async (input: unknown, context: ToolContext) => {
@@ -153,11 +197,12 @@ export function createPublishPlugin(options: Options = {}) {
               if (current.status.length) throw new Error('Repository is not clean; rerun /publish');
             };
             try {
-              const result = await ops.publishBranch(state.root, { branch: state.branch, head: state.head }, mode, mode === 'pr' ? { title: fields.title, body: text } : {}, publishPermission, run, context.signal);
-              return { ...result, commits: entry.commits, count: entry.commits.length, residual: state.status };
+              const result = await ops.publishBranch(state.root, { branch: state.branch, head: state.head }, mode, mode === 'pr' ? { title: fields.title, body: text } : {}, publishPermission, run, context.signal, entry.retry);
+              return { ...result, commits: entry.commits, ...createdCounts(entry.commits.length), residual: state.status };
             } catch (error) {
               const detail = error instanceof Error ? error.message : String(error);
-              throw new Error(`Publish incomplete: ${JSON.stringify({ error: detail, commits: entry.commits, count: entry.commits.length, residualLastObserved: state.status, push: 'unknown; see error' })}`);
+              const observed = error instanceof workflow.PublishError ? error.state : { phase: 'unknown', push: 'unknown', remoteVerified: false, pr: 'unknown' };
+              throw new Error(`Publish incomplete: ${JSON.stringify({ ...observed, error: detail, commits: entry.commits, ...createdCounts(entry.commits.length), residualLastObserved: state.status })}`);
             }
           });
         };
@@ -187,13 +232,13 @@ export function createPublishPlugin(options: Options = {}) {
         let admit!: () => void; let reject!: (error: unknown) => void;
         const admission = new Promise<void>((resolve, fail) => { admit = resolve; reject = fail; });
         admission.catch(() => {});
-        const entry: SessionState = { state, template, untracked: [], commits: [], admission, shown: new Set() }; sessions.set(sessionID, entry);
+        const entry: SessionState = { state, template, untracked: [], commits: [], admission, shown: new Set(), retry: {} }; sessions.set(sessionID, entry);
         try {
           await ctx.session.prompt({ ...prompt, sessionID, text: `${resources.instructions}\n\n${prompt.text}`, skills: [...(prompt.skills ?? []).filter((skill) => !required.some((entry) => entry.id === skill.id)), ...required.map(({ id }) => ({ id }))], delivery });
           admit();
         } catch (error) { if (sessions.get(sessionID) === entry) sessions.delete(sessionID); reject(error); throw error; }
       } }));
-      return async () => { sessions.clear(); generations.clear(); await commandRegistration.dispose(); await toolRegistration.dispose(); };
+      return async () => { sessions.clear(); generations.clear(); syncApprovals.clear(); await commandRegistration.dispose(); await toolRegistration.dispose(); };
     },
   };
 }

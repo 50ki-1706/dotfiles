@@ -70,6 +70,69 @@ test('untracked file is committed through the alternate index', async () => {
   } finally { await rm(cwd, { recursive: true, force: true }); }
 });
 
+for (const staged of [true, false]) {
+  test(`new ${staged ? 'staged' : 'opted-in'} file followed by tracked change preserves other staged changes`, async () => {
+    const cwd = await mkdtemp('/private/tmp/opencode/publish-sequence-');
+    const permission = async () => {};
+    const git = (args: string[]) => run(cwd, 'git', args, permission);
+    try {
+      await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+      await writeFile(join(cwd, 'tracked.patch'), 'before\n'); await writeFile(join(cwd, 'partial'), 'base\n');
+      await git(['add', 'tracked.patch', 'partial']); await git(['commit', '-m', 'chore: initial']);
+      await writeFile(join(cwd, 'tracked.patch'), 'after\n');
+      await writeFile(join(cwd, 'partial'), 'staged\n'); await git(['add', 'partial']); await writeFile(join(cwd, 'partial'), 'worktree\n');
+      await writeFile(join(cwd, 'other.patch'), 'other staged\n'); await git(['add', 'other.patch']);
+      await writeFile(join(cwd, 'new.patch'), 'staged version\n');
+      if (staged) { await git(['add', 'new.patch']); await writeFile(join(cwd, 'new.patch'), 'final version\n'); }
+      const optins = staged ? [] : ['new.patch'];
+      const index = join(cwd, '.git/index'); const before = await readFile(index);
+      const first = await inspectHunks(cwd, permission, optins);
+      const newId = first.hunks.match(/^([a-zA-Z0-9_-]+) new\.patch\s/m)?.[1]; assert.ok(newId);
+      assert.match(await showHunk(cwd, newId, permission, optins), /version/);
+      assert.deepEqual(await readFile(index), before);
+      await commitHunks(cwd, [newId], 'feat: new', permission, optins);
+      assert.equal(await git(['show', 'HEAD:new.patch']), staged ? 'final version\n' : 'staged version\n');
+      if (staged) assert.equal(await git(['show', ':new.patch']), 'staged version\n');
+      const second = await inspectHunks(cwd, permission);
+      const trackedId = second.hunks.match(/^([a-zA-Z0-9_-]+) tracked\.patch\s/m)?.[1]; assert.ok(trackedId);
+      assert.match(await showHunk(cwd, trackedId, permission), /after/);
+      const captured = await readFile(index); let checked = 0; let sawLock = false;
+      const checkingPermission = async (action: string) => {
+        if (action === 'shell') {
+          const locked = await access(`${index}.lock`).then(() => true, () => false);
+          if (!sawLock || locked) { assert.deepEqual(await readFile(index), captured); checked++; }
+          if (locked) sawLock = true;
+        }
+      };
+      await commitHunks(cwd, [trackedId], 'fix: tracked', checkingPermission);
+      assert.ok(checked > 0);
+      assert.equal(await git(['show', 'HEAD:tracked.patch']), 'after\n');
+      assert.equal(await git(['show', ':other.patch']), 'other staged\n');
+      assert.equal(await git(['show', ':partial']), 'staged\n');
+      assert.equal(await readFile(join(cwd, 'partial'), 'utf8'), 'worktree\n');
+    } finally { await rm(cwd, { recursive: true, force: true }); }
+  });
+}
+
+test('show and commit one of two unchanged staged additions preserves the other', async () => {
+  const cwd = await mkdtemp('/private/tmp/opencode/publish-staged-pair-');
+  const permission = async () => {};
+  const git = (args: string[]) => run(cwd, 'git', args, permission);
+  try {
+    await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+    await git(['commit', '--allow-empty', '-m', 'chore: initial']);
+    await writeFile(join(cwd, 'one.patch'), 'one\n'); await writeFile(join(cwd, 'two.patch'), 'two\n');
+    await git(['add', 'one.patch', 'two.patch']);
+    const index = join(cwd, '.git/index'); const before = await readFile(index);
+    const id = (await inspectHunks(cwd, permission)).hunks.match(/^([a-zA-Z0-9_-]+) one\.patch\s/m)?.[1]; assert.ok(id);
+    assert.match(await showHunk(cwd, id, permission), /one/); assert.deepEqual(await readFile(index), before);
+    await commitHunks(cwd, [id], 'feat: one', permission);
+    assert.equal(await git(['show', 'HEAD:one.patch']), 'one\n');
+    assert.equal(await git(['show', ':two.patch']), 'two\n');
+    assert.match(await git(['diff', '--cached', '--name-only']), /^two\.patch\n$/);
+  } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
 test('literal pathspec names are previewed and selected without changing unrelated state', async () => {
   const cwd = await mkdtemp('/private/tmp/opencode/publish-literal-');
   const permission = async () => {};
@@ -107,6 +170,62 @@ test('literal pathspec names are previewed and selected without changing unrelat
   } finally { await rm(cwd, { recursive: true, force: true }); }
 });
 
+test('missing or binary staged additions fail before preview initialization', async () => {
+  const cwd = await mkdtemp('/private/tmp/opencode/publish-unsafe-add-');
+  const permission = async () => {};
+  const git = (args: string[]) => run(cwd, 'git', args, permission);
+  try {
+    await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+    await git(['commit', '--allow-empty', '-m', 'chore: initial']);
+    await writeFile(join(cwd, 'new.patch'), Buffer.from([0, 1])); await git(['add', 'new.patch']);
+    const before = await readFile(join(cwd, '.git/index'));
+    await assert.rejects(inspectHunks(cwd, permission), /Binary/);
+    assert.deepEqual(await readFile(join(cwd, '.git/index')), before);
+    await writeFile(join(cwd, 'new.patch'), 'text\n'); await git(['add', 'new.patch']);
+    const textIndex = await readFile(join(cwd, '.git/index'));
+    await rm(join(cwd, 'new.patch'));
+    await assert.rejects(inspectHunks(cwd, permission), /ENOENT/);
+    assert.deepEqual(await readFile(join(cwd, '.git/index')), textIndex);
+  } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+for (const field of ['head', 'branch', 'worktree', 'status', 'indexBytes'] as const) {
+  test(`external ${field} change under index lock is rejected without disclosing content`, async () => {
+    const cwd = await mkdtemp('/private/tmp/opencode/publish-race-');
+    const permission = async () => {};
+    const git = (args: string[]) => run(cwd, 'git', args, permission);
+    try {
+      await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+      await writeFile(join(cwd, 'file'), 'base\n'); await git(['add', 'file']); await git(['commit', '-m', 'chore: initial']);
+      const head = (await git(['rev-parse', 'HEAD'])).trim();
+      const tree = (await git(['rev-parse', 'HEAD^{tree}'])).trim();
+      const alternate = (await git(['commit-tree', tree, '-p', head, '-m', 'external'])).trim();
+      await writeFile(join(cwd, 'file'), 'private-content\n');
+      const id = (await inspectHunks(cwd, permission)).hunks.match(/^([a-zA-Z0-9_-]+) file\s/m)?.[1]; assert.ok(id);
+      const index = join(cwd, '.git/index'); const before = await readFile(index); let changed = false;
+      const mutate = async (action: string) => {
+        if (action !== 'shell' || changed || !(await access(`${index}.lock`).then(() => true, () => false))) return;
+        changed = true;
+        if (field === 'head') await git(['update-ref', 'refs/heads/main', alternate]);
+        if (field === 'branch') await git(['symbolic-ref', 'HEAD', 'refs/heads/other']);
+        if (field === 'branch') await git(['update-ref', 'refs/heads/other', head]);
+        if (field === 'worktree') await writeFile(join(cwd, 'file'), 'external-content\n');
+        if (field === 'status') await writeFile(join(cwd, 'external'), 'external-content\n');
+        if (field === 'indexBytes') await appendFile(index, Buffer.from([0]));
+      };
+      await assert.rejects(commitHunks(cwd, [id], 'fix: selected', mutate), (error: Error & { mismatches?: string[]; commitStatus?: string }) => {
+        assert.ok(error.mismatches?.includes(field)); assert.match(error.message, new RegExp(`\\b${field}\\b`));
+        assert.doesNotMatch(error.message, /content|publish-race-|[a-f0-9]{40}/); assert.equal(error.commitStatus, undefined); return true;
+      });
+      assert.ok(changed);
+      assert.equal((await git(['rev-parse', 'HEAD'])).trim(), field === 'head' ? alternate : head);
+      assert.deepEqual(await readFile(index), field === 'indexBytes' ? Buffer.concat([before, Buffer.from([0])]) : before);
+      assert.equal(await readFile(join(cwd, 'file'), 'utf8'), field === 'worktree' ? 'external-content\n' : 'private-content\n');
+      if (field === 'status') assert.equal(await readFile(join(cwd, 'external'), 'utf8'), 'external-content\n');
+    } finally { await rm(cwd, { recursive: true, force: true }); }
+  });
+}
+
 test('failing hook and existing index lock prevent commits', async () => {
   const cwd = await mkdtemp('/private/tmp/opencode/publish-hook-');
   const permission = async () => {};
@@ -125,7 +244,11 @@ test('failing hook and existing index lock prevent commits', async () => {
     const hook = join(cwd, '.git/hooks/pre-commit');
     await writeFile(hook, '#!/bin/sh\nexit 1\n');
     await chmod(hook, 0o755);
-    await assert.rejects(commitHunks(cwd, [id], 'fix: test', permission));
+    const before = await readFile(join(cwd, '.git/index'));
+    await assert.rejects(commitHunks(cwd, [id], 'fix: test', permission), (error: Error & { commitStatus?: string; indexInstalled?: boolean; createdSha?: string | null }) => {
+      assert.equal(error.commitStatus, 'uncertain'); assert.equal(error.indexInstalled, false); assert.equal(error.createdSha, null); return true;
+    });
+    assert.deepEqual(await readFile(join(cwd, '.git/index')), before);
     assert.equal(await git(['rev-parse', 'HEAD']), head);
     await writeFile(join(cwd, '.git/index.lock'), 'held');
     await assert.rejects(commitHunks(cwd, [id], 'fix: test', permission), /EEXIST/);
