@@ -34,7 +34,8 @@
 //   live branch is still main.
 // - Any recognized mutation (rm/mv/cp/..., sed -i, perl -i, git mutations
 //   including worktree/clone/restore/switch/revert, file redirects) clears the
-//   whole session's evidence independently of stage matching. Edit-family and
+//   whole session's evidence independently of stage matching, including plugin
+//   shell permission resources. Edit-family and
 //   worktree removal tool attempts clear it too. A fmt attempt clears it as
 //   well, because fmt can change files; build and switch attempts do not clear.
 // - Internal errors on matched attempts deny (fail-closed); unmatched
@@ -274,7 +275,11 @@ export default {
         if (event.action !== "shell") return
         const resources = shellResources(event)
         if (resources.length === 0) return
-        const plan = planFor(resources, callEntry(event)?.command)
+        const rawCommand = callEntry(event)?.command
+        if (resources.some((resource) => classify(resource) === "fmt" || isMutation(resource))) {
+          clearPipeline(event.sessionID)
+        }
+        const plan = planFor(resources, rawCommand)
         if (plan.kind === "none") return
         matched = true
         await applyPlan(event, plan, ctx)
@@ -352,11 +357,11 @@ async function applyPlan(event, plan, ctx) {
   event.message = SWITCH_ASK_MESSAGE
 }
 
-// Priority per string: switch > fmt/build stage > mutation. Switch matching
-// also checks normalized quoting/backslashes; stage patterns use the raw string
-// and its backslash-stripped fixpoint variant.
+// Priority per string: switch > fmt/build stage > mutation. After literal data
+// masking, matching also checks normalized quoting/backslashes.
 function classify(command) {
   if (typeof command !== "string" || command.trim() === "") return "none"
+  command = executableText(command)
   const variants = [command, stripBackslashes(command)]
   if (matchesSwitchText(command)) return "switch"
   for (const variant of variants) if (FMT_RE.test(variant)) return "fmt"
@@ -370,6 +375,7 @@ function classify(command) {
 // exemption applies only when the trimmed command equals a bare stage form.
 function isMutation(command) {
   if (typeof command !== "string") return false
+  command = executableText(command)
   const trimmed = command.trim()
   if (BARE_STAGES.has(trimmed)) return false
   return [command, stripBackslashes(command)].some((variant) => mutationVariant(variant))
@@ -406,11 +412,58 @@ function stripBackslashes(text) {
   return current
 }
 
+// Only mask literal argv values in an entirely understood gh invocation.
+// Anything resembling shell syntax falls back to the original scanner.
+function executableText(command) {
+  if (typeof command !== "string") return command
+  const words = []
+  let i = 0
+  while (i < command.length) {
+    while (i < command.length && /[ \t]/.test(command[i])) i++
+    if (i === command.length) break
+    if (/\s/.test(command[i])) return command
+    const start = i
+    let value = ""
+    while (i < command.length && !/\s/.test(command[i])) {
+      if (command[i] === "'") {
+        const end = command.indexOf("'", i + 1)
+        if (end === -1) return command
+        value += command.slice(i + 1, end)
+        i = end + 1
+      } else if (command.slice(i, i + 2) === "\\'") {
+        value += "'"
+        i += 2
+      } else if (/[a-zA-Z0-9_./:=+,-]/.test(command[i])) {
+        value += command[i++]
+      } else {
+        return command
+      }
+    }
+    words.push({ start, end: i, value })
+  }
+  if (words.length < 5 || words.slice(0, 3).map((word) => word.value).join(" ") !== "gh pr create") return command
+  const masked = []
+  for (let index = 3; index < words.length; index += 2) {
+    const option = words[index].value
+    const value = words[index + 1]
+    if (!value || !["--repo", "--base", "--head", "--body", "--title"].includes(option)) return command
+    if (option === "--body" || option === "--title") masked.push(value)
+  }
+  let result = command
+  for (const word of masked.reverse()) {
+    result = result.slice(0, word.start) + "DATA" + result.slice(word.end)
+  }
+  return result
+}
+
 // A stage attempt passes the gate only when the whole command is one of the
 // bare stage forms; anything else (env, &, bash -c, &&, pipes, redirects) is
 // compound. Classification still scans resources to detect the attempt.
 function planFor(resources, rawCommand) {
   const stageResources = resources.filter((resource) => isStage(classify(resource)))
+  if (typeof rawCommand === "string" && isStage(classify(rawCommand)) && stageResources.length === 0) {
+    return { kind: "compound" }
+  }
   if (stageResources.length === 0) return { kind: "none" }
   const candidate =
     typeof rawCommand === "string"
@@ -528,11 +581,11 @@ async function sessionDirectory(ctx, sessionID) {
 }
 
 function matchesSwitchText(command) {
-  return matchesSwitchTextWithPatterns(command, SWITCH_EXECUTABLE_RE, SWITCH_INSTALLABLE_RE)
+  return matchesSwitchTextWithPatterns(executableText(command), SWITCH_EXECUTABLE_RE, SWITCH_INSTALLABLE_RE)
 }
 
 function matchesHomeManagerSwitchText(command) {
-  return matchesSwitchTextWithPatterns(command, HOME_MANAGER_SWITCH_RE, HOME_MANAGER_INSTALLABLE_RE)
+  return matchesSwitchTextWithPatterns(executableText(command), HOME_MANAGER_SWITCH_RE, HOME_MANAGER_INSTALLABLE_RE)
 }
 
 function matchesSwitchTextWithPatterns(command, executablePattern, installablePattern) {
