@@ -29,6 +29,16 @@
 - devenv
 - mise
 
+## dsh-TUI
+
+[dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) は `dsh --profile dsh-tui` のプラグインとして導入します。
+profile の宣言（`package.json` と `pnpm-lock.yaml`）は [modules/cli/dsh-tui](modules/cli/dsh-tui) にあり、
+Nix の適用時に `pnpm install --frozen-lockfile` で依存を展開します。
+
+```sh
+dsh --profile dsh-tui
+```
+
 ## Terminal themes
 
 Nix の適用後は、どのディレクトリからでも手動で切り替えられます。
