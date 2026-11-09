@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -102,6 +103,45 @@ class SwitchTests(unittest.TestCase):
         self.switch("dark")
         self.assertTrue(self.vibe.is_symlink())
         self.assertEqual(tomlkit.loads(target.read_text())["theme"], "ansi-dark")
+
+    def test_command_reloads_only_after_the_new_theme_is_saved(self):
+        argv = ["cgt", "--profiles", str(self.profiles), "--state-dir", str(self.state), "dark"]
+        commands = []
+
+        def run(command, **kwargs):
+            commands.append(command[0])
+            if command[0] == "lazygit":
+                return subprocess.CompletedProcess(command, 0, str(self.lazy.parent))
+            self.assertEqual((self.state / "current").resolve(), self.profiles / "dark")
+            self.assertEqual(tomlkit.loads(self.vibe.read_text())["theme"], "ansi-dark")
+            return subprocess.CompletedProcess(command, 0, "reloaded\n")
+
+        with patch("sys.argv", argv), patch.dict(os.environ, {"VIBE_HOME": str(self.vibe.parent)}), patch.object(cgt.subprocess, "run", side_effect=run), contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(cgt.main(), 0)
+            self.assertIn("Ghostty: configuration reloaded.", output.getvalue())
+        self.assertEqual(commands, ["lazygit", "/usr/bin/osascript", "herdr"])
+
+
+class ReloadTests(unittest.TestCase):
+    def test_reload_success_or_no_running_terminal(self):
+        for status in ("reloaded", "not-running", "no-terminals"):
+            with self.subTest(status=status), patch.object(cgt.subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()) as output:
+                run.return_value.stdout = status + "\n"
+                cgt.reload_ghostty()
+                self.assertNotIn("failed", output.getvalue())
+                self.assertEqual("configuration reloaded" in output.getvalue(), status == "reloaded")
+
+    def test_reload_failure_explains_manual_fallback(self):
+        errors = [
+            OSError("osascript unavailable"),
+            subprocess.CalledProcessError(1, "osascript"),
+            subprocess.TimeoutExpired("osascript", 30),
+        ]
+        for error in errors:
+            with self.subTest(error=type(error).__name__), patch.object(cgt.subprocess, "run", side_effect=error), contextlib.redirect_stdout(io.StringIO()) as output:
+                cgt.reload_ghostty()
+                self.assertIn("Cmd+Shift+,", output.getvalue())
+                self.assertIn("saved theme", output.getvalue())
 
 
 if __name__ == "__main__":

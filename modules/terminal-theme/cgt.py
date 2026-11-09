@@ -14,6 +14,33 @@ import tomlkit
 from ruamel.yaml import YAML
 
 
+GHOSTTY_RELOAD_SCRIPT = '''
+if application id "com.mitchellh.ghostty" is not running then return "not-running"
+tell application id "com.mitchellh.ghostty"
+    if (count of terminals) is 0 then return "no-terminals"
+    set didReload to perform action "reload_config" on first terminal
+    if not didReload then error "Ghostty declined reload_config"
+end tell
+return "reloaded"
+'''
+
+
+def reload_ghostty():
+    # reload_config is app-wide. One surface is enough, including when the
+    # calling shell is inside Herdr. Do not launch, focus, or quit the app.
+    try:
+        result = subprocess.run(
+            ["/usr/bin/osascript", "-e", GHOSTTY_RELOAD_SCRIPT],
+            check=True, capture_output=True, text=True, timeout=30,
+        )
+        if result.stdout.strip() == "reloaded":
+            print("Ghostty: configuration reloaded.")
+        elif result.stdout.strip() not in ("not-running", "no-terminals"):
+            raise ValueError("unexpected Ghostty reload result")
+    except (OSError, subprocess.SubprocessError, ValueError):
+        print("Ghostty: automatic reload failed; press Cmd+Shift+, to apply the saved theme.")
+
+
 def atomic_write(path, content, permissions=0o600):
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix=".cgt-", dir=path.parent)
@@ -137,11 +164,12 @@ def main():
 
     print(f"cgt: {mode} ({'Solarized Light' if mode == 'light' else 'VS Code Dark Modern'})")
     if not args.initialize:
+        reload_ghostty()
         try:
             subprocess.run(["herdr", "server", "reload-config"], check=True, capture_output=True, timeout=5)
         except (OSError, subprocess.SubprocessError):
             print("Herdr: reload config (prefix + Shift+R) or reopen the client.")
-        print("Ghostty: Cmd+Shift+, to reload. Helix: :config-reload.")
+        print("Helix: :config-reload.")
         print("Reopen lazygit, OpenCode and Vibe to load the selected theme.")
     return 0
 
