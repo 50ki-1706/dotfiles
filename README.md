@@ -35,8 +35,10 @@
 profile の宣言（`package.json` と `pnpm-lock.yaml`）は [modules/cli/dsh-tui](modules/cli/dsh-tui) にあり、
 Nix の適用時に `pnpm install --frozen-lockfile` で依存を展開します。
 
+起動は `dst` で行います。`dsh --profile dsh-tui` と同じです。
+
 ```sh
-dsh --profile dsh-tui
+dst
 ```
 
 ## Terminal themes
