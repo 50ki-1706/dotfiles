@@ -31,6 +31,7 @@ in
   '';
 
   home.packages = [
+    (pkgs.callPackage ../../packages/dst.nix { })
     pkgs.fzf
     pkgs.lazygit
     pkgs.git-surgeon
