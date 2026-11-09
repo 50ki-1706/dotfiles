@@ -1,5 +1,9 @@
 import assert from "node:assert/strict"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
 import gate, { deps } from "../modules/opencode/plugins/nix-verify-gate.js"
+import { run as publishRun } from "../modules/opencode/plugins/publish/runner.ts"
 
 const MAIN_ROOT = "/Users/koki/.dotfiles"
 const WORKTREE_ROOT = "/virtual/worktree"
@@ -433,6 +437,75 @@ async function testMutatingToolsInvalidateEvidence() {
   assertAsk(await readOnly.run(DARWIN_SWITCH), "listing worktrees preserves verification evidence")
 }
 
+async function testPublishData() {
+  currentBranch = "main"
+  const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`
+  const strings = [FMT, HM_BUILD, DARWIN_BUILD, [FMT, HM_BUILD, DARWIN_BUILD].join("\n"), `it's ${FMT}`]
+  const harness = await makeHarness()
+  await recordAllBuildEvidence(harness)
+  for (const option of ["--body", "--title"]) {
+    for (const value of strings) {
+      const command = `gh pr create ${option} ${quote(value)}`
+      assert.equal((await harness.run(command)).effect, "allow", command)
+      const event = { action: "shell", sessionID: harness.sessionID, resources: [command], effect: "allow" }
+      await harness.hooks.permission.evaluate(event)
+      assert.equal(event.effect, "allow", command)
+    }
+  }
+  const inert = `gh pr create --body ${quote(`$(nix fmt) \`nix fmt\` ${DARWIN_SWITCH} git merge > out`)}`
+  assert.equal((await harness.run(inert)).effect, "allow")
+  assert.equal((await harness.run(`gh pr create --body ${quote(FMT)} --body ${quote(HM_BUILD)}`)).effect, "allow")
+  assert.equal((await harness.run(inert, { resources: [inert, "git --version"] })).effect, "allow")
+  assert.equal(harness.interlock(inert, WORKTREE_ROOT), inert)
+  assertAsk(await harness.run(DARWIN_SWITCH), "publish data preserves evidence")
+  assertDenied(await harness.run(inert, { resources: [inert, FMT] }), "mixed resource executes a stage")
+
+  const undeclared = await makeHarness({ declared: false })
+  await undeclared.run(`gh pr create --body ${quote(strings[3])}`)
+  assertDenied(await undeclared.run(FMT), "data is not a declaration")
+  const noEvidence = await makeHarness()
+  await noEvidence.run(`gh pr create --body ${quote(strings[3])}`)
+  assertDenied(await noEvidence.run(HM_BUILD), "data is not evidence")
+
+  for (const command of [
+    `gh pr create --body "$(nix fmt)"`,
+    `gh pr create --body "\`nix fmt\`"`,
+    `gh pr create --body 'safe' && ${FMT}`,
+    `env gh pr create --body 'safe' && ${FMT}`,
+    `sh -c 'gh pr create --body safe; ${FMT}'`,
+    `gh pr create --body 'unterminated ${FMT}`,
+    `gh pr view --body ${quote(FMT)}`,
+    `gh pr create --title=${quote(FMT)}`,
+    `gh pr create --body ${quote(FMT)} --unknown value`,
+  ]) assertDenied(await harness.run(command), command)
+  const nestedSwitch = `gh pr create --body "$( ${DARWIN_SWITCH} )"`
+  assert.notEqual(harness.interlock(nestedSwitch, WORKTREE_ROOT), nestedSwitch)
+  assertDenied(await harness.run(nestedSwitch, { resources: ["gh pr create"] }), "raw nested switch")
+  const resourceOnly = { action: "shell", sessionID: harness.sessionID, resources: [nestedSwitch], effect: "allow" }
+  await harness.hooks.permission.evaluate(resourceOnly)
+  assertDenied(resourceOnly, "resource-only nested switch")
+  assertDenied(await harness.run(`gh pr create --body ${quote(FMT)}`, { initialEffect: "deny" }), "unrelated denial remains")
+
+  const mutation = await makeHarness()
+  await recordAllBuildEvidence(mutation)
+  await mutation.hooks.permission.evaluate({ action: "shell", sessionID: mutation.sessionID, resources: ["git merge origin/main"], effect: "allow" })
+  assertDenied(await mutation.run(DARWIN_SWITCH), "plugin-spawned merge invalidates evidence")
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-runner-"))
+  try {
+    fs.writeFileSync(path.join(dir, "gh"), "#!/bin/sh\nexit 0\n", { mode: 0o755 })
+    await recordAllBuildEvidence(mutation)
+    await publishRun(dir, "gh", ["pr", "create", "--title", "it's a title", "--body", strings[3]], async (action, resources) => {
+      const event = { action, sessionID: mutation.sessionID, resources, effect: "allow" }
+      await mutation.hooks.permission.evaluate(event)
+      assert.equal(event.effect, "allow")
+    }, { env: { PATH: dir } })
+    assertAsk(await mutation.run(DARWIN_SWITCH), "real runner resource preserves evidence")
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+}
+
 try {
   await testExactSwitchesRequireFullEvidence()
   await testDeclarationAndEvidenceOrder()
@@ -442,6 +515,7 @@ try {
   await testNonCanonicalSwitchesAreDenied()
   await testWrappersAndMutationDoNotProvideEvidence()
   await testMutatingToolsInvalidateEvidence()
+  await testPublishData()
   await testUnrelatedSudoRemainsDenied()
   console.log("check-nix-verify-gate: all tests passed")
 } finally {

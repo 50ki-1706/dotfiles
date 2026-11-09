@@ -1,6 +1,8 @@
 Publish the current changes using the available publish tools and the git-surgeon skill.
 
-Inspect the staged and unstaged changes and explicitly selected untracked files. Review the actual hunks and relevant lines before proposing logically ordered Conventional Commits. Preserve unrelated or ambiguous changes. Commit only through `commit_hunks`; do not use `git add -A`, direct shell commits, or automatic history rewriting. Split an existing commit manually only when it is clean and provably unpushed.
+Inspect the staged and unstaged changes and explicitly selected untracked files. Review the actual hunks and relevant lines before proposing logically ordered Conventional Commits. Preserve unrelated or ambiguous changes. Commit only through `commit_hunks`; do not use `git add -A`, direct shell commits, or automatic history rewriting. Handle existing commit splits separately, only with clean, provably unpushed history.
+
+When an approved main synchronization is needed, use `publish_sync_main` with the bound `expectedHead` and exact `targetHead` from origin/main. It requires a clean tree, a fast-forward relationship and human approval of the root, branch and both SHAs. Do not stash or reapply changes automatically, switch branches, or adopt an external HEAD change. After synchronization, run `publish_inspect` and show every selected hunk again.
 
 Run the repository's required validation separately. Report actual evidence for every test claim, or give a reason why it does not apply. Do not claim a check passed without its result.
 
@@ -10,4 +12,4 @@ For non-main PR description synthesis only, apply the attached `pr` skill. The r
 
 Use only observed diffs, committed changes and actual validation. Never invent before or after evidence, test results, screenshots, diagrams or risk certainty. Mark missing evidence not run, unavailable or not applicable with a reason. Read GLOSSARY.md safely if present; otherwise use the code and user's domain language. Do not install dependencies, invoke setup or show-me, capture a browser, or run unsolicited end-to-end tests merely to fill Evidence. Honor the user's requested output language.
 
-Report the actual created commit SHAs and messages, count, residual changes, push status, pull request URL, and any partial failure. Never imply that permission checks or publish admission replace the user's approval for protected operations.
+Report the actual created commit SHAs and messages, invocation-created count separately from the branch's outgoing count, residual changes, structured push and PR states, pull request URL, and any partial failure. Preserve known push success when PR creation fails. Reconcile an uncertain PR creation with the remote and existing PRs; do not repeatedly create it. Never imply that publish admission replaces the user's approval for protected operations.

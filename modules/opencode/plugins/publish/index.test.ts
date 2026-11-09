@@ -1,16 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { createPublishPlugin } from './index.ts';
 import { parseTemplate } from './template.ts';
+import { PublishError, SyncError, publishBranch, syncMain } from './workflow.ts';
+import * as transaction from './transaction.ts';
+import { run } from './runner.ts';
 
 const base = { root: '/repo', branch: 'feature', head: 'a'.repeat(40), status: [] as string[] };
 const tc = (sessionID = 's') => ({ sessionID, agent: 'agent', messageID: 'm', id: 'call', signal: new AbortController().signal });
-async function fixture() {
+async function fixture(root = '/repo', overrides: any = {}) {
   let state = { ...base }; let template = parseTemplate('template.md', '## Summary\n');
   let skills = [{ id: 'git-surgeon', path: '/trusted/SKILL.md', content: 'official' }, { id: 'pr', path: '/trusted/pr/SKILL.md', content: 'pr official' }]; let loads: boolean[] = [];
   let denied = false; let pending: Promise<void> = Promise.resolve(); let calls = 0; let publishArgs: any[] = []; let onPermission = async (_input: any) => {};
-  let command: any; let tools: Record<string, any> = {}; let prompt: any; const disposed: string[] = []; const permissions: any[] = [];
+  let command: any; let tools: Record<string, any> = {}; let prompt: any; let evaluate = (_event: any) => {}; const disposed: string[] = []; const permissions: any[] = []; const events: any[] = [];
   const ops: any = {
     inspectRepository: async () => ({ ...state }),
     inspectHunks: async () => ({ state: { ...state }, hunks: 'hunks', stagedDiff: 'staged' }),
@@ -18,19 +23,21 @@ async function fixture() {
     commitHunks: async (_root: any, _ids: any, message: string) => { calls++; state = { ...state, head: String(calls).repeat(40) }; return { sha: state.head, message, state: { ...state } }; },
     discoverTemplate: async () => template,
     publishBranch: async (...args: any[]) => { publishArgs = args; return { push: 'pushed', prUrl: 'https://github.com/a/b/pull/1' }; },
+    syncMain: async (_root: string, _expected: any, target: string, permission: any) => { const before = { ...state }; await permission('shell', [`git merge --ff-only --no-edit ${target}`]); state = { ...state, head: target }; return { before, state: { ...state } }; },
+    ...overrides,
   };
   const ctx: any = {
     command: { transform: async (f: any) => { f({ add: (x: any) => command = x }); return { dispose: async () => { disposed.push('command'); } }; } },
     tool: { transform: async (f: any) => { ctx.tool.install = f; f({ add: (x: any) => tools[x.name] = x }); return { dispose: async () => { disposed.push('tool'); } }; }, reload: async () => { tools = {}; ctx.tool.install({ add: (x: any) => tools[x.name] = x }); } },
-    session: { get: async () => ({ location: { directory: '/repo' } }), prompt: async (x: any) => { prompt = x; await pending; } },
+    session: { get: async () => ({ location: { directory: root } }), prompt: async (x: any) => { prompt = x; await pending; } },
     skill: { list: async () => ({ data: skills }) },
-    permission: { assert: async (x: any) => { permissions.push(x); if (denied && x.action === 'skill') throw Error('denied'); await onPermission(x); } },
+    permission: { hook: (_name: string, callback: any) => { evaluate = callback; }, assert: async (x: any) => { permissions.push(x); const event = { ...x, effect: 'allow' }; evaluate(event); events.push(event); if (event.effect === 'deny' || denied && x.action === 'skill') throw Error('denied'); await onPermission(x); } },
   };
   const dispose = await createPublishPlugin({ operations: ops, loadResources: async (includePrSkill) => { loads.push(includePrSkill); return { instructions: 'instructions', officialSkill: '---\nname: git-surgeon\n---\nofficial\n', trustedSkillPath: '/trusted/SKILL.md', ...(includePrSkill ? { prSkill: '---\nname: pr\n---\npr official\n', trustedPrSkillPath: '/trusted/pr/SKILL.md' } : {}) }; } }).setup(ctx);
   const invoke = (sessionID = 's', skills = [{ id: 'other' }]) => command.execute({ sessionID, prompt: { text: 'request', skills }, delivery: 'default' });
   const call = async (name: string, input: any, sessionID = 's') => JSON.parse((await tools[name].execute(input, tc(sessionID))).content);
   const inspect = async (...ids: string[]) => { await call('publish_inspect', { untracked: [] }); for (const id of ids) await call('publish_show', { id }); };
-  return { invoke, call, inspect, dispose, disposed, permissions, get tools() { return tools; }, get prompt() { return prompt; }, get publishArgs() { return publishArgs; }, get calls() { return calls; }, get loads() { return loads; }, setSkills: (x: typeof skills) => skills = x, setDenied: (x: boolean) => denied = x, setPending: (x: Promise<void>) => pending = x, setTemplate: (x: typeof template) => template = x, setState: (x: typeof state) => state = x, setPermissionHook: (hook: typeof onPermission) => onPermission = hook, ops };
+  return { invoke, call, inspect, dispose, disposed, permissions, events, evaluate: (event: any) => evaluate(event), get tools() { return tools; }, get prompt() { return prompt; }, get publishArgs() { return publishArgs; }, get calls() { return calls; }, get loads() { return loads; }, setSkills: (x: typeof skills) => skills = x, setDenied: (x: boolean) => denied = x, setPending: (x: Promise<void>) => pending = x, setTemplate: (x: typeof template) => template = x, setState: (x: typeof state) => state = x, setPermissionHook: (hook: typeof onPermission) => onPermission = hook, ops };
 }
 
 test('command registers, verifies and attaches skill and reloads required template fields', async () => {
@@ -43,10 +50,123 @@ test('command registers, verifies and attaches skill and reloads required templa
   assert.equal(f.tools.publish_pr.options.codemode, false);
 });
 
+for (const staged of [true, false]) {
+  test(`plugin commits a ${staged ? 'staged' : 'opted-in'} new file then tracked changes with real surgeon`, async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'publish-'));
+    const git = (args: string[]) => run(cwd, 'git', args, async () => {});
+    try {
+      await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+      await writeFile(join(cwd, 'tracked'), 'before\n'); await writeFile(join(cwd, 'residual'), 'before\n');
+      await git(['add', 'tracked', 'residual']); await git(['commit', '-m', 'chore: initial']);
+      await writeFile(join(cwd, 'new'), 'new\n'); if (staged) await git(['add', 'new']);
+      await writeFile(join(cwd, 'tracked'), 'after\n'); await writeFile(join(cwd, 'residual'), 'after\n');
+      const f = await fixture(cwd, transaction); await f.invoke();
+      const first = await f.call('publish_inspect', { untracked: staged ? [] : ['new'] });
+      const newId = first.hunks.match(/^([a-zA-Z0-9_-]+) new\s/m)?.[1]; assert.ok(newId);
+      await f.call('publish_show', { id: newId });
+      assert.equal((await f.call('commit_hunks', { ids: [newId], message: 'feat: new' })).count, 1);
+      await assert.rejects(f.call('publish_show', { id: newId }), /publish_inspect/);
+      const second = await f.call('publish_inspect', { untracked: [] });
+      const trackedId = second.hunks.match(/^([a-zA-Z0-9_-]+) tracked\s/m)?.[1]; assert.ok(trackedId);
+      await f.call('publish_show', { id: trackedId });
+      const committed = await f.call('commit_hunks', { ids: [trackedId], message: 'fix: tracked' });
+      assert.equal(committed.invocationCreatedCount, 2); assert.equal(committed.count, 2);
+      assert.match((await f.call('publish_inspect', { untracked: [] })).hunks, /residual/);
+      assert.equal(await git(['show', 'HEAD:new']), 'new\n');
+    } finally { await rm(cwd, { recursive: true, force: true }); }
+  });
+}
+
+test('sync approval hook scopes ask to the exact pending call and preserves denial', async () => {
+  const f = await fixture(); await f.invoke(); await f.inspect('a');
+  const target = 'b'.repeat(40); const resource = `git merge --ff-only --no-edit ${target}`;
+  f.setPermissionHook(async input => {
+    if (input.action !== 'shell') return;
+    const matching = { ...input, effect: 'allow' }; f.evaluate(matching); assert.equal(matching.effect, 'ask'); assert.match(matching.message, /Fast-forward approval/);
+    for (const change of [{ effect: 'deny' }, { sessionID: 'other' }, { source: undefined }, { source: { ...input.source, id: 'other' } }, { agent: 'other' }, { resources: ['git status'] }, { resources: [resource, resource] }]) {
+      const event = { ...input, effect: 'allow', ...change }; f.evaluate(event); assert.equal(event.effect, change.effect ?? 'allow');
+    }
+    const noAgent = { ...input, agent: undefined, effect: 'allow' }; f.evaluate(noAgent); assert.equal(noAgent.effect, 'ask');
+  });
+  const result = await f.call('publish_sync_main', { expectedHead: base.head, targetHead: target });
+  assert.equal(result.state.head, target); assert.equal(result.reviewRequired, true);
+  assert.equal(f.events.find(x => x.action === 'shell').effect, 'ask');
+  await assert.rejects(f.call('publish_show', { id: 'a' }), /publish_inspect/);
+  const outside = { sessionID: 's', action: 'shell', resources: [resource], source: { messageID: 'm', id: 'call' }, effect: 'allow' }; f.evaluate(outside); assert.equal(outside.effect, 'allow');
+});
+
+test('sync denial retains admission for retry while attempted failure revokes it', async () => {
+  const f = await fixture(); await f.invoke(); const target = 'b'.repeat(40); const sync = f.ops.syncMain;
+  f.ops.syncMain = async () => { throw new SyncError('denied', false, null, undefined); };
+  await assert.rejects(f.call('publish_sync_main', { expectedHead: base.head, targetHead: target }), /"attempted":false/);
+  f.ops.syncMain = sync; assert.equal((await f.call('publish_sync_main', { expectedHead: base.head, targetHead: target })).state.head, target);
+  f.ops.syncMain = async () => { throw new SyncError('unexpected', true, null, undefined); };
+  await assert.rejects(f.call('publish_sync_main', { expectedHead: target, targetHead: 'c'.repeat(40) }), /"attempted":true/);
+  await assert.rejects(f.call('publish_inspect', { untracked: [] }), /Run \/publish/);
+});
+
+test('replaced publish admission cannot launch a pending synchronization before or after approval', async () => {
+  for (const timing of ['before-permission', 'during-approval']) {
+    const f = await fixture(); await f.invoke(); const sync = f.ops.syncMain;
+    const target = 'b'.repeat(40);
+    f.ops.syncMain = async (...args: any[]) => {
+      if (timing === 'before-permission') await f.invoke();
+      try { return await sync(...args); }
+      catch (error) { throw new SyncError('Publish session replaced', false, null, error); }
+    };
+    if (timing === 'during-approval') f.setPermissionHook(async (input) => {
+      if (input.action === 'shell' && input.resources[0] === `git merge --ff-only --no-edit ${target}`) await f.invoke();
+    });
+    await assert.rejects(f.call('publish_sync_main', { expectedHead: base.head, targetHead: target }), /"attempted":false/);
+    const merge = f.events.find((event) => event.action === 'shell');
+    assert.equal(merge.effect, timing === 'before-permission' ? 'deny' : 'ask');
+    assert.equal((await f.call('publish_inspect', { untracked: [] })).state.head, base.head);
+  }
+});
+
+test('real sync denial can be retried and requires a new review before a real commit', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'publish-sync-'));
+  const origin = join(dir, 'origin.git'); const cwd = join(dir, 'work');
+  const git = (root: string, args: string[]) => run(root, 'git', args, async () => {});
+  try {
+    await git(dir, ['init', '--bare', origin]); await git(dir, ['init', '-b', 'main', cwd]);
+    await git(cwd, ['config', 'user.name', 'Test']); await git(cwd, ['config', 'user.email', 'test@example.invalid']);
+    await writeFile(join(cwd, 'file'), 'one\n'); await git(cwd, ['add', 'file']); await git(cwd, ['commit', '-m', 'chore: initial']);
+    await git(cwd, ['remote', 'add', 'origin', origin]); await git(cwd, ['push', 'origin', 'main']);
+    const old = (await git(cwd, ['rev-parse', 'HEAD'])).trim();
+    const f = await fixture(cwd, { ...transaction, syncMain }); await f.invoke(); await f.call('publish_inspect', { untracked: [] });
+    const other = join(dir, 'other'); await git(dir, ['clone', '-b', 'main', origin, other]);
+    await git(other, ['config', 'user.name', 'Test']); await git(other, ['config', 'user.email', 'test@example.invalid']);
+    await writeFile(join(other, 'file'), 'two\n'); await git(other, ['add', 'file']); await git(other, ['commit', '-m', 'fix: upstream']); await git(other, ['push', 'origin', 'main']);
+    const target = (await git(other, ['rev-parse', 'HEAD'])).trim();
+    f.setPermissionHook(async input => { if (input.action === 'shell' && input.resources[0].startsWith('git merge ')) throw Error('denied'); });
+    await assert.rejects(f.call('publish_sync_main', { expectedHead: old, targetHead: target }), /"attempted":false/);
+    assert.equal((await git(cwd, ['rev-parse', 'HEAD'])).trim(), old);
+    f.setPermissionHook(async () => {});
+    assert.equal((await f.call('publish_sync_main', { expectedHead: old, targetHead: target })).state.head, target);
+    await assert.rejects(f.call('publish_show', { id: 'old' }), /publish_inspect/);
+    await writeFile(join(cwd, 'file'), 'three\n');
+    const inspection = await f.call('publish_inspect', { untracked: [] });
+    const id = inspection.hunks.match(/^([a-zA-Z0-9_-]+) file\s/m)?.[1]; assert.ok(id);
+    await f.call('publish_show', { id });
+    assert.equal((await f.call('commit_hunks', { ids: [id], message: 'fix: local' })).count, 1);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('sync rejects malformed and stale heads and changed repository binding', async () => {
+  for (const change of [{ root: '/other' }, { branch: 'other' }, { head: 'c'.repeat(40) }]) {
+    const f = await fixture(); await f.invoke(); f.setState({ ...base, ...change });
+    await assert.rejects(f.call('publish_sync_main', { expectedHead: base.head, targetHead: 'b'.repeat(40) }), /binding changed/);
+  }
+  const f = await fixture(); await f.invoke();
+  await assert.rejects(f.call('publish_sync_main', { expectedHead: 'c'.repeat(40), targetHead: 'b'.repeat(40) }), /does not match/);
+  await assert.rejects(f.call('publish_sync_main', { expectedHead: base.head, targetHead: 'bad' }), /Invalid synchronization HEAD/);
+});
+
 test('tool visibility uses read for inspection and edit for mutations', async () => {
   const f = await fixture();
   for (const name of ['publish_inspect', 'publish_show']) assert.deepEqual(f.tools[name].options, { codemode: false, permission: 'read' });
-  for (const name of ['commit_hunks', 'publish_main', 'publish_pr']) assert.deepEqual(f.tools[name].options, { codemode: false, permission: 'edit' });
+  for (const name of ['commit_hunks', 'publish_main', 'publish_pr', 'publish_sync_main']) assert.deepEqual(f.tools[name].options, { codemode: false, permission: 'edit' });
 });
 
 test('edit denial blocks commit and publish before repository operations', async () => {
@@ -59,6 +179,7 @@ test('edit denial blocks commit and publish before repository operations', async
   const fingerprint = f.tools.publish_pr.input.properties.fingerprint.const;
   await assert.rejects(f.call('publish_pr', { title: 'x', fingerprint, fields: { summary_1: 'x' } }), /edit denied/);
   await assert.rejects(f.call('publish_main', {}), /edit denied/);
+  await assert.rejects(f.call('publish_sync_main', { expectedHead: base.head, targetHead: 'b'.repeat(40) }), /edit denied/);
   assert.equal(operations, 0);
   assert.deepEqual(f.permissions.find((x) => x.action === 'edit'), { sessionID: 's', agent: 'agent', source: { type: 'tool', messageID: 'm', id: 'call' }, action: 'edit', resources: ['/repo'] });
 });
@@ -81,7 +202,7 @@ test('commit updates head and report, PR renders fields and rejects stale and ma
   const f = await fixture(); await f.invoke();
   await assert.rejects(f.call('commit_hunks', { ids: ['a'], message: 'fix: test', extra: 1 }));
   await f.inspect('a');
-  const commit = await f.call('commit_hunks', { ids: ['a'], message: 'fix: test' }); assert.equal(commit.count, 1);
+  const commit = await f.call('commit_hunks', { ids: ['a'], message: 'fix: test' }); assert.equal(commit.count, 1); assert.equal(commit.invocationCreatedCount, 1);
   const fingerprint = f.tools.publish_pr.input.properties.fingerprint.const;
   await assert.rejects(f.call('publish_pr', { title: 'Title', fingerprint, fields: { summary_1: 'Summary', extra: 'x' } }));
   const result = await f.call('publish_pr', { title: 'Title', fingerprint, fields: { summary_1: 'Summary' } });
@@ -127,12 +248,83 @@ test('commit partial failure reports created SHA and prior commits, and revokes 
   const f = await fixture(); await f.invoke(); await f.inspect('a');
   await f.call('commit_hunks', { ids: ['a'], message: 'fix: one' }); await f.inspect('b');
   const sha = 'b'.repeat(40);
-  f.ops.commitHunks = async () => { throw Error(`Commit created (${sha}); index not installed: validation failed`); };
+  f.ops.commitHunks = async () => { throw Object.assign(Error(`Commit created (${sha}); index not installed: validation failed`), { createdSha: sha, commitStatus: 'created', indexInstalled: false, mismatches: ['index'] }); };
   await assert.rejects(f.call('commit_hunks', { ids: ['b'], message: 'fix: two' }), (error: Error) => {
-    assert.match(error.message, /"count":2/); assert.match(error.message, new RegExp(sha));
-    assert.match(error.message, /"requestedMessage":"fix: two"/); assert.match(error.message, /residualLastObserved/); return true;
+    assert.match(error.message, /"count":2/); assert.match(error.message, /"invocationCreatedCount":2/); assert.match(error.message, new RegExp(sha));
+    assert.match(error.message, /"requestedMessage":"fix: two"/); assert.match(error.message, /"indexInstalled":false/); assert.match(error.message, /"mismatches":\["index"\]/); assert.match(error.message, /residualLastObserved/); return true;
   });
   await assert.rejects(f.call('publish_main', {}), /Run \/publish/);
+});
+
+test('typed publish failure exposes pushed state and remains retryable', async () => {
+  const f = await fixture(); await f.invoke();
+  let calls = 0;
+  f.ops.publishBranch = async () => {
+    if (++calls === 1) throw new PublishError('create denied', { phase: 'pr-create', push: 'pushed', remoteVerified: true, pr: 'absent', outgoingCommitCount: 1, head: base.head }, new Error('denied'));
+    return { push: 'already-up-to-date', pr: 'known' };
+  };
+  const fingerprint = f.tools.publish_pr.input.properties.fingerprint.const;
+  const input = { title: 'x', fingerprint, fields: { summary_1: 'summary' } };
+  await assert.rejects(f.call('publish_pr', input), (error: Error) => {
+    assert.match(error.message, /"push":"pushed"/); assert.match(error.message, /"pr":"absent"/);
+    assert.match(error.message, /"outgoingCommitCount":1/); assert.match(error.message, /"invocationCreatedCount":0/); return true;
+  });
+  assert.equal((await f.call('publish_pr', input)).pr, 'known');
+});
+
+test('real publish retains a verified push after create permission denial and retries without duplicate effects', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'publish-retry-'));
+  const origin = join(dir, 'origin.git'); const cwd = join(dir, 'work'); const bin = join(dir, 'bin');
+  const created = join(dir, 'created.json'); const url = 'https://github.com/acme/repo/pull/42';
+  const git = (root: string, args: string[]) => run(root, 'git', args, async () => {});
+  try {
+    await mkdir(bin);
+    await writeFile(join(bin, 'gh'), `#!${process.execPath}\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nconst file = ${JSON.stringify(created)};\nif (args[0] !== 'pr') process.exit(2);\nif (args[1] === 'list') console.log(JSON.stringify(fs.existsSync(file) ? [{url:${JSON.stringify(url)},baseRefName:'main',headRefName:'feature',headRepositoryOwner:{login:'acme'}}] : []));\nelse if (args[1] === 'create') { fs.appendFileSync(file, JSON.stringify(args) + '\\n'); console.log(${JSON.stringify(url)}); }\nelse process.exit(2);\n`, { mode: 0o755 });
+    await git(dir, ['init', '--bare', origin]); await git(dir, ['init', '-b', 'main', cwd]);
+    await git(cwd, ['config', 'user.name', 'Test']); await git(cwd, ['config', 'user.email', 'test@example.invalid']);
+    await writeFile(join(cwd, 'file'), 'base\n'); await git(cwd, ['add', 'file']); await git(cwd, ['commit', '-m', 'chore: base']);
+    await git(cwd, ['remote', 'add', 'origin', origin]); await git(cwd, ['push', 'origin', 'main']);
+    await git(cwd, ['checkout', '-b', 'feature']); await writeFile(join(cwd, 'file'), 'outgoing\n');
+    await git(cwd, ['add', 'file']); await git(cwd, ['commit', '-m', 'feat: existing']);
+    await writeFile(join(cwd, 'file'), 'wip\n');
+    let pushes = 0; let creates = 0;
+    const runner: typeof run = async (root, exe, args, permission, options) => {
+      const result = await run(root, exe, args, permission, { ...options, env: { PATH: `${bin}:${process.env.PATH}` } });
+      if (exe === 'git' && args[0] === 'push') pushes++;
+      if (exe === 'gh' && args[0] === 'pr' && args[1] === 'create') creates++;
+      if (exe === 'git' && args[0] === 'remote' && args[1] === 'get-url') return 'https://github.com/acme/repo.git\n';
+      return result;
+    };
+    const f = await fixture(cwd, { ...transaction, publishBranch: (root: any, expected: any, mode: any, request: any, permission: any, _runner: any, signal: any, retry: any) => publishBranch(root, expected, mode, request, permission, runner, signal, retry) });
+    f.setTemplate(parseTemplate(null, '')); await f.invoke();
+    const inspection = await f.call('publish_inspect', { untracked: [] });
+    const id = inspection.hunks.match(/^([a-zA-Z0-9_-]+) file\s/m)?.[1]; assert.ok(id);
+    await f.call('publish_show', { id });
+    const commit = await f.call('commit_hunks', { ids: [id], message: 'fix: wip' });
+    const body = 'Evidence:\nnix fmt\nnix run home-manager -- build --flake .#koki\nnix build .#darwinConfigurations.mac.system --out-link result-darwin\n';
+    const input = { title: 'Test PR', fingerprint: f.tools.publish_pr.input.properties.fingerprint.const, body };
+    f.setPermissionHook(async x => { if (x.action === 'shell' && x.resources[0].startsWith('gh pr create ')) throw Error('create denied'); });
+    await assert.rejects(f.call('publish_pr', input), (error: Error) => {
+      assert.ok(error.message.startsWith('Publish incomplete: '));
+      const state = JSON.parse(error.message.slice('Publish incomplete: '.length));
+      assert.equal(state.push, 'pushed'); assert.equal(state.remoteVerified, true); assert.equal(state.pr, 'absent');
+      assert.equal(state.invocationCreatedCount, 1); assert.equal(state.outgoingCommitCount, 2);
+      assert.deepEqual(state.commits, [{ sha: commit.sha, message: 'fix: wip' }]); assert.deepEqual(state.residualLastObserved, []);
+      return true;
+    });
+    assert.equal((await git(dir, ['--git-dir', origin, 'rev-parse', 'refs/heads/feature'])).trim(), commit.sha);
+    assert.equal(pushes, 1); assert.equal(creates, 0);
+    await assert.rejects(readFile(created), { code: 'ENOENT' });
+    f.setPermissionHook(async () => {});
+    const retry = await f.call('publish_pr', input);
+    assert.equal(retry.push, 'already-up-to-date'); assert.equal(retry.pr, 'known'); assert.equal(retry.prUrl, url);
+    assert.equal(pushes, 1); assert.equal(creates, 1);
+    assert.deepEqual((await readFile(created, 'utf8')).trim().split('\n').map(line => JSON.parse(line)), [['pr', 'create', '--repo', 'acme/repo', '--base', 'main', '--head', 'feature', '--title', input.title, '--body', body]]);
+    const again = await f.call('publish_pr', input);
+    assert.equal(again.push, 'already-up-to-date'); assert.equal(again.pr, 'known'); assert.equal(again.prUrl, url);
+    assert.equal(pushes, 1); assert.equal(creates, 1);
+    assert.equal((await readFile(created, 'utf8')).trim().split('\n').length, 1);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('publish partial failure retains commits and the workflow push report', async () => {

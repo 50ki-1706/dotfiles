@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, writeFile, readFile, chmod, appendFile, access } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile, readFile, chmod, appendFile, access, utimes, stat, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { commitHunks, inspectHunks, showHunk } from './transaction.ts';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { commitHunks, inspectHunks, showHunk, readIndexSnapshot, writeIndexSnapshot } from './transaction.ts';
 import { run } from './runner.ts';
 
 test('real surgeon previews staged and untracked changes without altering real index', async () => {
@@ -70,6 +72,69 @@ test('untracked file is committed through the alternate index', async () => {
   } finally { await rm(cwd, { recursive: true, force: true }); }
 });
 
+for (const staged of [true, false]) {
+  test(`new ${staged ? 'staged' : 'opted-in'} file followed by tracked change preserves other staged changes`, async () => {
+    const cwd = await mkdtemp('/private/tmp/opencode/publish-sequence-');
+    const permission = async () => {};
+    const git = (args: string[]) => run(cwd, 'git', args, permission);
+    try {
+      await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+      await writeFile(join(cwd, 'tracked.patch'), 'before\n'); await writeFile(join(cwd, 'partial'), 'base\n');
+      await git(['add', 'tracked.patch', 'partial']); await git(['commit', '-m', 'chore: initial']);
+      await writeFile(join(cwd, 'tracked.patch'), 'after\n');
+      await writeFile(join(cwd, 'partial'), 'staged\n'); await git(['add', 'partial']); await writeFile(join(cwd, 'partial'), 'worktree\n');
+      await writeFile(join(cwd, 'other.patch'), 'other staged\n'); await git(['add', 'other.patch']);
+      await writeFile(join(cwd, 'new.patch'), 'staged version\n');
+      if (staged) { await git(['add', 'new.patch']); await writeFile(join(cwd, 'new.patch'), 'final version\n'); }
+      const optins = staged ? [] : ['new.patch'];
+      const index = join(cwd, '.git/index'); const before = await readFile(index);
+      const first = await inspectHunks(cwd, permission, optins);
+      const newId = first.hunks.match(/^([a-zA-Z0-9_-]+) new\.patch\s/m)?.[1]; assert.ok(newId);
+      assert.match(await showHunk(cwd, newId, permission, optins), /version/);
+      assert.deepEqual(await readFile(index), before);
+      await commitHunks(cwd, [newId], 'feat: new', permission, optins);
+      assert.equal(await git(['show', 'HEAD:new.patch']), staged ? 'final version\n' : 'staged version\n');
+      if (staged) assert.equal(await git(['show', ':new.patch']), 'staged version\n');
+      const second = await inspectHunks(cwd, permission);
+      const trackedId = second.hunks.match(/^([a-zA-Z0-9_-]+) tracked\.patch\s/m)?.[1]; assert.ok(trackedId);
+      assert.match(await showHunk(cwd, trackedId, permission), /after/);
+      const captured = await readFile(index); let checked = 0; let sawLock = false;
+      const checkingPermission = async (action: string) => {
+        if (action === 'shell') {
+          const locked = await access(`${index}.lock`).then(() => true, () => false);
+          if (!sawLock || locked) { assert.deepEqual(await readFile(index), captured); checked++; }
+          if (locked) sawLock = true;
+        }
+      };
+      await commitHunks(cwd, [trackedId], 'fix: tracked', checkingPermission);
+      assert.ok(checked > 0);
+      assert.equal(await git(['show', 'HEAD:tracked.patch']), 'after\n');
+      assert.equal(await git(['show', ':other.patch']), 'other staged\n');
+      assert.equal(await git(['show', ':partial']), 'staged\n');
+      assert.equal(await readFile(join(cwd, 'partial'), 'utf8'), 'worktree\n');
+    } finally { await rm(cwd, { recursive: true, force: true }); }
+  });
+}
+
+test('show and commit one of two unchanged staged additions preserves the other', async () => {
+  const cwd = await mkdtemp('/private/tmp/opencode/publish-staged-pair-');
+  const permission = async () => {};
+  const git = (args: string[]) => run(cwd, 'git', args, permission);
+  try {
+    await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+    await git(['commit', '--allow-empty', '-m', 'chore: initial']);
+    await writeFile(join(cwd, 'one.patch'), 'one\n'); await writeFile(join(cwd, 'two.patch'), 'two\n');
+    await git(['add', 'one.patch', 'two.patch']);
+    const index = join(cwd, '.git/index'); const before = await readFile(index);
+    const id = (await inspectHunks(cwd, permission)).hunks.match(/^([a-zA-Z0-9_-]+) one\.patch\s/m)?.[1]; assert.ok(id);
+    assert.match(await showHunk(cwd, id, permission), /one/); assert.deepEqual(await readFile(index), before);
+    await commitHunks(cwd, [id], 'feat: one', permission);
+    assert.equal(await git(['show', 'HEAD:one.patch']), 'one\n');
+    assert.equal(await git(['show', ':two.patch']), 'two\n');
+    assert.match(await git(['diff', '--cached', '--name-only']), /^two\.patch\n$/);
+  } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
 test('literal pathspec names are previewed and selected without changing unrelated state', async () => {
   const cwd = await mkdtemp('/private/tmp/opencode/publish-literal-');
   const permission = async () => {};
@@ -107,6 +172,62 @@ test('literal pathspec names are previewed and selected without changing unrelat
   } finally { await rm(cwd, { recursive: true, force: true }); }
 });
 
+test('missing or binary staged additions fail before preview initialization', async () => {
+  const cwd = await mkdtemp('/private/tmp/opencode/publish-unsafe-add-');
+  const permission = async () => {};
+  const git = (args: string[]) => run(cwd, 'git', args, permission);
+  try {
+    await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+    await git(['commit', '--allow-empty', '-m', 'chore: initial']);
+    await writeFile(join(cwd, 'new.patch'), Buffer.from([0, 1])); await git(['add', 'new.patch']);
+    const before = await readFile(join(cwd, '.git/index'));
+    await assert.rejects(inspectHunks(cwd, permission), /Binary/);
+    assert.deepEqual(await readFile(join(cwd, '.git/index')), before);
+    await writeFile(join(cwd, 'new.patch'), 'text\n'); await git(['add', 'new.patch']);
+    const textIndex = await readFile(join(cwd, '.git/index'));
+    await rm(join(cwd, 'new.patch'));
+    await assert.rejects(inspectHunks(cwd, permission), /ENOENT/);
+    assert.deepEqual(await readFile(join(cwd, '.git/index')), textIndex);
+  } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+for (const field of ['head', 'branch', 'worktree', 'status', 'indexBytes'] as const) {
+  test(`external ${field} change under index lock is rejected without disclosing content`, async () => {
+    const cwd = await mkdtemp('/private/tmp/opencode/publish-race-');
+    const permission = async () => {};
+    const git = (args: string[]) => run(cwd, 'git', args, permission);
+    try {
+      await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+      await writeFile(join(cwd, 'file'), 'base\n'); await git(['add', 'file']); await git(['commit', '-m', 'chore: initial']);
+      const head = (await git(['rev-parse', 'HEAD'])).trim();
+      const tree = (await git(['rev-parse', 'HEAD^{tree}'])).trim();
+      const alternate = (await git(['commit-tree', tree, '-p', head, '-m', 'external'])).trim();
+      await writeFile(join(cwd, 'file'), 'private-content\n');
+      const id = (await inspectHunks(cwd, permission)).hunks.match(/^([a-zA-Z0-9_-]+) file\s/m)?.[1]; assert.ok(id);
+      const index = join(cwd, '.git/index'); const before = await readFile(index); let changed = false;
+      const mutate = async (action: string) => {
+        if (action !== 'shell' || changed || !(await access(`${index}.lock`).then(() => true, () => false))) return;
+        changed = true;
+        if (field === 'head') await git(['update-ref', 'refs/heads/main', alternate]);
+        if (field === 'branch') await git(['symbolic-ref', 'HEAD', 'refs/heads/other']);
+        if (field === 'branch') await git(['update-ref', 'refs/heads/other', head]);
+        if (field === 'worktree') await writeFile(join(cwd, 'file'), 'external-content\n');
+        if (field === 'status') await writeFile(join(cwd, 'external'), 'external-content\n');
+        if (field === 'indexBytes') await appendFile(index, Buffer.from([0]));
+      };
+      await assert.rejects(commitHunks(cwd, [id], 'fix: selected', mutate), (error: Error & { mismatches?: string[]; commitStatus?: string }) => {
+        assert.ok(error.mismatches?.includes(field)); assert.match(error.message, new RegExp(`\\b${field}\\b`));
+        assert.doesNotMatch(error.message, /content|publish-race-|[a-f0-9]{40}/); assert.equal(error.commitStatus, undefined); return true;
+      });
+      assert.ok(changed);
+      assert.equal((await git(['rev-parse', 'HEAD'])).trim(), field === 'head' ? alternate : head);
+      assert.deepEqual(await readFile(index), field === 'indexBytes' ? Buffer.concat([before, Buffer.from([0])]) : before);
+      assert.equal(await readFile(join(cwd, 'file'), 'utf8'), field === 'worktree' ? 'external-content\n' : 'private-content\n');
+      if (field === 'status') assert.equal(await readFile(join(cwd, 'external'), 'utf8'), 'external-content\n');
+    } finally { await rm(cwd, { recursive: true, force: true }); }
+  });
+}
+
 test('failing hook and existing index lock prevent commits', async () => {
   const cwd = await mkdtemp('/private/tmp/opencode/publish-hook-');
   const permission = async () => {};
@@ -125,7 +246,11 @@ test('failing hook and existing index lock prevent commits', async () => {
     const hook = join(cwd, '.git/hooks/pre-commit');
     await writeFile(hook, '#!/bin/sh\nexit 1\n');
     await chmod(hook, 0o755);
-    await assert.rejects(commitHunks(cwd, [id], 'fix: test', permission));
+    const before = await readFile(join(cwd, '.git/index'));
+    await assert.rejects(commitHunks(cwd, [id], 'fix: test', permission), (error: Error & { commitStatus?: string; indexInstalled?: boolean; createdSha?: string | null }) => {
+      assert.equal(error.commitStatus, 'uncertain'); assert.equal(error.indexInstalled, false); assert.equal(error.createdSha, null); return true;
+    });
+    assert.deepEqual(await readFile(join(cwd, '.git/index')), before);
     assert.equal(await git(['rev-parse', 'HEAD']), head);
     await writeFile(join(cwd, '.git/index.lock'), 'held');
     await assert.rejects(commitHunks(cwd, [id], 'fix: test', permission), /EEXIST/);
@@ -317,4 +442,78 @@ test('real surgeon commits selected hunk and preserves unrelated staged content'
     assert.equal((await git(['show', ':two'])).trim(), 'staged');
     assert.match(await git(['diff', '--cached']), /staged/);
   } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+test('racy unselected changes remain visible through preview and index installation', async () => {
+  const cwd = await mkdtemp('/private/tmp/opencode/publish-racy-');
+  const permission = async () => {};
+  const git = (args: string[]) => run(cwd, 'git', args, permission);
+  const stamp = 1600000000;
+  try {
+    await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Test']); await git(['config', 'user.email', 'test@example.invalid']);
+    // Reproduce Git's racy timestamp case without depending on wall-clock timing or ctime.
+    await git(['config', 'core.trustctime', 'false']);
+    await writeFile(join(cwd, 'racy'), 'old\n'); await utimes(join(cwd, 'racy'), stamp, stamp);
+    await writeFile(join(cwd, 'selected'), 'old\n');
+    await git(['add', 'racy', 'selected']); await git(['commit', '-m', 'chore: initial']);
+    const index = join(cwd, '.git/index'); await utimes(index, stamp, stamp);
+    await writeFile(join(cwd, 'racy'), 'new\n'); await utimes(join(cwd, 'racy'), stamp, stamp);
+    await writeFile(join(cwd, 'selected'), 'new\n');
+    const before = await readFile(index);
+    const preview = await inspectHunks(cwd, permission);
+    assert.ok(preview.state.status.includes(' M racy'));
+    const racyId = preview.hunks.match(/^([a-zA-Z0-9_-]+) racy\s/m)?.[1]; assert.ok(racyId);
+    assert.match(await showHunk(cwd, racyId, permission), /new/);
+    assert.deepEqual(await readFile(index), before);
+    const id = preview.hunks.match(/^([a-zA-Z0-9_-]+) selected\s/m)?.[1]; assert.ok(id);
+    await commitHunks(cwd, [id], 'fix: selected', permission);
+    assert.equal(Math.floor((await stat(index)).mtimeMs / 1000), stamp);
+    assert.match(await git(['status', '--porcelain=v1']), / M racy/);
+    assert.equal(await readFile(join(cwd, 'racy'), 'utf8'), 'new\n');
+    const again = await inspectHunks(cwd, permission);
+    const next = again.hunks.match(/^([a-zA-Z0-9_-]+) racy\s/m)?.[1]; assert.ok(next);
+    assert.match(await showHunk(cwd, next, permission), /new/);
+    await commitHunks(cwd, [next], 'fix: racy', permission);
+    assert.equal(await git(['show', 'HEAD:racy']), 'new\n');
+  } finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+test('index snapshots preserve conservative timestamps and reject zero, future and symlink sources', async () => {
+  const dir = await mkdtemp('/private/tmp/opencode/publish-snapshot-');
+  const source = join(dir, 'source'); const copy = join(dir, 'copy');
+  try {
+    await writeFile(source, 'index');
+    await utimes(source, 1600000000.75, 1600000000.75);
+    const snapshot = await readIndexSnapshot(source);
+    await writeIndexSnapshot(copy, snapshot);
+    assert.deepEqual(await readFile(copy), snapshot.bytes);
+    assert.equal((await stat(copy)).mtimeMs, 1600000000000);
+    assert.ok((await stat(copy)).mtimeMs <= (await stat(source)).mtimeMs);
+    await utimes(source, 0, 0);
+    await assert.rejects(readIndexSnapshot(source), /Unsupported index timestamp/);
+    const future = Math.floor(Date.now() / 1000) + 10;
+    await utimes(source, future, future);
+    await assert.rejects(readIndexSnapshot(source), /Unsupported index timestamp/);
+    for (const [i, mtimeSeconds] of [0, 1.5, NaN, Infinity, future].entries()) {
+      const target = join(dir, `invalid-${i}`);
+      await assert.rejects(writeIndexSnapshot(target, { bytes: snapshot.bytes, mtimeSeconds }), /Unsupported index timestamp/);
+      await assert.rejects(access(target), { code: 'ENOENT' });
+    }
+    await assert.rejects(readIndexSnapshot(dir), /Unsupported index file/);
+    await symlink(source, join(dir, 'link'));
+    await assert.rejects(readIndexSnapshot(join(dir, 'link')), /Index snapshot changed during read/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('index snapshot rejects a FIFO without blocking or reading it', async () => {
+  const dir = await mkdtemp('/private/tmp/opencode/publish-fifo-');
+  const fifo = join(dir, 'index');
+  const execute = promisify(execFile);
+  try {
+    await execute('mkfifo', [fifo]);
+    const code = `const { readIndexSnapshot } = await import(process.argv[1]);
+try { await readIndexSnapshot(process.argv[2]); process.exitCode = 1; }
+catch (error) { if (error.message !== 'Unsupported index file') throw error; }`;
+    await execute(process.execPath, ['--input-type=module', '-e', code, new URL('./transaction.ts', import.meta.url).href, fifo], { timeout: 5000 });
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

@@ -44,6 +44,11 @@ test('sensitive paths are rejected in every path segment', () => {
   assert.doesNotThrow(() => assertSafePath('foo/.env.example'));
 });
 
+test('runner distinguishes permission denial from a launched command failure', async () => {
+  await assert.rejects(run('/private/tmp', 'git', ['--version'], async () => { throw new Error('denied'); }), (error: Error & { commandStarted?: boolean }) => error.commandStarted === false);
+  await assert.rejects(run('/private/tmp', 'git', ['not-a-git-command'], async () => {}), (error: Error & { commandStarted?: boolean }) => error.commandStarted === true);
+});
+
 test('runner checks permissions and executes git without a shell', async () => {
   const cwd = await mkdtemp(join(tmpdir(), 'publish-runner-'));
   try {

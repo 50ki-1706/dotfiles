@@ -44,8 +44,9 @@ If verification cannot be completed, say so clearly and include the next command
 
 - The gate is attempt gating, not execution forcing: it observes tool calls and permission evaluations, and it cannot make you run a command. The only command-level control is the execution-boundary interlock, which aborts an already-approved switch when the root/branch check fails just before spawn.
 - It is a guard, not a lock. Manual terminal use is out of scope, and adversarial re-encodings can evade text scanning. Legacy `home-manager switch` forms are denied with migration guidance; non-canonical, unbound, and non-sudo darwin-rebuild/nix-darwin switch attempts are denied rather than asked. Exotic spellings depend on the resources the runtime scanner reports, which the gate captures at runtime.
-- Evidence is conservative: any recognized mutation (`rm`/`mv`/`cp`, `sed -i`, `git checkout`/`merge`/`restore`/`revert`/`switch`/`worktree`/`clone`, file redirects, edit-family tools) clears the session’s evidence, and a new `nix fmt` also clears it because fmt may change files. The git mutation check is word-level and can false-positive.
+- Evidence is conservative: any recognized mutation (`rm`/`mv`/`cp`, `sed -i`, `git checkout`/`merge`/`restore`/`revert`/`switch`/`worktree`/`clone`, file redirects, edit-family tools), including plugin-initiated shell permission resources, clears the session’s evidence. A new `nix fmt` also clears it because fmt may change files. The git mutation check is word-level and can false-positive.
 - Classification is heuristic text matching and can false-positive (for example, `echo "nix fmt"` counts as a fmt attempt). False positives only clear evidence or block a stage.
+- Literal `gh pr create` title and body arguments are excluded only for supported, unambiguous argument syntax. Double-quoted arguments and other shell syntax fall back to conservative scanning, including executable substitutions.
 - This skill and the gate cannot replace reading the actual build output.
 
 ## Sandbox Notes

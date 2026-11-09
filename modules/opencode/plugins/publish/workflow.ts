@@ -1,8 +1,10 @@
 import { constants } from 'node:fs';
-import { lstat, open, readdir, realpath } from 'node:fs/promises';
+import { lstat, mkdtemp, open, readdir, realpath, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseTemplate, type Template } from './template.ts';
 import { assertSafePath, run, type Permission } from './runner.ts';
+import { inspectRepository, readIndexSnapshot, writeIndexSnapshot, type IndexSnapshot, type RepositoryState } from './transaction.ts';
 
 /** Discover one unambiguous GitHub pull request template within the repository. */
 export async function discoverTemplate(root: string, permission: Permission): Promise<Template> {
@@ -107,16 +109,127 @@ export async function discoverTemplate(root: string, permission: Permission): Pr
 type Runner = typeof run;
 type Expected = { branch: string; head: string };
 type PublishRequest = { title?: string; body?: string };
-type PublishResult = { push: 'pushed' | 'already-up-to-date'; prUrl?: string };
+export type PublishState = {
+  phase: string;
+  push: 'not-attempted' | 'pushed' | 'already-up-to-date' | 'unknown';
+  remoteVerified: boolean;
+  pr: 'not-attempted' | 'absent' | 'known' | 'unknown';
+  prUrl?: string;
+  outgoingCommitCount: number | null;
+  base?: string;
+  head: string;
+};
+export type PublishRetry = { createUncertain?: boolean };
+export class PublishError extends Error {
+  state: PublishState;
+  constructor(message: string, state: PublishState, cause: unknown) { super(message, { cause }); this.state = state; }
+}
 
 const shaPattern = /^[0-9a-f]{40,64}$/;
 const conventional = /^(?:feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(?:\([a-zA-Z0-9._/-]+\))?!?: \S[^\r\n]*$/;
 
+export class SyncError extends Error {
+  attempted: boolean;
+  observed: RepositoryState | null;
+  constructor(message: string, attempted: boolean, observed: RepositoryState | null, cause: unknown) {
+    super(message, { cause });
+    this.attempted = attempted;
+    this.observed = observed;
+  }
+}
+
+/** Fast-forward a clean bound checkout after approval; failures after launch may have changed it. */
+export async function syncMain(
+  root: string, expected: Expected, targetHead: string, permission: Permission, signal?: AbortSignal,
+): Promise<{ before: { root: string; branch: string; head: string }; state: RepositoryState }> {
+  let attempted = false;
+  let dir: string | undefined;
+  let indexPath: string | undefined;
+  let observed: RepositoryState | null = null;
+  const git = (args: string[], p = permission) => run(root, 'git', args, p, { signal });
+  const readIndex = async () => {
+    await permission('read', [indexPath!]);
+    return readIndexSnapshot(indexPath!);
+  };
+  const snapshot = async (bytes: IndexSnapshot) => {
+    const path = join(dir!, 'index');
+    // Git status may refresh its index, so all inspection uses a disposable copy.
+    await writeIndexSnapshot(path, bytes);
+    await permission('read', [path]);
+    return inspectRepository(root, permission, signal, { GIT_INDEX_FILE: path });
+  };
+  const noOperation = async () => {
+    for (const name of ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'REBASE_HEAD', 'BISECT_LOG', 'rebase-merge', 'rebase-apply', 'sequencer']) {
+      const path = resolve(root, (await git(['rev-parse', '--git-path', name])).trim());
+      await permission('read', [path]);
+      try { await lstat(path); throw new Error(`Git operation in progress: ${name}`); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+    }
+  };
+  const check = async (head: string, bytes: IndexSnapshot) => {
+    const state = await snapshot(bytes);
+    if (resolve(state.root) !== resolve(root) || state.branch !== expected.branch || state.head !== head || state.status.length)
+      throw new Error('Repository root, branch, HEAD, or clean state changed');
+    await noOperation();
+    if (!(await readIndex()).bytes.equals(bytes.bytes)) throw new Error('Index changed');
+    return state;
+  };
+  try {
+    if (!shaPattern.test(expected.head) || !shaPattern.test(targetHead) || !expected.branch || expected.branch.startsWith('-'))
+      throw new Error('Unsafe expected branch or HEAD');
+    await permission('read', [root]);
+    dir = await mkdtemp(join(tmpdir(), 'publish-sync-'));
+    const actualRoot = (await git(['rev-parse', '--show-toplevel'])).trim();
+    if (resolve(actualRoot) !== resolve(root)) throw new Error('Repository root changed');
+    indexPath = resolve(root, (await git(['rev-parse', '--git-path', 'index'])).trim());
+    const initial = await readIndex();
+    const beforeState = await check(expected.head, initial);
+    const before = { root: beforeState.root, branch: beforeState.branch, head: beforeState.head };
+    await git(['fetch', '--no-tags', 'origin', 'refs/heads/main']);
+    const checkTarget = async () => {
+      if ((await git(['rev-parse', '--verify', 'FETCH_HEAD'])).trim() !== targetHead) throw new Error('Fetched main does not match target');
+      await git(['merge-base', '--is-ancestor', expected.head, targetHead]);
+    };
+    await checkTarget();
+    await check(expected.head, initial);
+    const mergePermission: Permission = async (action, resources) => {
+      await permission(action, resources);
+      await check(expected.head, initial);
+      await checkTarget();
+    };
+    try {
+      await git(['merge', '--ff-only', '--no-edit', targetHead], mergePermission);
+      attempted = true;
+    } catch (error) {
+      attempted = (error as { commandStarted?: boolean }).commandStarted !== false;
+      throw error;
+    }
+    const postIndex = await readIndex();
+    const state = await check(targetHead, postIndex);
+    await git(['merge-base', '--is-ancestor', expected.head, targetHead]);
+    if (!(await readIndex()).bytes.equals(postIndex.bytes)) throw new Error('Index changed during verification');
+    return { before, state };
+  } catch (error) {
+    if (attempted && dir && indexPath) {
+      try {
+        const bytes = await readIndex();
+        const state = await snapshot(bytes);
+        if (resolve(state.root) === resolve(root) && (await readIndex()).bytes.equals(bytes.bytes)) observed = state;
+      } catch { /* The repository could not be safely observed. */ }
+    }
+    throw new SyncError(error instanceof Error ? error.message : String(error), attempted, observed, error);
+  } finally {
+    if (dir) await rm(dir, { recursive: true, force: true });
+  }
+}
+
 /** Publish a clean, bound branch. The caller must serialize repository mutations and validate PR content first. */
 export async function publishBranch(
   root: string, expected: Expected, mode: 'main' | 'pr', request: PublishRequest,
-  permission: Permission, runner: Runner = run, signal?: AbortSignal,
-): Promise<PublishResult> {
+  permission: Permission, runner: Runner = run, signal?: AbortSignal, retry: PublishRetry = {},
+): Promise<PublishState> {
+  const state: PublishState = { phase: 'preflight', push: 'not-attempted', remoteVerified: false, pr: retry.createUncertain ? 'unknown' : 'not-attempted', outgoingCommitCount: null, head: expected.head };
+  try {
   if (mode !== 'main' && mode !== 'pr') throw new Error('Invalid publish mode');
   if (!shaPattern.test(expected.head) || !/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(expected.branch)
     || expected.branch.includes('..') || expected.branch.includes('//') || expected.branch.endsWith('/')
@@ -166,12 +279,15 @@ export async function publishBranch(
   };
   const base = await remoteSha('refs/heads/main');
   if (!base) throw new Error('origin/main does not exist');
+  state.base = base;
   await git(['fetch', '--no-tags', 'origin', 'refs/heads/main']);
   if ((await git(['rev-parse', '--verify', 'FETCH_HEAD'])).trim() !== base) throw new Error('origin/main changed during fetch');
   await git(['merge-base', '--is-ancestor', base, expected.head]);
-  const subjects = (await git(['log', '--format=%s', `${base}..${expected.head}`])).trim();
-  if (subjects && subjects.split('\n').some((subject) => !conventional.test(subject))) throw new Error('Non-conventional outgoing commit');
-  if (mode === 'pr' && !subjects) throw new Error('No outgoing commits');
+  const subjectOutput = await git(['log', '--format=%s', `${base}..${expected.head}`]);
+  const subjects = subjectOutput ? subjectOutput.replace(/\n$/, '').split('\n') : [];
+  state.outgoingCommitCount = subjects.length;
+  if (subjects.some((subject) => !conventional.test(subject))) throw new Error('Non-conventional outgoing commit');
+  if (mode === 'pr' && !subjects.length) throw new Error('No outgoing commits');
   await git(['diff', '--stat', base, expected.head, '--']);
   const remote = mode === 'main' ? base : await remoteSha(ref);
   if (remote && remote !== expected.head) {
@@ -192,41 +308,58 @@ export async function publishBranch(
     return pull.url;
   };
   const existing = mode === 'pr' ? await findPull() : undefined;
+  if (mode === 'pr') {
+    state.pr = existing ? 'known' : retry.createUncertain ? 'unknown' : 'absent';
+    if (existing) { state.prUrl = existing; retry.createUncertain = false; }
+  }
   await checkState();
   if ((await remoteSha('refs/heads/main')) !== base) throw new Error('origin/main changed before push');
   if ((await remoteSha(ref)) !== remote) throw new Error('Remote branch changed before push');
-  let push: PublishResult['push'] = 'already-up-to-date';
+  state.phase = 'push';
+  state.push = 'already-up-to-date';
   if (remote !== expected.head) {
-    await git(['push', '--no-follow-tags', 'origin', `HEAD:${ref}`]);
-    push = 'pushed';
+    try { await git(['push', '--no-follow-tags', 'origin', `HEAD:${ref}`]); state.push = 'pushed'; }
+    catch (error) {
+      state.push = (error as { commandStarted?: boolean })?.commandStarted === false ? 'not-attempted' : 'unknown';
+      throw error;
+    }
   }
+  state.phase = 'verify-remote';
   try {
     await checkState();
     if ((await remoteSha(ref)) !== expected.head) throw new Error('remote verification failed');
+    state.remoteVerified = true;
     if (mode === 'pr' && (await remoteSha('refs/heads/main')) !== base) throw new Error('origin/main changed');
   } catch (error) {
-    throw new Error(`Push ${push}; post-push verification failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Push ${state.push}; post-push verification failed: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (mode === 'main') return { push };
-  if (existing) return { push, prUrl: existing };
+  if (mode === 'main' || existing) { state.phase = 'complete'; return state; }
+  state.phase = 'pr-preflight';
   try {
     await checkState();
     if ((await remoteSha(ref)) !== expected.head) throw new Error('Remote branch changed before PR creation');
     if ((await remoteSha('refs/heads/main')) !== base) throw new Error('origin/main changed before PR creation');
     const nowExisting = await findPull();
-    if (nowExisting) return { push, prUrl: nowExisting };
+    if (nowExisting) { state.pr = 'known'; state.prUrl = nowExisting; retry.createUncertain = false; state.phase = 'complete'; return state; }
   } catch (error) {
-    throw new Error(`Push ${push}; PR preflight failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Push ${state.push}; PR preflight failed: ${error instanceof Error ? error.message : String(error)}`);
   }
+  if (retry.createUncertain) { state.pr = 'unknown'; throw new Error('Previous PR creation remains uncertain'); }
+  state.phase = 'pr-create';
   try {
     const created = (await command('gh', ['pr', 'create', '--repo', repo!, '--base', 'main', '--head', expected.branch, '--title', request.title!, '--body', request.body!])).trim();
     if (!created.toLowerCase().startsWith(`https://github.com/${repo!.toLowerCase()}/pull/`) || !/\/pull\/\d+$/.test(created)) throw new Error('Unexpected PR creation response');
-    return { push, prUrl: created };
+    state.pr = 'known'; state.prUrl = created; state.phase = 'complete'; return state;
   } catch (error) {
+    const attempted = (error as { commandStarted?: boolean })?.commandStarted !== false;
+    if (attempted) { retry.createUncertain = true; state.pr = 'unknown'; }
     try {
       const recovered = await findPull();
-      if (recovered) return { push, prUrl: recovered };
+      if (recovered) { retry.createUncertain = false; state.pr = 'known'; state.prUrl = recovered; state.phase = 'complete'; return state; }
     } catch { /* Preserve the original failure and push status. */ }
-    throw new Error(`Push ${push}; PR creation failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Push ${state.push}; PR creation failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  } catch (error) {
+    throw new PublishError(error instanceof Error ? error.message : String(error), { ...state }, error);
   }
 }

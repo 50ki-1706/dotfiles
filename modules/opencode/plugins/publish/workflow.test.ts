@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rename, rm, symlink, writeFile, utimes } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { discoverTemplate, publishBranch } from './workflow.ts';
+import { discoverTemplate, publishBranch, PublishError, syncMain, SyncError } from './workflow.ts';
 import type { run } from './runner.ts';
 
 test('discovers a single template and fingerprints current bytes', async () => {
@@ -89,6 +90,7 @@ function harness(root: string, options: Scenario = {}) {
   let remote = options.remote;
   let fetched = base;
   let pulls = options.pulls ?? [];
+  const retry = {};
   const runner: typeof run = async (_cwd, executable, args, permission) => {
     calls.push([executable, ...args]);
     await permission('shell', [[executable, ...args].join(' ')]);
@@ -117,21 +119,32 @@ function harness(root: string, options: Scenario = {}) {
     return '';
   };
   const permission = async (action: string, resources: string[]) => { permissions.push(`${action}:${resources[0]}`); };
-  const invoke = () => publishBranch(root, { branch, head }, branch === 'main' ? 'main' : 'pr', { title: 'Title', body: 'body; $(not-a-command)' }, permission, runner);
-  return { calls, permissions, invoke, options };
+  const invoke = () => publishBranch(root, { branch, head }, branch === 'main' ? 'main' : 'pr', { title: 'Title', body: 'body; $(not-a-command)' }, permission, runner, undefined, retry);
+  return { calls, permissions, invoke, options, setPulls: (value: unknown[]) => { pulls = value; } };
 }
 
 test('main pushes exact ref and never invokes gh', async () => {
   const h = harness('/private/tmp/opencode', { branch: 'main' });
-  assert.deepEqual(await h.invoke(), { push: 'pushed' });
+  assert.deepEqual(await h.invoke(), { push: 'pushed', phase: 'complete', remoteVerified: true, pr: 'not-attempted', outgoingCommitCount: 1, base, head });
   assert.ok(h.calls.some((c) => c.join(' ') === 'git push --no-follow-tags origin HEAD:refs/heads/main'));
   assert.ok(h.permissions.includes('shell:git push --no-follow-tags origin HEAD:refs/heads/main'));
   assert.ok(h.calls.every((c) => c[0] !== 'gh'));
 });
 
+test('preflight failures preserve uncertain PR and unknown outgoing count', async () => {
+  const retry = { createUncertain: true };
+  await assert.rejects(publishBranch('/private/tmp/opencode', { branch: 'feature', head }, 'pr', { title: 'Title', body: 'body' }, async () => {}, async () => { throw new Error('offline'); }, undefined, retry), (error: unknown) => {
+    assert.ok(error instanceof PublishError);
+    assert.equal(error.state.pr, 'unknown');
+    assert.equal(error.state.outgoingCommitCount, null);
+    assert.equal(retry.createUncertain, true);
+    return true;
+  });
+});
+
 test('feature creates PR with origin pinned and body passed as one argument', async () => {
   const h = harness('/private/tmp/opencode');
-  assert.deepEqual(await h.invoke(), { push: 'pushed', prUrl: 'https://github.com/acme/repo/pull/2' });
+  assert.deepEqual(await h.invoke(), { push: 'pushed', phase: 'complete', remoteVerified: true, pr: 'known', outgoingCommitCount: 1, base, head, prUrl: 'https://github.com/acme/repo/pull/2' });
   const create = h.calls.find((c) => c[0] === 'gh' && c[2] === 'create')!;
   assert.deepEqual(create, ['gh', 'pr', 'create', '--repo', 'acme/repo', '--base', 'main', '--head', 'feature', '--title', 'Title', '--body', 'body; $(not-a-command)']);
 });
@@ -139,7 +152,7 @@ test('feature creates PR with origin pinned and body passed as one argument', as
 test('existing matching PR is returned, mismatched and multiple PRs fail before push', async () => {
   const pull = { url: 'https://github.com/acme/repo/pull/1', baseRefName: 'main', headRefName: 'feature', headRepositoryOwner: { login: 'acme' } };
   const h = harness('/private/tmp/opencode', { pulls: [pull] });
-  assert.deepEqual(await h.invoke(), { push: 'pushed', prUrl: pull.url });
+  assert.equal((await h.invoke()).prUrl, pull.url);
   assert.ok(!h.calls.some((c) => c[0] === 'gh' && c[2] === 'create'));
   for (const pulls of [[{ ...pull, baseRefName: 'develop' }], [pull, pull]]) {
     const bad = harness('/private/tmp/opencode', { pulls });
@@ -156,17 +169,43 @@ test('dirty, detached, changed HEAD, bad ancestry, non-conventional history and 
   }
 });
 
-test('failed create reports push and retry does not push again', async () => {
+test('empty outgoing subjects are counted and rejected instead of disappearing from main publication', async () => {
+  for (const subject of ['\n', 'fix: valid\n\n']) {
+    const h = harness('/private/tmp/opencode', { branch: 'main', subject });
+    await assert.rejects(h.invoke(), (error: unknown) => {
+      assert.ok(error instanceof PublishError);
+      assert.match(error.message, /Non-conventional outgoing commit/);
+      assert.equal(error.state.outgoingCommitCount, subject === '\n' ? 1 : 2);
+      assert.equal(error.state.push, 'not-attempted');
+      return true;
+    });
+    assert.ok(!h.calls.some((call) => call[1] === 'push'));
+  }
+});
+
+test('uncertain create blocks another create until a matching PR is found', async () => {
   const h = harness('/private/tmp/opencode', { createFailure: true });
-  await assert.rejects(h.invoke(), /Push pushed; PR creation failed: network failed/);
-  h.options.createFailure = false;
-  assert.deepEqual(await h.invoke(), { push: 'already-up-to-date', prUrl: 'https://github.com/acme/repo/pull/2' });
+  await assert.rejects(h.invoke(), (error: unknown) => {
+    assert.ok(error instanceof PublishError);
+    assert.match(error.message, /Push pushed; PR creation failed: network failed/);
+    assert.equal(error.state.push, 'pushed');
+    assert.equal(error.state.remoteVerified, true);
+    assert.equal(error.state.pr, 'unknown');
+    assert.equal(error.state.outgoingCommitCount, 1);
+    return true;
+  });
+  await assert.rejects(h.invoke(), /Previous PR creation remains uncertain/);
+  assert.equal(h.calls.filter((c) => c[0] === 'gh' && c[2] === 'create').length, 1);
+  h.setPulls([{ url: 'https://github.com/acme/repo/pull/2', baseRefName: 'main', headRefName: 'feature', headRepositoryOwner: { login: 'acme' } }]);
+  const result = await h.invoke();
+  assert.equal(result.push, 'already-up-to-date');
+  assert.equal(result.prUrl, 'https://github.com/acme/repo/pull/2');
   assert.equal(h.calls.filter((c) => c[1] === 'push').length, 1);
 });
 
 test('create network error recovers a matching PR', async () => {
   const h = harness('/private/tmp/opencode', { createFailure: true, createdOnError: true });
-  assert.deepEqual(await h.invoke(), { push: 'pushed', prUrl: 'https://github.com/acme/repo/pull/2' });
+  assert.equal((await h.invoke()).prUrl, 'https://github.com/acme/repo/pull/2');
 });
 
 test('already pushed branch skips push and incompatible mode is rejected', async () => {
@@ -201,14 +240,121 @@ test('real local origin main push, retry, and dirty refusal use the runner and p
     const permissions: string[] = [];
     const permission = async (action: string, resources: string[]) => { permissions.push(`${action}:${resources[0]}`); };
     const publish = () => publishBranch(repo, { branch: 'main', head }, 'main', {}, permission);
-    assert.deepEqual(await publish(), { push: 'pushed' });
+    assert.equal((await publish()).push, 'pushed');
     assert.equal(await git(temp, '--git-dir', origin, 'rev-parse', 'refs/heads/main'), head);
     assert.equal(await git(temp, '--git-dir', origin, 'tag', '--list'), '');
     assert.ok(permissions.includes('shell:git push --no-follow-tags origin HEAD:refs/heads/main'));
-    assert.deepEqual(await publish(), { push: 'already-up-to-date' });
+    assert.equal((await publish()).push, 'already-up-to-date');
     assert.equal(permissions.filter((entry) => entry === 'shell:git push --no-follow-tags origin HEAD:refs/heads/main').length, 1);
     await writeFile(join(repo, 'untracked.txt'), 'dirty\n');
     await assert.rejects(publish(), /clean state changed/);
     assert.equal(await git(temp, '--git-dir', origin, 'rev-parse', 'refs/heads/main'), head);
   } finally { await rm(temp, { recursive: true, force: true }); }
+});
+
+async function syncFixture(action: (f: { repo: string; old: string; target: string; git: (...args: string[]) => Promise<string> }) => Promise<void>) {
+  const temp = await realpath(await mkdtemp(join(tmpdir(), 'sync-test-')));
+  const repo = join(temp, 'repo');
+  const origin = join(temp, 'origin');
+  const execute = promisify(execFile);
+  const command = async (cwd: string, ...args: string[]) => (await execute('git', args, { cwd })).stdout.trim();
+  const git = (...args: string[]) => command(repo, ...args);
+  try {
+    await command(temp, 'init', '--bare', '--initial-branch=main', origin);
+    await command(temp, 'init', '--initial-branch=main', repo);
+    await git('config', 'user.name', 'Test');
+    await git('config', 'user.email', 'test@example.invalid');
+    await git('remote', 'add', 'origin', origin);
+    await writeFile(join(repo, 'file'), 'old\n');
+    await git('add', 'file'); await git('commit', '-m', 'old');
+    const old = await git('rev-parse', 'HEAD');
+    await writeFile(join(repo, 'file'), 'new\n');
+    await git('add', 'file'); await git('commit', '-m', 'new');
+    const target = await git('rev-parse', 'HEAD');
+    await git('push', 'origin', 'HEAD:refs/heads/main');
+    await git('reset', '--hard', old);
+    await action({ repo, old, target, git });
+  } finally { await rm(temp, { recursive: true, force: true }); }
+}
+
+test('sync fast-forwards the bound feature branch to the exact fetched main', async () => {
+  await syncFixture(async ({ repo, old, target, git }) => {
+    await git('switch', '-c', 'feature');
+    const result = await syncMain(repo, { branch: 'feature', head: old }, target, async () => {});
+    assert.deepEqual(result.before, { root: repo, branch: 'feature', head: old });
+    assert.deepEqual(result.state, { root: repo, branch: 'feature', head: target, status: [] });
+    await git('merge-base', '--is-ancestor', old, target);
+  });
+});
+
+test('sync denial and approval-time mutations never launch merge', async () => {
+  for (const mutation of ['deny', 'head', 'index', 'worktree', 'branch', 'operation']) {
+    await syncFixture(async ({ repo, old, target, git }) => {
+      let approved = false;
+      const permission = async (action: string, resources: string[]) => {
+        if (action !== 'shell' || resources[0] !== `git merge --ff-only --no-edit ${target}`) return;
+        approved = true;
+        if (mutation === 'deny') throw new Error('denied');
+        if (mutation === 'head') await git('commit', '--allow-empty', '-m', 'external');
+        if (mutation === 'index') { await writeFile(join(repo, 'other'), 'external'); await git('add', 'other'); }
+        if (mutation === 'worktree') await writeFile(join(repo, 'file'), 'external');
+        if (mutation === 'branch') await git('switch', '-c', 'external');
+        if (mutation === 'operation') await writeFile(join(repo, '.git', 'MERGE_HEAD'), target + '\n');
+      };
+      await assert.rejects(syncMain(repo, { branch: 'main', head: old }, target, permission), (error: unknown) => error instanceof SyncError && !error.attempted);
+      assert.equal(approved, true, mutation);
+      assert.notEqual(await git('rev-parse', 'HEAD'), target, mutation);
+      if (mutation === 'worktree') assert.equal(await readFile(join(repo, 'file'), 'utf8'), 'external');
+      if (mutation === 'branch') assert.equal(await git('branch', '--show-current'), 'external');
+      if (mutation === 'operation') assert.equal(await readFile(join(repo, '.git', 'MERGE_HEAD'), 'utf8'), target + '\n');
+    });
+  }
+});
+
+test('sync rejects dirty, wrong target, and non-ancestor states', async () => {
+  for (const condition of ['dirty', 'target', 'ancestor']) {
+    await syncFixture(async ({ repo, old, target, git }) => {
+      let head = old;
+      if (condition === 'dirty') await writeFile(join(repo, 'file'), 'dirty');
+      if (condition === 'ancestor') { await git('commit', '--allow-empty', '-m', 'diverged'); head = await git('rev-parse', 'HEAD'); }
+      await assert.rejects(syncMain(repo, { branch: 'main', head }, condition === 'target' ? old : target, async () => {}), (error: unknown) => error instanceof SyncError && !error.attempted);
+      assert.equal(await git('rev-parse', 'HEAD'), head);
+    });
+  }
+});
+
+test('sync reports a post-merge hook mutation as attempted and observed', async () => {
+  await syncFixture(async ({ repo, old, target }) => {
+    await writeFile(join(repo, '.git', 'hooks', 'post-merge'), '#!/bin/sh\nprintf mutation > file\n', { mode: 0o755 });
+    await assert.rejects(syncMain(repo, { branch: 'main', head: old }, target, async () => {}), (error: unknown) => {
+      assert.ok(error instanceof SyncError);
+      assert.equal(error.attempted, true);
+      assert.equal(error.observed?.head, target);
+      assert.ok(error.observed?.status.length);
+      return true;
+    });
+  });
+});
+
+test('sync refuses a racy dirty index before requesting merge permission', async () => {
+  await syncFixture(async ({ repo, old, target, git }) => {
+    // Align cached file and index seconds so Git must hash the same-size edit.
+    const stamp = 1600000000;
+    await git('config', 'core.trustctime', 'false');
+    await utimes(join(repo, 'file'), stamp, stamp);
+    await git('add', 'file');
+    await utimes(join(repo, '.git/index'), stamp, stamp);
+    await writeFile(join(repo, 'file'), 'bad\n');
+    await utimes(join(repo, 'file'), stamp, stamp);
+    const index = await readFile(join(repo, '.git/index'));
+    let mergePermission = false;
+    await assert.rejects(syncMain(repo, { branch: 'main', head: old }, target, async (action, resources) => {
+      if (action === 'shell' && resources[0].startsWith('git merge --ff-only')) mergePermission = true;
+    }), (error: unknown) => error instanceof SyncError && !error.attempted);
+    assert.equal(mergePermission, false);
+    assert.equal(await git('rev-parse', 'HEAD'), old);
+    assert.equal(await readFile(join(repo, 'file'), 'utf8'), 'bad\n');
+    assert.deepEqual(await readFile(join(repo, '.git/index')), index);
+    assert.equal(await git('ls-remote', 'origin', 'refs/heads/main'), `${target}\trefs/heads/main`);
+  });
 });
