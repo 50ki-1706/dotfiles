@@ -1,20 +1,34 @@
 # dotfiles
 
 ## What this is / isn’t
-
-私が普段使用するdotfiles
+私の開発環境
 ### 対象OS
 - Mac OS
 ### 使用端末
 - Mac Book Air M5 32gb
-
 ## What’s inside
+### Editor
+- vscode
+- helix
+### AI Coding
+- codex
+- claude code
+- vibe cli
+- dsh
+- opencode
+### Terminal
+- Ghostty
+- Herdr
+### Tools
+- lazygit
+- fzf
+- git-surgeon
+- ripgrep
+- yq-go
+### develop environments
+- devenv
+- mise
 
-- [シェル・エディタ・ターミナル・CLI の設定](modules/)は Nix・Home Manager で管理します。
-- [macOS とアプリの設定](hosts/mac.nix)は nix-darwin・Homebrew で管理します。
-- [独自パッケージと固定バージョン](packages/)を定義します。
-- [初期設定・アカウント管理スクリプト](scripts/)で Git アカウントと SSH キーを扱います。
-- OpenCode の設定は [opencode.nix](modules/opencode/opencode.nix)、権限は [permissions.nix](modules/opencode/permissions.nix) にあります。[グローバルスキル](skills/)は `skills/`、このリポジトリ固有のスキルは `.agents/skills/` にあります。
 
 ## Installation
 
