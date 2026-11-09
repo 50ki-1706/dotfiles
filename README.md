@@ -38,24 +38,39 @@ cgt light # 現在の Solarized Light
 cgt dark  # VS Code 標準の Dark Modern を基にした配色
 ```
 
-対象は Ghostty・Herdr・Helix・lazygit・OpenCode・Vibe CLI。VS Code 自体の設定は変更しません。
+対象は Ghostty・Herdr・Helix・lazygit・OpenCode・Vibe CLI・Claude Code・Codex CLI。VS Code 自体の設定は変更しません。
 初回適用は light、以降は `~/.local/state/cgt/current` に保存した選択を再適用します。
 OS の外観には自動追従しません。
 
-起動中の Ghostty は `Cmd+Shift+,`、Helix は `:config-reload` で読み直します。
+起動中の Ghostty は `cgt` が AppleScript の `reload_config` で自動的に読み直すため、再起動せずその場で配色が変わります。
+初回は macOS のオートメーション許可を求められる場合があります。自動再読み込みに失敗した場合だけ `Cmd+Shift+,` を使ってください。
+Ghostty が未起動なら起動せず、次回起動時に選択した配色を読み込みます。
+Helix は同じユーザーの起動中プロセス（Nix のラッパーを含む）へ `USR1` を送り、設定を再読み込みします。失敗した場合は `:config-reload` を使ってください。
 Herdr はコマンドから再読み込みを試みます。表示が変わらなければ Herdr の `prefix + Shift+R` を使ってください。
-lazygit・OpenCode・Vibe は起動し直してください。プロジェクト別設定や起動時の設定ファイル指定がある場合は、そちらが優先されます。
+OpenCode 2.1.4 は `cli.json` の親ディレクトリを監視します。`current` の切り替えだけでは通知が届かないため、`cgt` は `cli.json` のリンク先を保ったままリンクを置き直し、再読み込みを促します。
+ファイル監視を無効にしている場合や `cli.json` が cgt 管理のリンクではない場合は自動反映できません。後者は設定を上書きせず案内を表示します。
+lazygit は端末にフォーカスを戻すと設定を再読み込みします。端末やマルチプレクサーがフォーカス通知を届けない場合は起動し直してください。
+Vibe は `/reload` を実行してください。配色が変わらない場合は起動し直してください。
+Claude Code は `settings.json` の変更監視による反映を利用します。変わらない場合は `/config theme=light-ansi` または `/config theme=dark-ansi` を実行してください。
+Codex CLI の起動中セッションは `/theme` で `solarized-light` または `cgt-dark-modern` を選択してください。次回起動には保存した選択が適用されます。
+プロジェクト別設定、環境変数、起動時の設定ファイル指定による上書きは、各アプリの優先順位に従います。`cgt` は実行中のアプリを終了しません。
 
 Ghostty・Herdr・Helix・OpenCode の設定は、既存の各モジュールの設定から Nix が生成し、`current` 経由で参照します。
 設定本体を編集した場合は Nix の再ビルド・適用が必要です。`cgt` の切り替えだけなら再ビルドは不要で、Git の差分も生じません。
-Vibe と lazygit は既存設定のテーマ項目だけを更新し、その他の項目・コメント・ファイル権限を保ちます。
-初回変更前の内容を隣の `config.toml.cgt-backup` / `config.yml.cgt-backup` に保存します。
+Vibe・lazygit・Claude Code・Codex CLI は既存設定のテーマ項目だけを更新し、その他の項目・TOML/YAML のコメント・ファイル権限を保ちます。JSON は整形し直します。
+初回変更前の内容を隣の `<ファイル名>.cgt-backup` に保存します。全設定を事前に解析し、書き込み失敗時は変更を戻します。
 lazygit の保存場所は `lazygit --print-config-dir` に従います（macOS の標準は `~/Library/Application Support/lazygit`）。
+Claude Code は `${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json`、Codex CLI は `${CODEX_HOME:-~/.codex}/config.toml` を更新します。
+Codex の専用テーマは同じ `CODEX_HOME` の `themes/cgt-dark-modern.tmTheme` に配置します。このファイルも初回変更前にバックアップします。
 
 Vibe 3.1 は light に組み込みの `solarized-light`、dark に端末の ANSI 色を使う `ansi-dark` を選びます。
-Dark Modern の背景・文字・ANSI 配色は Ghostty が供給するため、Ghostty の再読み込みも必要です。
+Dark Modern の背景・文字・ANSI 配色は、自動再読み込みした Ghostty が供給します。
 Helix は `dark_plus` の構文色を継承し、Dark Modern の UI 色を上書きします。
 OpenCode 2.1.4 は組み込みテーマと同じ V1 互換形式を読み込み、内部で V2 に変換します。
+Claude Code は `light-ansi` / `dark-ansi` を選び、Ghostty の ANSI 配色を使います。
+Codex CLI は light に組み込みの `solarized-light`、dark に Dark Modern の背景・文字色と Dark+ の主要な構文色を基にした `cgt-dark-modern` を選びます。対象はコードブロックや diff の構文ハイライトで、GUI アプリの外観設定は変更しません。
+
+設定仕様: [Claude Code theme](https://code.claude.com/docs/en/settings-reference#theme)、[Codex CLI themes](https://learn.chatgpt.com/docs/cli-customization#syntax-highlighting-and-themes)。
 
 配色の参照元: [VS Code Dark Modern](https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_modern.json)、
 [VS Code terminal colors](https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/terminal/common/terminalColorRegistry.ts)。
