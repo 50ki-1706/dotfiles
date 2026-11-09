@@ -32,8 +32,8 @@
 ## dsh-TUI
 
 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) は `dsh --profile dsh-tui` のプラグインとして導入します。
-profile の宣言（`package.json` と `pnpm-lock.yaml`）は [modules/cli/dsh-tui](modules/cli/dsh-tui) にあり、
-Nix の適用時に `pnpm install --frozen-lockfile` で依存を展開します。
+profile の宣言（`package.json` と `pnpm-lock.yaml`）は [plugins/cli/dsh-tui/pnpm](plugins/cli/dsh-tui/pnpm) にあり、
+Nix の適用時に `pnpm install --frozen-lockfile --ignore-scripts` で依存を展開します。
 
 起動は `dst` で行います。`dsh --profile dsh-tui` と同じです。
 
@@ -67,7 +67,7 @@ Claude Code は `settings.json` の変更監視による反映を利用します
 Codex CLI の起動中セッションは `/theme` で `solarized-light` または `cgt-dark-modern` を選択してください。次回起動には保存した選択が適用されます。
 プロジェクト別設定、環境変数、起動時の設定ファイル指定による上書きは、各アプリの優先順位に従います。`cgt` は実行中のアプリを終了しません。
 
-Ghostty・Herdr・Helix・OpenCode の設定は、既存の各モジュールの設定から Nix が生成し、`current` 経由で参照します。
+Ghostty・Herdr・Helix・OpenCode の設定は、各 plugin の設定から Nix が生成し、`current` 経由で参照します。
 設定本体を編集した場合は Nix の再ビルド・適用が必要です。`cgt` の切り替えだけなら再ビルドは不要で、Git の差分も生じません。
 Vibe・lazygit・Claude Code・Codex CLI は既存設定のテーマ項目だけを更新し、その他の項目・TOML/YAML のコメント・ファイル権限を保ちます。JSON は整形し直します。
 初回変更前の内容を隣の `<ファイル名>.cgt-backup` に保存します。全設定を事前に解析し、書き込み失敗時は変更を戻します。
@@ -94,7 +94,7 @@ Codex CLI は light に組み込みの `solarized-light`、dark に Dark Modern 
 
 - Homebrew。
 - Mac App Store へのサインイン。
-- [hosts/mac.nix](hosts/mac.nix) が参照するローカル tap `/Users/koki/Dev/mywork/eigo-no-hanon/homebrew-tap`。
+- [plugins/app/hanon-player/homebrew](plugins/app/hanon-player/homebrew) が参照するローカル tap `/Users/koki/Dev/mywork/eigo-no-hanon/homebrew-tap`。
 
 このリポジトリを `~/.dotfiles` に取得し、対話ターミナルで実行します。Nix が未導入の場合は、スクリプトからインストールできます。
 

@@ -2,8 +2,8 @@
 # OpenCode action-space drift checker.
 #
 # Compares the effective action space of the pinned OpenCode runtime against the
-# baseline in modules/opencode/actions.nix (baked in by
-# packages/opencode-action-check.nix) and live-introspects the configured MCP
+# baseline in plugins/cli/opencode/actions.nix (baked in by
+# plugins/cli/opencode/local/action-check) and live-introspects the configured MCP
 # servers (initialize -> tools/list over stdio, never tools/call).
 #
 # Exit codes: 0 = OK, 1 = drift, 2 = inconclusive (infra/skip; drift 判定保留).
@@ -679,7 +679,7 @@ def print_fix_block():
     log("  1. 追加項目はアクセス付与を意味します。ユーザー承認なしに allow-list へ追加しないでください。")
     log("     削除項目は上流削除かサーバー障害か区別できない場合、`opencode mcp list` と")
     log("     ~/.local/share/opencode/log を確認してください。")
-    log("  2. modules/opencode/actions.nix を更新（ruleActions / expectedRuleActions / mcpToolActions）。")
+    log("  2. plugins/cli/opencode/actions.nix を更新（ruleActions / expectedRuleActions / mcpToolActions）。")
     log("  3. nix run home-manager -- build --flake .#koki")
     log("  4. nix run .#opencodeActionCheck -- --home ./result  で候補 generation を検証")
     log("  5. switch はユーザーの明示依頼時のみ実行")

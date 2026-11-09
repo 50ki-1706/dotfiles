@@ -1,0 +1,7 @@
+{
+  darwin =
+    { ... }:
+    {
+      homebrew.casks = [ "audacity" ];
+    };
+}

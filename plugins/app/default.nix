@@ -1,0 +1,38 @@
+{
+  imports = [
+    ./android-studio
+    ./audacity
+    ./bitwarden
+    ./bruno
+    ./claude
+    ./codex-app
+    ./cursor
+    ./discord
+    ./docker-desktop
+    ./figma
+    ./garageband
+    ./ghostty
+    ./gimp
+    ./google-chrome
+    ./google-drive
+    ./grok-bot
+    ./handy
+    ./hanon-player
+    ./imovie
+    ./keynote
+    ./line
+    ./notion
+    ./numbers
+    ./obsidian
+    ./openscad
+    ./pages
+    ./raycast
+    ./spotify
+    ./steam
+    ./unity
+    ./unity-hub
+    ./vivaldi
+    ./vscode
+    ./zoom
+  ];
+}

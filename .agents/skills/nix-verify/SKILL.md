@@ -19,13 +19,13 @@ Run verification from the root of the checkout that contains the change, each st
 4. Verify in gate-enforced order: `nix fmt`, `nix run home-manager -- build --flake .#koki`, then `nix build .#darwinConfigurations.mac.system --out-link result-darwin`. If `nix fmt` fails, fix and re-run it until it exits 0 before the build stage. For other repositories, use the closest equivalent checks.
 5. Verify generated or managed outputs when relevant: inspect the Home Manager build result (for this repo's opencode changes, `result/home-files/.config/opencode/opencode.json`) instead of assuming the attrset rendered correctly. The darwin build uses `result-darwin` so it does not overwrite `./result`.
 6. Check the OpenCode action space when the OpenCode pin changes.
-   - If `packages/opencode.nix` or an MCP provider command/pin in `modules/opencode/opencode.nix` changed, run from the repository root:
+   - If `plugins/cli/opencode/npm/package.nix` or an MCP provider command/pin in `plugins/cli/opencode/opencode.nix` changed, run from the repository root:
 
      ```sh
      nix run .#opencodeActionCheck
      ```
 
-   - Exit 1 = drift, exit 2 = inconclusive. Follow the printed 修正手順 with its approval gates: baseline additions in `modules/opencode/actions.nix` are permission grants and need user approval, then rebuild, verify the candidate generation with `--home ./result`, and keep switch gated.
+   - Exit 1 = drift, exit 2 = inconclusive. Follow the printed 修正手順 with its approval gates: baseline additions in `plugins/cli/opencode/actions.nix` are permission grants and need user approval, then rebuild, verify the candidate generation with `--home ./result`, and keep switch gated.
 7. Activate only when the user asked for the change to take effect now, you are at `/Users/koki/.dotfiles` on branch `main`, and fmt, Home Manager build, and darwin build evidence ran at that root in this session. After a merge — especially one performed outside gate-observed tool calls — re-run all three build stages at the main checkout before switching; merges and manual terminal use produce no evidence. Linked worktrees never qualify. The only accepted switch commands are `sudo nix --extra-experimental-features nix-command --extra-experimental-features flakes run /Users/koki/.dotfiles#darwin-rebuild -- switch --flake /Users/koki/.dotfiles#mac` and `sudo darwin-rebuild switch --flake /Users/koki/.dotfiles#mac`. The gate forces human confirmation, re-checks root and branch just before spawn, and denies recognized attempts that fail its declaration, evidence, root/branch, or exact-command checks. The first bootstrap is user-operated and is not protected by the currently installed gate. On other branches, stop after build and report activation deferred with the post-merge commands.
 
 ## Reporting

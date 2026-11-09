@@ -123,32 +123,40 @@ resolve_chain() {
   printf '%s\n' "$link"
 }
 
-# 1 リンクあたり 4 要素: 対象リンク、手動管理時代の旧パス、home-manager 時代の旧パス、現在の正しいパス。
+# 1 リンクあたり 6 要素: 対象リンク、手動管理、home-manager、modules、旧 plugins、現在のパス。
 MAPPINGS=(
   "$HOME/.config/git/ignore"
   "$REPO_ROOT/git/ignore"
   "$REPO_ROOT/home/dotfiles/git/ignore"
   "$REPO_ROOT/modules/git/ignore"
+  "$REPO_ROOT/plugins/git/ignore"
+  "$REPO_ROOT/plugins/cli/git/ignore"
   "$HOME/Library/Application Support/Code/User/settings.json"
   "$REPO_ROOT/config/Code/User/settings.json"
   "$REPO_ROOT/home/dotfiles/vscode/settings.json"
   "$REPO_ROOT/modules/vscode/settings.json"
+  "$REPO_ROOT/plugins/vscode/settings.json"
+  "$REPO_ROOT/plugins/app/vscode/settings.json"
   "$HOME/Library/Application Support/Code/User/keybindings.json"
   "$REPO_ROOT/config/Code/User/keybindings.json"
   "$REPO_ROOT/home/dotfiles/vscode/keybindings.json"
   "$REPO_ROOT/modules/vscode/keybindings.json"
+  "$REPO_ROOT/plugins/vscode/keybindings.json"
+  "$REPO_ROOT/plugins/app/vscode/keybindings.json"
 )
 
 main() {
   local target
   local legacy
   local previous
+  local modules
+  local flat_plugins
   local new
   local final
   local diagnostic
   local -i i=0
   local -i offset=0
-  local -i mapping_count=$(( ${#MAPPINGS[@]} / 4 ))
+  local -i mapping_count=$(( ${#MAPPINGS[@]} / 6 ))
   local -i abort=0
   local -i removed=0
   local -a states=()
@@ -157,11 +165,13 @@ main() {
   printf '%s\n' '== 旧シンボリックリンクの移行事前確認 =='
 
   while (( i < mapping_count )); do
-    offset=$((i * 4))
+    offset=$((i * 6))
     target="${MAPPINGS[offset]}"
     legacy="${MAPPINGS[offset + 1]}"
     previous="${MAPPINGS[offset + 2]}"
-    new="${MAPPINGS[offset + 3]}"
+    modules="${MAPPINGS[offset + 3]}"
+    flat_plugins="${MAPPINGS[offset + 4]}"
+    new="${MAPPINGS[offset + 5]}"
 
     if [[ -L "$target" ]]; then
       if ! final="$(resolve_chain "$target")"; then
@@ -171,7 +181,7 @@ main() {
       elif [[ "$final" == "$new" ]]; then
         states[i]='SKIP'
         diagnostics[i]="already points to $new"
-      elif [[ "$final" == "$legacy" || "$final" == "$previous" ]]; then
+      elif [[ "$final" == "$legacy" || "$final" == "$previous" || "$final" == "$modules" || "$final" == "$flat_plugins" ]]; then
         states[i]='REMOVE'
         diagnostics[i]="legacy target resolves to $final"
       else
@@ -195,7 +205,7 @@ main() {
     printf '%s\n' '事前確認を中止しました。旧シンボリックリンクは削除していません。' >&2
     i=0
     while (( i < mapping_count )); do
-      offset=$((i * 4))
+      offset=$((i * 6))
       target="${MAPPINGS[offset]}"
       printf '%s: %s — %s\n' "${states[i]}" "$target" "${diagnostics[i]}" >&2
       i=$((i + 1))
@@ -205,7 +215,7 @@ main() {
 
   i=0
   while (( i < mapping_count )); do
-    offset=$((i * 4))
+    offset=$((i * 6))
     target="${MAPPINGS[offset]}"
     diagnostic="${diagnostics[i]}"
     printf '%s: %s — %s\n' "${states[i]}" "$target" "$diagnostic"
@@ -215,7 +225,7 @@ main() {
   i=0
   while (( i < mapping_count )); do
     if [[ "${states[i]}" == 'REMOVE' ]]; then
-      offset=$((i * 4))
+      offset=$((i * 6))
       target="${MAPPINGS[offset]}"
       rm "$target"
       printf 'REMOVED: %s\n' "$target"

@@ -1,0 +1,26 @@
+{
+  imports = [
+    ./bitwarden-cli
+    ./claude-code
+    ./codex
+    ./deepseek-harness
+    ./devenv
+    ./dsh-tui
+    ./fzf
+    ./gh
+    ./git
+    ./git-surgeon
+    ./helix
+    ./herdr
+    ./lazygit
+    ./mas
+    ./mise
+    ./mistral-vibe
+    ./opencode
+    ./playwright-cli
+    ./ripgrep
+    ./ssh-bootstrap
+    ./vim
+    ./yq-go
+  ];
+}

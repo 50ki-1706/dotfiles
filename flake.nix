@@ -19,14 +19,19 @@
   };
 
   outputs =
-    {
+    inputs@{
       self,
       nixpkgs,
-      git-surgeon,
       home-manager,
       nix-darwin,
+      ...
     }:
     let
+      pluginRegistry = import ./lib/plugins.nix {
+        inherit inputs;
+        inherit (nixpkgs) lib;
+        modules = [ ./plugins ];
+      };
       mkPkgs =
         {
           system,
@@ -38,22 +43,7 @@
         };
       darwinPkgs = mkPkgs {
         system = "aarch64-darwin";
-        overlays = [
-          (_final: prev: {
-            git-surgeon = git-surgeon.packages.${prev.stdenv.hostPlatform.system}.default;
-            mistral-vibe = prev.mistral-vibe.overridePythonAttrs (old: {
-              patches = (old.patches or [ ]) ++ [
-                ./packages/mistral-vibe-tests.patch
-                ./packages/mistral-vibe-fork.patch
-              ];
-            });
-            deepseek-harness = prev.deepseek-harness.overrideAttrs (old: {
-              meta = old.meta // {
-                platforms = old.meta.platforms ++ [ "aarch64-darwin" ];
-              };
-            });
-          })
-        ];
+        overlays = pluginRegistry.overlays;
       };
       # ssh-bootstrap・formatter・appを両システムで公開し、homeConfigurationsはaarch64-darwin固定。
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -64,31 +54,23 @@
     {
       packages = forAllSystems (
         system:
-        let
-          pkgs = mkPkgs { inherit system; };
-        in
-        {
-          "ssh-bootstrap" = pkgs.callPackage ./packages/ssh-bootstrap.nix { };
-        }
-        // nixpkgs.lib.optionalAttrs (system == "aarch64-darwin") {
-          # Drift checker for the OpenCode permission action space. Darwin only,
-          # because the pinned OpenCode package is aarch64-darwin only.
-          opencodeActionCheck = pkgs.callPackage ./packages/opencode-action-check.nix {
-            opencode = pkgs.callPackage ./packages/opencode.nix { };
-          };
-        }
+        pluginRegistry.packages (mkPkgs {
+          inherit system;
+        })
       );
 
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
 
+      checks.aarch64-darwin.plugin-composition =
+        let
+          failures = import ./tests/plugins.nix { inherit inputs; };
+        in
+        assert nixpkgs.lib.assertMsg (failures == [ ]) (builtins.toJSON failures);
+        darwinPkgs.runCommand "plugin-composition-check" { } "touch $out";
+
       apps = forAllSystems (
         system:
-        {
-          "ssh-bootstrap" = {
-            type = "app";
-            program = "${self.packages.${system}."ssh-bootstrap"}/bin/ssh-bootstrap";
-          };
-        }
+        pluginRegistry.apps self.packages.${system}
         // nixpkgs.lib.optionalAttrs (system == "aarch64-darwin") {
           darwin-rebuild = {
             type = "app";
@@ -100,6 +82,7 @@
       homeConfigurations."koki" = home-manager.lib.homeManagerConfiguration {
         pkgs = darwinPkgs;
         modules = [
+          pluginRegistry.home
           ./home.nix
         ];
       };
@@ -109,7 +92,14 @@
         pkgs = darwinPkgs;
         modules = [
           home-manager.darwinModules.home-manager
+          pluginRegistry.darwin
           ./hosts/mac.nix
+          {
+            home-manager.users.koki.imports = [
+              pluginRegistry.home
+              ./home.nix
+            ];
+          }
         ];
       };
     };

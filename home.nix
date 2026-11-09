@@ -1,27 +1,13 @@
-{ config, lib, ... }:
 {
-  imports = [
-    ./modules/cli
-    ./modules/mise
-    ./modules/gh
-    ./modules/ssh
-    ./modules/fonts
-    ./modules/helix
-    ./modules/ghostty
-    ./modules/herdr
-    ./modules/terminal-theme
-    ./modules/git
-    ./modules/shell
-    ./modules/vscode
-    ./modules/opencode
-    ./modules/skills
-    ./hosts
-  ];
-
+  config,
+  lib,
+  ...
+}:
+{
   # https://github.com/nix-community/home-manager/pull/6242
   # HM 内部で nix profile install を使っているが、Nix は install を add に改名済み。
   # 旧名の alias を呼ばせないよう override する。
-  # 元実装: f2d3e04e278422c7379e067e323734f3e8c585a7 (flake.lock 参照)
+  # 元実装の pin は flake.nix / flake.lock を参照。
   home.activation.installPackages = lib.mkForce (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       function nixReplaceProfile() {
