@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 let
   actions = import ./actions.nix;
   actionDriftMonitor = pkgs.writeTextFile {
@@ -85,7 +85,7 @@ in
         force = true;
       };
       ".config/opencode/cli.json" = {
-        text = builtins.toJSON (import ./cli.nix);
+        source = config.lib.file.mkOutOfStoreSymlink "${config.xdg.stateHome}/cgt/current/opencode.json";
         force = true;
       };
     };

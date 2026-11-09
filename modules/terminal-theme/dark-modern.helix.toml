@@ -1,0 +1,17 @@
+# Dark Modern inherits Dark+ syntax colors in VS Code too.
+inherits = "dark_plus"
+
+"ui.statusline" = { fg = "text", bg = "widget" }
+"ui.statusline.inactive" = { fg = "dark_gray", bg = "widget" }
+"ui.bufferline.active" = { fg = "white", bg = "background" }
+"ui.menu.selected" = { bg = "#04395e" }
+
+[palette]
+background = "#1f1f1f"
+dark_gray2 = "#1f1f1f"
+dark_gray3 = "#2b2b2b"
+light_gray = "#cccccc"
+text = "#cccccc"
+widget = "#181818"
+borders = "#2b2b2b"
+blue = "#0078d4"

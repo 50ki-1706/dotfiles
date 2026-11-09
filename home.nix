@@ -9,6 +9,7 @@
     ./modules/helix
     ./modules/ghostty
     ./modules/herdr
+    ./modules/terminal-theme
     ./modules/git
     ./modules/shell
     ./modules/vscode

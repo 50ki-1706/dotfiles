@@ -1,6 +1,6 @@
 { config, ... }:
 {
-  # リンク先は評価中のworktreeではなく、メインcheckoutの `${config.home.homeDirectory}/.dotfiles`。
+  # cgt が選択したプロファイルを参照する。
   xdg.configFile."herdr/config.toml".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/herdr/config.toml";
+    config.lib.file.mkOutOfStoreSymlink "${config.xdg.stateHome}/cgt/current/herdr.toml";
 }
