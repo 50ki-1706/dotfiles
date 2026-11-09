@@ -1,0 +1,3 @@
+- insert:
+    - id: llm-mistral-vibe
+      name: '@local/dsh-mistral-vibe'
