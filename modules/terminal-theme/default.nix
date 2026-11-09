@@ -36,6 +36,7 @@ let
                 selection = "#eee8d5";
               };
           files = {
+            "codex.tmTheme" = builtins.readFile ./dark-modern.codex.tmTheme;
             ghostty =
               builtins.replaceStrings
                 [ "theme = iTerm2 Solarized Light" ]

@@ -25,6 +25,10 @@ return "reloaded"
 '''
 
 
+def codex_theme_name(mode):
+    return "cgt-dark-modern" if mode == "dark" else "solarized-light"
+
+
 def reload_ghostty():
     # reload_config is app-wide. One surface is enough, including when the
     # calling shell is inside Herdr. Do not launch, focus, or quit the app.
@@ -39,6 +43,39 @@ def reload_ghostty():
             raise ValueError("unexpected Ghostty reload result")
     except (OSError, subprocess.SubprocessError, ValueError):
         print("Ghostty: automatic reload failed; press Cmd+Shift+, to apply the saved theme.")
+
+
+def reload_helix():
+    # Match the executable name, including Nix's wrapped binary, and only this
+    # user's processes. USR1 is Helix's supported config-reload notification.
+    try:
+        result = subprocess.run(
+            ["/usr/bin/pkill", "-USR1", "-u", str(os.getuid()), "-x", r"hx|\.hx-wrapped_?"],
+            capture_output=True, timeout=5,
+        )
+        if result.returncode == 0:
+            print("Helix: configuration reload requested.")
+        elif result.returncode != 1:  # No running Helix is not an error.
+            raise ValueError("pkill failed")
+    except (OSError, subprocess.SubprocessError, ValueError):
+        print("Helix: automatic reload failed; use :config-reload to apply the saved theme.")
+
+
+def reload_opencode(config, state):
+    # OpenCode 2.1.4 watches cli.json's parent, not the cgt selector directory.
+    # Re-publish the *same* Home Manager symlink to notify that watcher without
+    # changing its target or writing through it into the Nix store.
+    try:
+        if not config.is_symlink() or config.resolve() != (state / "current/opencode.json").resolve():
+            raise ValueError("cli.json is not linked to the selected cgt profile")
+        target = os.readlink(config)
+        with tempfile.TemporaryDirectory(prefix=".cgt-", dir=config.parent) as temporary:
+            link = Path(temporary) / "cli.json"
+            link.symlink_to(target)
+            os.replace(link, config)
+        print("OpenCode: configuration change notified (requires file watching enabled).")
+    except (OSError, ValueError):
+        print("OpenCode: automatic reload unavailable; reopen the TUI to apply the saved theme.")
 
 
 def atomic_write(path, content, permissions=0o600):
@@ -73,9 +110,9 @@ def prepare_config(path, transform):
     return target, before, after, permissions
 
 
-def switch(profiles, state, mode, vibe_config, lazygit_config):
+def switch(profiles, state, mode, vibe_config, lazygit_config, claude_config, codex_config):
     profile = profiles / mode
-    for name in ("ghostty", "herdr.toml", "helix.toml", "opencode.json", "lazygit.json"):
+    for name in ("ghostty", "herdr.toml", "helix.toml", "opencode.json", "lazygit.json", "codex.tmTheme"):
         if not (profile / name).is_file():
             raise ValueError(f"incomplete theme profile: {profile / name}")
 
@@ -100,11 +137,31 @@ def switch(profiles, state, mode, vibe_config, lazygit_config):
         yaml.dump(document, output)
         return output.getvalue()
 
-    # Parse both existing configs before making any changes. Keep unrelated
-    # settings and comments, including Vibe's model/auth configuration.
+    def claude_theme(text):
+        document = json.loads(text or "{}")
+        if not isinstance(document, dict):
+            raise ValueError("Claude Code settings must be a JSON object")
+        # ANSI variants use the palette supplied by Ghostty in both modes.
+        document["theme"] = mode + "-ansi"
+        return json.dumps(document, ensure_ascii=False, indent=2) + "\n"
+
+    def codex_theme(text):
+        document = tomlkit.parse(text)
+        document.setdefault("tui", {})["theme"] = codex_theme_name(mode)
+        return tomlkit.dumps(document)
+
+    # Parse every existing config before making any changes. Keep unrelated
+    # settings and TOML/YAML comments, including model/auth configuration.
     changes = [
         prepare_config(vibe_config, vibe_theme),
         prepare_config(lazygit_config, lazygit_theme),
+        prepare_config(claude_config, claude_theme),
+        # Install the custom theme before selecting it in Codex's config.
+        prepare_config(
+            codex_config.parent / "themes/cgt-dark-modern.tmTheme",
+            lambda _: (profile / "codex.tmTheme").read_text(),
+        ),
+        prepare_config(codex_config, codex_theme),
     ]
     current = state / "current"
     if current.exists() and not current.is_symlink():
@@ -157,7 +214,12 @@ def main():
             ).stdout.strip()
             if not lazygit:
                 raise ValueError("lazygit returned an empty config directory")
-            switch(args.profiles, args.state_dir, mode, vibe, Path(lazygit) / "config.yml")
+            claude = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude") / "settings.json"
+            codex = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex") / "config.toml"
+            switch(args.profiles, args.state_dir, mode, vibe, Path(lazygit) / "config.yml", claude, codex)
+            if not args.initialize:
+                config_home = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+                reload_opencode(config_home / "opencode/cli.json", args.state_dir)
     except Exception as error:
         print(f"cgt: {error}", file=sys.stderr)
         return 1
@@ -169,8 +231,11 @@ def main():
             subprocess.run(["herdr", "server", "reload-config"], check=True, capture_output=True, timeout=5)
         except (OSError, subprocess.SubprocessError):
             print("Herdr: reload config (prefix + Shift+R) or reopen the client.")
-        print("Helix: :config-reload.")
-        print("Reopen lazygit, OpenCode and Vibe to load the selected theme.")
+        reload_helix()
+        print("lazygit: focus its terminal again to reload the theme; reopen if focus events are unavailable.")
+        print("Vibe: use /reload to load the selected theme; reopen if it is not reflected.")
+        print(f"Claude Code: theme saved ({mode}-ansi); if not reflected, use /config theme={mode}-ansi.")
+        print(f"Codex CLI: theme saved; in running sessions use /theme and select {codex_theme_name(mode)}, or reopen.")
     return 0
 
 
