@@ -71,7 +71,6 @@
           "ssh-bootstrap" = pkgs.callPackage ./packages/ssh-bootstrap.nix { };
         }
         // nixpkgs.lib.optionalAttrs (system == "aarch64-darwin") {
-          dshMistralVibe = darwinPkgs.callPackage ./packages/dsh-mistral-vibe { };
           # Drift checker for the OpenCode permission action space. Darwin only,
           # because the pinned OpenCode package is aarch64-darwin only.
           opencodeActionCheck = pkgs.callPackage ./packages/opencode-action-check.nix {

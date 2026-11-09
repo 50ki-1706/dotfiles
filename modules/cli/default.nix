@@ -1,9 +1,5 @@
 { pkgs, ... }:
 {
-  xdg.dataFile."deepseek-harness/plugins/mistral-vibe".source = "${
-    pkgs.callPackage ../../packages/dsh-mistral-vibe { }
-  }/share/dsh-mistral-vibe";
-
   home.packages = [
     pkgs.fzf
     pkgs.lazygit
