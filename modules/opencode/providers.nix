@@ -13,7 +13,7 @@ in
   # checked 2026-10-24 with current auth retained. Not an inference test.
   # Empty variant lists preserve catalog variants: Cohere inherits boolean
   # reasoning.enabled none/thinking, not reasoning.effort.
-  # OpenCode Zen free. https://opencode.ai/zen/v1/models checked 2026-11-04.
+  # OpenCode Zen free. https://opencode.ai/zen/v1/models checked 2026-11-10.
   opencode.models = {
     # Reflection
     "beam-free".variants = mkVariants "reasoningEffort" [
@@ -25,15 +25,6 @@ in
     ];
     # Stealth. Zen exposes no reasoning effort variants.
     "big-pickle".variants = [ ];
-    # Stealth
-    "crouton-alpha-free".variants = mkVariants "reasoningEffort" [
-      "minimal"
-      "low"
-      "medium"
-      "high"
-      "xhigh"
-      "max"
-    ];
     # DeepSeek
     "deepseek-v4.1-flash-free".variants = mkVariants "reasoningEffort" [
       "low"
@@ -54,6 +45,19 @@ in
       "high"
       "max"
     ];
+    # Stealth. Catalog has no reasoning effort list.
+    "iceman-free".variants = [ ];
+    # Thinking Machines
+    "inkling-2-small-free".variants = mkVariants "reasoningEffort" [
+      "none"
+      "minimal"
+      "low"
+      "medium"
+      "high"
+      "max"
+    ];
+    # Meituan. Catalog exposes a reasoning toggle, not reasoning.effort.
+    "longcat-2.5-free".variants = [ ];
     # Xiaomi. Zen exposes no reasoning effort variants.
     "mimo-v2.6-flash-free".variants = [ ];
     # NVIDIA. Lightning exposes no reasoning effort variants.
@@ -66,16 +70,10 @@ in
       "high"
       "xhigh"
     ];
-    # Pulse
-    "pulse-alpha-free".variants = mkVariants "reasoningEffort" [
-      "low"
-      "high"
-      "max"
-    ];
   };
   # OpenAI featured models.
   # https://platform.openai.com/docs/models and https://models.dev/api.json
-  # openai provider, checked 2026-11-01. Efforts match each catalog
+  # openai provider, checked 2026-11-10. Efforts match each catalog
   # reasoning_options effort list.
   openai.models = {
     "gpt-6-astra".variants = mkVariants "reasoningEffort" [
@@ -110,7 +108,7 @@ in
     ];
   };
   # xAI. https://docs.x.ai/docs/models and https://models.dev/api.json
-  # xai provider, checked 2026-11-01. grok-4.7 accepts low, medium, high,
+  # xai provider, checked 2026-11-10. grok-4.7 accepts low, medium, high,
   # and xhigh. "none" is not a supported effort.
   xai.models = {
     "grok-4.7".variants = mkVariants "reasoningEffort" [
@@ -122,7 +120,7 @@ in
     "grok-build-0.1".variants = [ ];
   };
   # OpenRouter free coding/subagent shortlist.
-  # https://openrouter.ai/api/v1/models checked 2026-11-05.
+  # https://openrouter.ai/api/v1/models checked 2026-11-10.
   openrouter.models = {
     # NVIDIA. none も reasoning effort の値として指定する。
     "nvidia/nemotron-3-ultra-550b-a55b:free".variants = mkVariants "reasoning" [
@@ -137,5 +135,13 @@ in
     "recursive/flint-v1.0:free".variants = [ ];
     # Cohere
     "cohere/north-mini-code:free".variants = [ ];
+    # Thinking Machines. Catalog effort list has no "none".
+    "thinkingmachines/inkling-2-small:free".variants = mkVariants "reasoning" [
+      "minimal"
+      "low"
+      "medium"
+      "high"
+      "max"
+    ];
   };
 }
