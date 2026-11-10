@@ -29,6 +29,45 @@
 - devenv
 - mise
 
+## architecture
+
+Homebrew・nixpkgs・npm/pnpm などの導入元に関係なく、app・cli・tool・自作 package をすべて、独立して選択・合成できる plugin として管理します。自作 package も既存の分類内で plugin として公開します。
+
+管理対象の例（矢印は分類）：
+
+```mermaid
+flowchart TB
+    plugin["plugin<br/>独立して選択・合成する管理単位"]
+    plugin --> app["app<br/>Ghostty など"]
+    plugin --> cli["cli<br/>Herdr・Helix・LazyGit など"]
+    plugin --> tool["tool<br/>shell・fonts など"]
+    plugin --> custom["自作 package<br/>ssh-bootstrap（cli 配下）"]
+```
+
+複数 plugin の組み合わせも一つの plugin です。以下の矢印は依存方向（複合 → 単体）を表します。
+
+```mermaid
+flowchart TB
+    theme["複合 plugin: terminal-theme<br/>アプリ間の起動・テーマ・再読み込み"]
+    subgraph standalone["単体 plugin: 各アプリの導入・基本設定"]
+        ghostty["Ghostty"]
+        herdr["Herdr"]
+        helix["Helix"]
+        opencode["OpenCode"]
+        lazygit["LazyGit"]
+    end
+    theme --> ghostty
+    theme --> herdr
+    theme --> helix
+    theme --> opencode
+    theme --> lazygit
+```
+
+- [Ghostty](plugins/app/ghostty) 単体は [terminal-theme](plugins/tool/terminal-theme) を参照せず、Herdr を自動起動しません。Ghostty から Herdr を起動する設定は複合 plugin が持ちます。
+- 組み替えるときは、単体 plugin を変えず、複合 plugin を置き換えます。Zellij を使う複合 plugin は未実装です。
+- フォントのように一緒に使う組も一つのプラグインにできます。
+- 新しい Python ツールはプラグインごとに devenv と uv で管理します。
+
 ## Installation
 
 事前に次を用意してください。
@@ -44,8 +83,6 @@ cd ~/.dotfiles
 zsh scripts/install.sh
 ```
 ## Apply Changes
-
-Nix が読み込む新規ファイルは、検証前に `git add <ファイル>` で追跡対象にします。コミットは不要で、追跡済みファイルの編集は未ステージでも反映されます。
 
 1. 適用前チェック
 ```sh

@@ -39,6 +39,11 @@ let
     ../plugins/cli/opencode
   ]);
   themed = homeFor (compose [ ../plugins/tool/terminal-theme ]);
+  ghosttyOnly = homeFor (compose [ ../plugins/app/ghostty ]);
+  herdrOnly = homeFor (compose [ ../plugins/cli/herdr ]);
+  ghosttyProfile = import ../plugins/tool/terminal-theme/ghostty-config.nix;
+  ghosttyBase = builtins.readFile ../plugins/app/ghostty/config;
+  ghosttyCommand = "command = direct:/Users/koki/.nix-profile/bin/herdr --session ghostty\n";
   bootstrap = compose [ ../plugins/cli/ssh-bootstrap ];
   bootstrapPackages = bootstrap.packages pkgs;
 in
@@ -86,6 +91,74 @@ lib.runTests {
   testThemeIsNotImplicit = {
     expr = standalone.home.activation ? terminalTheme;
     expected = false;
+  };
+  testGhosttyAloneHasNoHerdrOrTheme = {
+    expr =
+      ghosttyOnly.programs.ghostty.enable
+      && !(lib.hasInfix "herdr" ghosttyBase)
+      && !(ghosttyOnly.xdg.configFile ? "herdr/config.toml")
+      && !(ghosttyOnly.home.activation ? terminalTheme)
+      && !(builtins.any (package: lib.hasPrefix "herdr-" package.name) ghosttyOnly.home.packages);
+    expected = true;
+  };
+  testHerdrAloneHasNoGhosttyOrTheme = {
+    expr =
+      herdrOnly.xdg.configFile ? "herdr/config.toml"
+      && !herdrOnly.programs.ghostty.enable
+      && !(herdrOnly.xdg.configFile ? "ghostty/config")
+      && !(herdrOnly.home.activation ? terminalTheme);
+    expected = true;
+  };
+  testGhosttyProfilesPreserveBaseSettings = {
+    expr = map ghosttyProfile [
+      { dark = false; }
+      { dark = true; }
+    ];
+    expected = [
+      (ghosttyCommand + ghosttyBase)
+      (
+        ghosttyCommand
+        +
+          builtins.replaceStrings
+            [ "theme = iTerm2 Solarized Light" ]
+            [
+              "theme = ${
+                builtins.path {
+                  path = toString ../plugins/tool/terminal-theme/dark-modern.ghostty;
+                  name = "dark-modern.ghostty";
+                }
+              }"
+            ]
+            ghosttyBase
+      )
+    ];
+  };
+  testGhosttyStandaloneRetainsBaseSettings = {
+    expr = ghosttyBase;
+    expected = ''
+      font-family = JetBrainsMono Nerd Font Mono
+      theme = iTerm2 Solarized Light
+      background-opacity = 0.92
+      background-opacity-cells = true
+      macos-non-native-fullscreen = true
+    '';
+  };
+  testGhosttyMacOSSourceFollowsXdg = {
+    expr =
+      map
+        (
+          home:
+          home.home.file."Library/Application Support/com.mitchellh.ghostty/config".source
+          == home.xdg.configFile."ghostty/config".source
+        )
+        [
+          ghosttyOnly
+          themed
+        ];
+    expected = [
+      true
+      true
+    ];
   };
   testOpenCodeBaseConfig = {
     expr = lib.hasSuffix "-opencode-cli.json" (

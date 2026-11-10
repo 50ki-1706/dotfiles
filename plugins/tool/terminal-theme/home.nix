@@ -37,11 +37,7 @@ let
               };
           files = {
             "codex.tmTheme" = builtins.readFile ./dark-modern.codex.tmTheme;
-            ghostty =
-              builtins.replaceStrings
-                [ "theme = iTerm2 Solarized Light" ]
-                [ (if dark then "theme = ${./dark-modern.ghostty}" else "theme = iTerm2 Solarized Light") ]
-                (builtins.readFile ../../app/ghostty/config);
+            ghostty = import ./ghostty-config.nix { inherit dark; };
             "herdr.toml" =
               builtins.replaceStrings
                 [ ''name = "solarized-light"'' ]

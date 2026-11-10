@@ -1,1 +1,3 @@
-When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code.
+Do not create or update documentation unless the user explicitly requests it.
+
+When documentation and existing code disagree, treat the existing code as the source of truth.
