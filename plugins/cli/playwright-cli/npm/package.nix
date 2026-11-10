@@ -5,7 +5,7 @@
   nodejs,
 }:
 let
-  # Version must move in lockstep with the vendored skill skills/playwright-cli.
+  # Version must move in lockstep with the vendored skill plugins/tool/skills/skills/playwright-cli.
   # Bump procedure: update the three URLs (playwright/playwright-core versions
   # come from the chosen @playwright/cli version's registry metadata) and hashes.
   cli = fetchurl {
