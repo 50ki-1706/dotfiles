@@ -7,6 +7,7 @@
     ./claude
     ./codex-app
     ./cursor
+    ./deepseek-harness
     ./discord
     ./docker-desktop
     ./figma
