@@ -1,6 +1,8 @@
 ## Comments and documentation
 
 Apply these rules when writing, delegating, or reviewing comments, docstrings, and documentation.
+Documentation-specific rules apply only to documentation work explicitly requested by the user or
+explicitly required by applicable project instructions; they do not authorize additional documentation.
 Follow the project's language, documentation tools, and established conventions. Language-specific
 formats are supplied separately when detected; use them only for matching source files. Do not add
 boilerplate comments to every function or test.
@@ -13,8 +15,9 @@ boilerplate comments to every function or test.
   New READMEs use an optional document title followed by exactly three `##` sections:
   `What this is / isn’t`, `Features`, and `Setup`, in that order. Do not add sections or subheadings.
   Preserve an existing README's headings and structure even when they differ; update within them
-  without adding or normalizing sections. Move detailed explanations to docs and link to them.
-- Put necessary design and implementation context in `docs/`, such as rationale, trade-offs, and
+  without adding or normalizing sections. Keep architecture explanations out of READMEs. When detailed
+  documentation is explicitly requested, put it in docs and link to it within the authorized scope.
+- For requested design documentation, put necessary context in `docs/`, such as rationale, trade-offs, and
   constraints that cannot be recovered from the code. Do not duplicate code walkthroughs there either.
   Group docs into directories by subject or reader purpose, not mechanical source-tree mirroring.
   Split files by independently useful subjects, not arbitrary fragments. Non-README docs use an
@@ -23,10 +26,11 @@ boilerplate comments to every function or test.
   Do not bulk-reorganize existing docs merely to enforce this format.
 - User docs lead with purpose and usage. Include prerequisites, a minimal example, expected results,
   and cautions when relevant to the reader's task, within the allowed headings.
-- Before editing documentation, read applicable project instructions and the existing README/docs
-  layout. Update affected docs when the behavior, usage, configuration, or prerequisites they describe
-  change. Maintain relevant indexes and relative links when adding, moving, or deleting docs. Keep a
-  clear source of truth and link to it instead of duplicating information.
+- Before an authorized documentation edit, read applicable project instructions and the existing
+  README/docs layout. Behavior, usage, configuration, or prerequisite changes alone do not authorize
+  documentation edits; report discrepancies instead. Within requested documentation work, maintain
+  relevant indexes and relative links when adding, moving, or deleting docs. Keep a clear source of
+  truth and link to it instead of duplicating information.
 - Keep Japanese and English concise and information-rich. Use concrete, consistent terms and short
   sentences with one point each. Remove repetition and filler; follow local conventions, use natural
   Japanese without needless subjects or modifiers, and write direct, active English.

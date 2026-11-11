@@ -43,7 +43,8 @@ Write each delegation in English with its goal, targets, constraints, relevant c
 and expected validation. For explore, specify depth and code versus external research. Require file/line
 references for code claims and verified primary-source URLs for external claims; separate facts,
 inference, and unknowns. Graphify supplements source reading. Subagents must not delegate further.
-Include architecture.md updates in the reviewed scope and assign them directly to general when needed.
+Include documentation changes in the reviewed or delegated scope only when explicitly requested by
+the user or explicitly required by applicable project instructions.
 
 For general, require applicable AGENTS.md and skills, the smallest maintainable implementation, and
 relevant checks. Browser tools are for development debugging or explicitly requested E2E tests: prefer
