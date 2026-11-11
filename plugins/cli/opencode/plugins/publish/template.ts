@@ -1,137 +1,306 @@
 import { createHash } from 'node:crypto';
 
-export type Slot = { key: string; kind: 'text' | 'checkbox'; start: number; end: number; context?: 'inline' | 'section' };
-export type Template = { path: string | null; source: string; fingerprint: string; slots: Slot[] };
+/** One editable region of a pull request template. */
+export type Slot = {
+  /** Stable field name; unique even when headings repeat. */
+  key: string;
+  kind: 'text' | 'checkbox';
+  /** Offsets into `Template.source`. */
+  start: number;
+  end: number;
+  /** Inline slots must stay on one line; section slots may span lines. */
+  context?: 'inline' | 'section';
+};
 
-function escaped(text: string, index: number): boolean {
-  let count = 0;
-  while (index > 0 && text[--index] === '\\') count++;
-  return count % 2 === 1;
+export type Template = {
+  /** Repository-relative path, or `null` when the repository has no template. */
+  path: string | null;
+  source: string;
+  /** Changes whenever the path or bytes change, so stale input is detectable. */
+  fingerprint: string;
+  slots: Slot[];
+};
+
+/** Opening or closing code fence with its marker and remainder. */
+const FENCE_MARKER = /^(?: {0,3})(`{3,}|~{3,})(.*)$/;
+const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const INDENTED_CODE = /^(?: {4}|\t)/;
+const CHECKBOX = /^ {0,3}[-*+]\s+\[([ xX])\]/;
+const HEADING = /^ {0,3}#{1,6}(?:[ \t]+|$)(.*?)(?:[ \t]+#+[ \t]*)?$/;
+const LIST_OR_RULE = /^ {0,3}(?:[-*+]\s|\d+[.)]\s|>|(?:[-*_]\s*){3,}$)/;
+const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)\s*$/;
+const TABLE_SEPARATOR = /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/;
+const PLACEHOLDER = /\{\{([^{}\r\n]+)\}\}/g;
+const PLACEHOLDER_LIKE = /\{\{|\}\}/;
+
+/** A source line without its terminator, plus its offset in the source. */
+type Line = { text: string; start: number };
+
+const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/** Assign unique field names, so repeated headings and cells stay distinct. */
+class FieldNames {
+  readonly #counts = new Map<string, number>();
+
+  next(name: string): string {
+    const normalized = name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '') || 'section';
+    const safe = RESERVED_KEYS.has(normalized) ? `field_${normalized}` : normalized;
+    const count = (this.#counts.get(safe) ?? 0) + 1;
+    this.#counts.set(safe, count);
+    return `${safe}_${count}`;
+  }
 }
 
+/** Split into lines while keeping each line's offset; a trailing newline is not a line. */
+function splitLines(source: string): Line[] {
+  const matches = [...source.matchAll(/[^\r\n]*(?:\r\n|\n|\r|$)/g)];
+  return matches
+    .filter((match) => match[0].length > 0)
+    .map((match) => ({ text: match[0].replace(/\r\n$|[\r\n]$/, ''), start: match.index ?? 0 }));
+}
+
+function isEscaped(text: string, index: number): boolean {
+  let backslashes = 0;
+  while (index > 0 && text[--index] === '\\') backslashes++;
+  return backslashes % 2 === 1;
+}
+
+/** Replace code spans and HTML comments with spaces, keeping offsets stable. */
+function maskNonMarkdown(raw: string, commentOpen: { value: boolean }): string {
+  let masked = '';
+  for (let i = 0; i < raw.length;) {
+    if (commentOpen.value) {
+      const end = raw.indexOf('-->', i);
+      if (end < 0) {
+        masked += ' '.repeat(raw.length - i);
+        break;
+      }
+      masked += ' '.repeat(end + 3 - i);
+      i = end + 3;
+      commentOpen.value = false;
+      continue;
+    }
+    if (raw.startsWith('<!--', i)) {
+      commentOpen.value = true;
+      masked += '    ';
+      i += 4;
+      continue;
+    }
+    if (raw[i] !== '`' || isEscaped(raw, i)) {
+      masked += raw[i++];
+      continue;
+    }
+    let runEnd = i;
+    while (raw[runEnd] === '`') runEnd++;
+    const size = runEnd - i;
+    let close = runEnd;
+    while (close < raw.length) {
+      if (raw[close] !== '`') {
+        close++;
+        continue;
+      }
+      let after = close;
+      while (raw[after] === '`') after++;
+      if (after - close === size) break;
+      close = after;
+    }
+    if (close === raw.length) throw new Error('Unclosed inline code');
+    const after = close + size;
+    masked += ' '.repeat(after - i);
+    i = after;
+  }
+  return masked;
+}
+
+/** True when `next` underlines the current line as a Setext heading. */
+function isSetextHeading(line: string, next: string): boolean {
+  return Boolean(line.trim())
+    && !LIST_OR_RULE.test(line)
+    && SETEXT_UNDERLINE.test(next);
+}
+
+/** Cell boundaries of a Markdown table row; the positions are pipe indexes. */
+function tableCellBoundaries(line: string): number[] {
+  const boundaries = [-1];
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '|' && !isEscaped(line, i)) boundaries.push(i);
+  }
+  boundaries.push(line.length);
+  return boundaries;
+}
+
+/** Collect the empty cells of a table row as inline fields. */
+function tableSlots(
+  line: string,
+  raw: string,
+  offset: number,
+  names: FieldNames,
+  slots: Slot[],
+): void {
+  const boundaries = tableCellBoundaries(line);
+  for (let cell = 0; cell < boundaries.length - 1; cell++) {
+    const start = boundaries[cell] + 1;
+    const end = boundaries[cell + 1];
+    const leadingPipe = cell === 0 && boundaries[1] === 0;
+    const trailingPipe = cell === boundaries.length - 2 && boundaries[cell] === line.length - 1;
+    if (leadingPipe || trailingPipe) continue;
+    if (raw.slice(start, end).trim()) continue;
+    slots.push({ key: names.next('table_cell'), kind: 'text', context: 'inline', start: offset + start, end: offset + end });
+  }
+}
+
+/** Collect `{{name}}` placeholders as inline fields. */
+function placeholderSlots(
+  line: string,
+  offset: number,
+  names: FieldNames,
+  slots: Slot[],
+): void {
+  const placeholders = [...line.matchAll(PLACEHOLDER)];
+  if (PLACEHOLDER_LIKE.test(line.replace(PLACEHOLDER, ''))) throw new Error('Malformed placeholder');
+  for (const match of placeholders) {
+    const start = offset + (match.index ?? 0);
+    slots.push({ key: names.next(match[1]), kind: 'text', context: 'inline', start, end: start + match[0].length });
+  }
+}
+
+/**
+ * Parse a pull request template into fixed text plus editable fields.
+ *
+ * Headings define section fields, checkboxes and placeholders define inline
+ * fields, and empty table cells become inline fields. Fenced or indented code,
+ * HTML comments, and inline code stay fixed.
+ */
 export function parseTemplate(path: string | null, source: string): Template {
   const fingerprint = createHash('sha256').update(JSON.stringify([path, source])).digest('hex');
   const slots: Slot[] = [];
-  const counts = new Map<string, number>();
-  const key = (name: string) => {
-    const base = name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '') || 'section';
-    const safe = base === '__proto__' || base === 'constructor' || base === 'prototype' ? `field_${base}` : base;
-    const count = (counts.get(safe) ?? 0) + 1;
-    counts.set(safe, count);
-    return `${safe}_${count}`;
-  };
-  const lines = [...source.matchAll(/[^\r\n]*(?:\r\n|\n|\r|$)/g)].filter((match) => match[0].length);
+  const names = new FieldNames();
+  const lines = splitLines(source);
+  const commentOpen = { value: false };
   let fence: string | undefined;
-  let comment = false;
-  let headings = 0;
-  let table = false;
+  let headingCount = 0;
+  let inTable = false;
+
   for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i][0].replace(/\r\n$|[\r\n]$/, '');
-    const offset = lines[i].index!;
+    const { text: raw, start: offset } = lines[i];
     if (fence) {
-      const close = raw.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+      const close = raw.match(FENCE_CLOSE);
       if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = undefined;
       continue;
     }
-    if (!comment) {
-      const opening = raw.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
-      if (opening) { fence = opening[1]; continue; }
+    if (!commentOpen.value && FENCE_MARKER.test(raw)) {
+      fence = raw.match(FENCE_MARKER)![1];
+      continue;
     }
-    let line = '';
-    for (let j = 0; j < raw.length;) {
-      if (comment) {
-        const end = raw.indexOf('-->', j);
-        if (end < 0) { line += ' '.repeat(raw.length - j); break; }
-        line += ' '.repeat(end + 3 - j); j = end + 3; comment = false;
-      } else if (raw.startsWith('<!--', j)) { comment = true; line += '    '; j += 4; }
-      else if (raw[j] === '`' && !escaped(raw, j)) {
-        let end = j;
-        while (raw[end] === '`') end++;
-        const size = end - j;
-        let close = end;
-        while (close < raw.length) {
-          if (raw[close] !== '`') { close++; continue; }
-          let after = close;
-          while (raw[after] === '`') after++;
-          if (after - close === size) break;
-          close = after;
-        }
-        if (close === raw.length) throw new Error('Unclosed inline code');
-        const after = close + size;
-        // Keep offsets stable while hiding code delimiters and contents from field parsing.
-        line += ' '.repeat(after - j); j = after;
-      } else { line += raw[j++]; }
-    }
-    const marker = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+    const line = maskNonMarkdown(raw, commentOpen);
+    // Masking can expose a fence after a comment closes on this same line.
+    const marker = line.match(FENCE_MARKER);
     if (marker) {
       if (!fence) fence = marker[1];
       else if (marker[1][0] === fence[0] && marker[1].length >= fence.length && !marker[2].trim()) fence = undefined;
       continue;
     }
-    if (fence || /^(?: {4}|\t)/.test(line)) continue;
-    const checkbox = line.match(/^ {0,3}[-*+]\s+\[([ xX])\]/);
+    if (fence || INDENTED_CODE.test(line)) continue;
+
+    const checkbox = line.match(CHECKBOX);
     if (checkbox) {
-      const start = offset + line.indexOf('[') + 1;
-      slots.push({ key: key(`checkbox_${line.slice(line.indexOf(']') + 1)}`), kind: 'checkbox', start, end: start + 1 });
+      const bracket = line.indexOf('[');
+      const start = offset + bracket + 1;
+      slots.push({ key: names.next(`checkbox_${line.slice(line.indexOf(']') + 1)}`), kind: 'checkbox', start, end: start + 1 });
     }
-    const heading = line.match(/^ {0,3}#{1,6}(?:[ \t]+|$)(.*?)(?:[ \t]+#+[ \t]*)?$/);
-    const next = lines[i + 1]?.[0].replace(/\r\n$|[\r\n]$/, '') ?? '';
-    const setext = !heading && line.trim() && !/^ {0,3}(?:[-*+]\s|\d+[.)]\s|>|(?:[-*_]\s*){3,}$)/.test(line) && /^ {0,3}(?:=+|-+)\s*$/.test(next);
+
+    const heading = line.match(HEADING);
+    const next = lines[i + 1]?.text ?? '';
+    const setext = !heading && isSetextHeading(line, next);
     if (heading || setext) {
-      if (/\{\{|\}\}/.test(line)) throw new Error('Placeholder in heading');
+      if (PLACEHOLDER_LIKE.test(line)) throw new Error('Placeholder in heading');
       const headingLine = setext ? lines[++i] : lines[i];
-      const start = headingLine.index! + headingLine[0].length;
-      slots.push({ key: key(heading ? heading[1] : line), kind: 'text', context: 'section', start, end: start });
-      headings++;
-      table = false;
+      const afterHeading = headingLine.start + headingLine.text.length;
+      const start = afterHeading + lineTerminatorLength(source, afterHeading);
+      slots.push({ key: names.next(heading ? heading[1] : line), kind: 'text', context: 'section', start, end: start });
+      headingCount++;
+      inTable = false;
       continue;
     }
-    const separator = /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(next);
-    const separatorLine = /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
-    if (separator) table = true;
-    if (table && line.includes('|') && !separatorLine) {
-      const boundaries = [-1];
-      for (let p = 0; p < line.length; p++) {
-        if (line[p] === '|' && !escaped(line, p)) boundaries.push(p);
-      }
-      boundaries.push(line.length);
-      for (let p = 0; p < boundaries.length - 1; p++) {
-        const start = boundaries[p] + 1, end = boundaries[p + 1];
-        if ((p === 0 && boundaries[1] === 0) || (p === boundaries.length - 2 && boundaries[p] === line.length - 1)) continue;
-        if (!raw.slice(start, end).trim()) slots.push({ key: key('table_cell'), kind: 'text', context: 'inline', start: offset + start, end: offset + end });
-      }
-    } else if (!separatorLine && !line.includes('|')) table = false;
-    const placeholders = [...line.matchAll(/\{\{([^{}\r\n]+)\}\}/g)];
-    const stripped = line.replace(/\{\{([^{}\r\n]+)\}\}/g, '');
-    if (/\{\{|\}\}/.test(stripped)) throw new Error('Malformed placeholder');
-    for (const match of placeholders) {
-      const start = offset + match.index!;
-      slots.push({ key: key(match[1]), kind: 'text', context: 'inline', start, end: start + match[0].length });
+
+    const separatorBelow = TABLE_SEPARATOR.test(next);
+    const separatorLine = TABLE_SEPARATOR.test(line);
+    if (separatorBelow) inTable = true;
+    if (inTable && line.includes('|') && !separatorLine) {
+      tableSlots(line, raw, offset, names, slots);
+    } else if (!separatorLine && !line.includes('|')) {
+      inTable = false;
     }
+    placeholderSlots(line, offset, names, slots);
   }
-  if (fence || comment) throw new Error('Unclosed template fence or comment');
-  if (!headings) slots.push({ key: key('content'), kind: 'text', context: 'section', start: source.length, end: source.length });
+
+  if (fence || commentOpen.value) throw new Error('Unclosed template fence or comment');
+  if (!headingCount) slots.push({ key: names.next('content'), kind: 'text', context: 'section', start: source.length, end: source.length });
   slots.sort((a, b) => a.start - b.start);
-  if (slots.some((slot, i) => i > 0 && slot.start < slots[i - 1].end)) throw new Error('Overlapping template fields');
+  if (slots.some((slot, index) => index > 0 && slot.start < slots[index - 1].end)) {
+    throw new Error('Overlapping template fields');
+  }
   return { path, source, fingerprint, slots };
 }
 
+/** Length of the line terminator beginning at `offset`, or 0 at end of source. */
+function lineTerminatorLength(source: string, offset: number): number {
+  if (source.startsWith('\r\n', offset)) return 2;
+  if (source[offset] === '\n' || source[offset] === '\r') return 1;
+  return 0;
+}
+
+/** JSON schema for the template's fields, used as the `publish_pr` input. */
 export function templateSchema(template: Template): Record<string, unknown> {
   return {
     type: 'object',
-    properties: Object.fromEntries(template.slots.map((slot) => [slot.key, slot.kind === 'checkbox' ? { type: 'boolean' } : { type: 'string', minLength: 1 }])),
+    properties: Object.fromEntries(
+      template.slots.map((slot) => [slot.key, slot.kind === 'checkbox' ? { type: 'boolean' } : { type: 'string', minLength: 1 }]),
+    ),
     required: template.slots.map((slot) => slot.key),
     additionalProperties: false,
   };
 }
 
+/** A bare "N/A" sentence is rejected; it must explain why the field does not apply. */
+const BARE_NOT_APPLICABLE = /^n[\s./-]*a(?=$|[^\p{L}\p{N}])/iu;
+const MEANINGFUL_TEXT = /[\p{L}\p{N}]/u;
+const INLINE_ESCAPE = /[\\`*_[\]<>|{}()!#]/g;
+const SECTION_MARKUP = /[<>`\[\]]/;
+const STRUCTURAL_LINE = /(?:^|\r\n|\r|\n) {0,3}(?:#{1,6}(?:\s|$)|`{3,}|~{3,}|(?:=+|-+)\s*$)/m;
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object'
+  && value !== null
+  && !Array.isArray(value)
+  && [Object.prototype, null].includes(Object.getPrototypeOf(value));
+
+function lineEndingOf(source: string): string {
+  if (source.includes('\r\n')) return '\r\n';
+  if (source.includes('\r') && !source.includes('\n')) return '\r';
+  return '\n';
+}
+
+/** Reject text that is empty or a bare, unexplained "N/A". */
+function requireExplainedText(value: unknown, key: string): string {
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`Invalid text: ${key}`);
+  const text = value.trim();
+  if (BARE_NOT_APPLICABLE.test(text) && !MEANINGFUL_TEXT.test(text.replace(BARE_NOT_APPLICABLE, ''))) {
+    throw new Error(`Invalid text: ${key}`);
+  }
+  return text;
+}
+
+/** Render template fields into a complete pull request body. */
 export function renderTemplate(template: Template, values: unknown): string {
-  if (!values || typeof values !== 'object' || Array.isArray(values) || ![Object.prototype, null].includes(Object.getPrototypeOf(values))) throw new Error('Invalid template fields');
-  const record = values as Record<string, unknown>;
+  if (!isPlainObject(values)) throw new Error('Invalid template fields');
+  const record = values;
   const keys = Reflect.ownKeys(record);
-  if (keys.length !== template.slots.length || template.slots.some((slot) => !Object.hasOwn(record, slot.key))) throw new Error('Template fields do not match');
-  const newline = template.source.includes('\r\n') ? '\r\n' : template.source.includes('\r') && !template.source.includes('\n') ? '\r' : '\n';
-  let result = template.source;
+  if (keys.length !== template.slots.length || template.slots.some((slot) => !Object.hasOwn(record, slot.key))) {
+    throw new Error('Template fields do not match');
+  }
+  const newline = lineEndingOf(template.source);
+  let body = template.source;
   for (const slot of [...template.slots].reverse()) {
     const value = record[slot.key];
     let replacement: string;
@@ -139,18 +308,17 @@ export function renderTemplate(template: Template, values: unknown): string {
       if (typeof value !== 'boolean') throw new Error(`Invalid checkbox: ${slot.key}`);
       replacement = value ? 'x' : ' ';
     } else {
-      if (typeof value !== 'string' || !value.trim() || (/^n[\s./-]*a(?=$|[^\p{L}\p{N}])/iu.test(value.trim()) && !/[\p{L}\p{N}]/u.test(value.trim().replace(/^n[\s./-]*a/iu, '')))) throw new Error(`Invalid text: ${slot.key}`);
-      const text = value.trim();
+      const text = requireExplainedText(value, slot.key);
       if (slot.context === 'inline') {
         if (/[\r\n]/.test(text)) throw new Error(`Invalid inline text: ${slot.key}`);
-        replacement = text.replace(/[\\`*_[\]<>|{}()!#]/g, '\\$&');
+        replacement = text.replace(INLINE_ESCAPE, '\\$&');
       } else {
-        if (/(?:^|\r\n|\r|\n) {0,3}(?:#{1,6}(?:\s|$)|`{3,}|~{3,}|(?:=+|-+)\s*$)/m.test(text) || /[<>`\[\]]/.test(text)) throw new Error(`Invalid section text: ${slot.key}`);
+        if (STRUCTURAL_LINE.test(text) || SECTION_MARKUP.test(text)) throw new Error(`Invalid section text: ${slot.key}`);
         const prefix = slot.start > 0 && !/[\r\n]/.test(template.source[slot.start - 1]) ? newline : '';
         replacement = `${prefix}${newline}${text.replace(/\r\n|\r|\n/g, newline)}${newline}`;
       }
     }
-    result = result.slice(0, slot.start) + replacement + result.slice(slot.end);
+    body = body.slice(0, slot.start) + replacement + body.slice(slot.end);
   }
-  return result;
+  return body;
 }
