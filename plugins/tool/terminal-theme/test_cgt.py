@@ -14,6 +14,7 @@ from unittest.mock import patch
 import cgt
 import tomlkit
 from ruamel.yaml import YAML
+from ruamel.yaml.events import AliasEvent
 
 
 class SwitchTests(unittest.TestCase):
@@ -57,6 +58,36 @@ class SwitchTests(unittest.TestCase):
 
     def switch(self, mode):
         cgt.switch(self.profiles, self.state, mode, self.vibe, self.lazy, self.claude, self.codex)
+
+    def assert_no_yaml_aliases_or_anchors(self):
+        events = list(YAML().parse(self.lazy.read_text()))
+        self.assertFalse(any(isinstance(event, AliasEvent) for event in events))
+        self.assertFalse(any(getattr(event, "anchor", None) for event in events))
+
+    def test_switches_emit_no_aliases_or_anchors(self):
+        for mode in ("light", "dark", "dark", "light"):
+            with self.subTest(mode=mode):
+                self.switch(mode)
+                self.assert_no_yaml_aliases_or_anchors()
+                gui = YAML().load(self.lazy.read_text())["gui"]
+                self.assertEqual(gui["theme"]["defaultFgColor"], [mode])
+                self.assertEqual(gui[mode + "Theme"]["defaultFgColor"], [mode])
+
+    def test_existing_aliases_expand_and_preserve_unrelated_settings(self):
+        self.lazy.write_text(
+            '# keep comment\nshared: &settings\n  label: "quoted value"\n'
+            '  colors: &colors [red, blue]\ncopy: *settings\nmore: *colors\n'
+            'gui:\n  mouseEvents: false\n'
+        )
+        self.switch("dark")
+        self.assert_no_yaml_aliases_or_anchors()
+        text = self.lazy.read_text()
+        self.assertIn("# keep comment", text)
+        self.assertIn('"quoted value"', text)
+        document = YAML().load(text)
+        self.assertEqual(document["shared"], document["copy"])
+        self.assertEqual(document["more"], ["red", "blue"])
+        self.assertFalse(document["gui"]["mouseEvents"])
 
     def test_round_trip_preserves_settings_comments_permissions_and_backups(self):
         originals = {path: path.read_bytes() for path in self.configs}

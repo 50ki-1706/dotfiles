@@ -126,6 +126,8 @@ def switch(profiles, state, mode, vibe_config, lazygit_config, claude_config, co
     def lazygit_theme(text):
         yaml = YAML()
         yaml.preserve_quotes = True
+        # Lazygit config migration rejects YAML aliases.
+        yaml.representer.ignore_aliases = lambda data: True
         document = yaml.load(text) or {}
         gui = document.setdefault("gui", {})
         gui["colorScheme"] = mode
