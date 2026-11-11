@@ -1,11 +1,6 @@
-# シェルエイリアス テンプレート (bash / zsh 共通)
-#
-# 使い方:
-#   以下のいずれかのファイルに追記してください:
-#     - ~/.bash_profile (macOS の bash ログインシェルの場合)
-#     - ~/.bashrc (Linux 等の対話的 bash の場合)
-#     - ~/.zshrc (zsh の場合)
-#   追記内容: source ~/.config/shell/aliases
+# シェルエイリアス (bash / zsh 共通)
+# Home Manager が ~/.config/shell/aliases に配置し、Zsh 起動時に読み込む。
+# 個人用の追加設定は ~/.zshrc.local に記述する。
 #
 # 必要なエイリアスの行頭の # を削除して有効にしてください。
 

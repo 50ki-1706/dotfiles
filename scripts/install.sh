@@ -394,7 +394,7 @@ echo ""
 echo "core.excludesfile の設定は Nix (Home Manager) で管理されます。"
 
 echo ""
-echo "Homebrew アプリと VS Code 拡張機能は nix-darwin (hosts/mac.nix) で管理されます。"
+echo "Homebrew アプリと VS Code 拡張機能は plugins/ 配下で宣言し、nix-darwin で管理されます。"
 
 echo ""
 echo "シェルエイリアスは Nix (Home Manager) で管理されます。"
