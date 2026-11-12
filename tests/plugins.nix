@@ -97,6 +97,16 @@ lib.runTests {
       && lib.hasInfix "dsh-publish" (publishActivation dsh);
     expected = true;
   };
+  testPublishReachesDesktop = {
+    # デスクトップ版も同じ dsh 本体 plugin を使う。
+    expr = lib.hasInfix "for profile in dsh-tui desktop; do" (
+      (homeFor (compose [
+        ../plugins/app/deepseek-harness
+        ../plugins/cli/dsh-tui
+      ])).home.activation.installDshPublish.data
+    );
+    expected = true;
+  };
   testPublishSkipsProfilesHomeManagerDoesNotOwn = {
     # desktop / web は手動管理なので、存在しなければスキップする。
     expr =
