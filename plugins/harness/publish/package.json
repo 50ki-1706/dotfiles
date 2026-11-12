@@ -1,0 +1,25 @@
+{
+  "name": "dsh-publish",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inspect, commit, and publish the current changes with git-surgeon: a harness-agnostic publish core plus a DeepSeek Harness adapter.",
+  "type": "module",
+  "main": "./dist/dsh/adapter.js",
+  "engines": {
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml"
+      ],
+      "listedByDefault": false
+    }
+  },
+  "scripts": {
+    "build": "tsrs -p tsconfig.json",
+    "typecheck": "tsrs -p tsconfig.json --noEmit",
+    "test": "./run-tests.sh"
+  }
+}

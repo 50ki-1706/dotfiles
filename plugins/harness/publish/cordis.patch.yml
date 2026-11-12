@@ -1,0 +1,20 @@
+# The publish bundle's row.
+#
+# The bundle ships one plugin: the DSH adapter over the harness-agnostic
+# publish core. It registers six tools (`publish_inspect`, `publish_show`,
+# `commit_hunks`, `publish_sync_main`, `publish_main`, `publish_pr`) and the
+# `/publish` command on whatever profile lists this bundle.
+#
+# The core lives in `src/` and knows nothing about DSH; `src/dsh/adapter.ts`
+# implements the host it needs on `ctx.tools`, `ctx.commands`, `ctx.skills`,
+# `ctx.workingDirectory`, and `ctx.approval`. Another harness can reuse the
+# core by implementing the same host.
+#
+# Removing it
+# -----------
+# Drop `dshPublish.profiles` for the profile (or remove this bundle from the
+# profile's list) and apply Home Manager. The row disappears with the bundle.
+
+- insert:
+    - id: publish
+      name: 'dsh-publish'

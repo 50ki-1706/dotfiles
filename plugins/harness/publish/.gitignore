@@ -1,0 +1,4 @@
+# Build output of `tsrs -p tsconfig.json`; committed so dsh can load the plugin
+# without a compiler on the target machine.
+!dist/
+node_modules/
