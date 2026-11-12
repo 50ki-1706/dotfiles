@@ -144,4 +144,91 @@ in
       "max"
     ];
   };
+  # OpenDesign Cloud (open-design.ai) is absent from the OpenCode catalog, so
+  # this entry defines the credential, runtime package, and endpoint itself
+  # per https://opencode.ai/docs/providers/#custom. The model plane serves the
+  # OpenAI Responses API at amr-link.open-design.ai/v1; the credential is an
+  # sk-amr- key issued on the web API keys page, read from OPENDESIGN_API_KEY.
+  # Model IDs, names, and token limits mirror the vendor catalog seed
+  # (models.mjs of dbydd/opencode-opendesign-auth), checked 2026-11-12. The
+  # catalog carries no reasoning effort list, so variants stay empty: the
+  # chains.nix validator then reads an empty list instead of a missing
+  # attribute if a chain ever references opendesign/#variant.
+  # The vendor plugin signs in to the same opendesign ID; a config-defined
+  # provider keeps the ID and lists the plugin's provider as
+  # opendesign-plugin (its README documents that precedence).
+  opendesign = {
+    name = "OpenDesign";
+    env = [ "OPENDESIGN_API_KEY" ];
+    package = "@opencode/ai/providers/openai-compatible/responses";
+    settings.baseURL = "https://amr-link.open-design.ai/v1";
+    models = {
+      "claude-haiku-5.5" = {
+        name = "Claude Haiku 5.5";
+        variants = [ ];
+        limit.context = 1000000;
+        limit.output = 132000;
+      };
+      "deepseek-v4-flash" = {
+        name = "DeepSeek V4 Flash";
+        variants = [ ];
+        limit.context = 1048000;
+        limit.output = 232000;
+      };
+      "deepseek-v4-flash-vision-exp" = {
+        name = "DeepSeek V4 Flash Vision (exp)";
+        variants = [ ];
+        limit.context = 1048000;
+        limit.output = 232000;
+      };
+      "deepseek-v4-pro" = {
+        name = "DeepSeek V4 Pro";
+        variants = [ ];
+        limit.context = 1048000;
+        limit.output = 232000;
+      };
+      "deepseek-v4.1-flash" = {
+        name = "DeepSeek V4.1 Flash";
+        variants = [ ];
+        limit.context = 1048000;
+        limit.output = 232000;
+      };
+      "glm-5.3-flash" = {
+        name = "GLM 5.3 Flash";
+        variants = [ ];
+        limit.context = 1048000;
+        limit.output = 232000;
+      };
+      "glm-5.3-flashx" = {
+        name = "GLM 5.3 FlashX";
+        variants = [ ];
+        limit.context = 1000000;
+        limit.output = 232000;
+      };
+      "gpt-6-luna" = {
+        name = "GPT-6 Luna";
+        variants = [ ];
+        limit.context = 1050000;
+        limit.output = 304000;
+      };
+      "kimi-k2.7-code" = {
+        name = "Kimi K2.7 Code";
+        variants = [ ];
+        limit.context = 262000;
+        limit.output = 262000;
+      };
+      "mimo-v2.6-flash" = {
+        name = "MiMo V2.6 Flash";
+        variants = [ ];
+        limit.context = 1048000;
+        limit.output = 232000;
+      };
+      "mimo-v2.6-pro" = {
+        name = "MiMo V2.6 Pro";
+        variants = [ ];
+        limit.context = 1048000;
+        limit.output = 232000;
+      };
+    };
+  };
 }
