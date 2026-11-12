@@ -144,4 +144,31 @@ in
       "max"
     ];
   };
+  # OpenDesign Cloud (open-design.ai) is absent from the OpenCode catalog, so
+  # this entry defines the credential, runtime package, and endpoint itself
+  # per https://opencode.ai/docs/providers/#custom. The model plane serves the
+  # OpenAI Responses API at amr-link.open-design.ai/v1; the credential is an
+  # sk-amr- key issued on the web API keys page, read from OPENDESIGN_API_KEY.
+  # Model IDs mirror the vendor catalog seed (models.mjs of
+  # dbydd/opencode-opendesign-auth), checked 2026-11-12. The catalog exposes
+  # IDs and names only, so entries carry no variants.
+  opendesign = {
+    name = "OpenDesign";
+    env = [ "OPENDESIGN_API_KEY" ];
+    package = "@opencode/ai/providers/openai-compatible/responses";
+    settings.baseURL = "https://amr-link.open-design.ai/v1";
+    models = {
+      "claude-haiku-5.5".name = "Claude Haiku 5.5";
+      "deepseek-v4-flash".name = "DeepSeek V4 Flash";
+      "deepseek-v4-flash-vision-exp".name = "DeepSeek V4 Flash Vision (exp)";
+      "deepseek-v4-pro".name = "DeepSeek V4 Pro";
+      "deepseek-v4.1-flash".name = "DeepSeek V4.1 Flash";
+      "glm-5.3-flash".name = "GLM 5.3 Flash";
+      "glm-5.3-flashx".name = "GLM 5.3 FlashX";
+      "gpt-6-luna".name = "GPT-6 Luna";
+      "kimi-k2.7-code".name = "Kimi K2.7 Code";
+      "mimo-v2.6-flash".name = "MiMo V2.6 Flash";
+      "mimo-v2.6-pro".name = "MiMo V2.6 Pro";
+    };
+  };
 }
