@@ -3,7 +3,6 @@
     ./bitwarden-cli
     ./claude-code
     ./codex
-    ./deepseek-harness
     ./devenv
     ./dsh-tui
     ./fzf

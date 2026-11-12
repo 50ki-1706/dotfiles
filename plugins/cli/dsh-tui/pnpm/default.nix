@@ -1,5 +1,5 @@
 {
-  imports = [ ../../deepseek-harness ];
+  imports = [ ../../../harness/deepseek-harness ];
   home =
     { lib, pkgs, ... }:
     let

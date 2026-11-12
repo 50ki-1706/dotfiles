@@ -28,10 +28,14 @@ let
   dsh = compose [ ../plugins/cli/dsh-tui ];
   repeatedDsh = compose [
     ../plugins/cli/dsh-tui
-    ../plugins/cli/deepseek-harness
+    ../plugins/harness/deepseek-harness
     ../plugins/cli/dsh-tui
   ];
   dshPackages = plugins: map (package: package.name) (homeFor plugins).home.packages;
+  # opendesign の tool_calls index 衝突への回避策。dsh 本体側の plugin として
+  # 独立し、対象プロファイルは dshOpendesignToolcallShim.profiles で選ぶ。
+  dshOnly = compose [ ../plugins/harness/deepseek-harness ];
+  shimActivation = plugins: (homeFor plugins).home.activation.installOpendesignToolcallShim.data;
   standalone = homeFor (compose [
     ../plugins/app/ghostty
     ../plugins/cli/helix
@@ -62,6 +66,21 @@ lib.runTests {
   };
   testDshDependency = {
     expr = builtins.any (name: lib.hasPrefix "deepseek-harness-" name) (dshPackages dsh);
+    expected = true;
+  };
+  testShimIsOptIn = {
+    # dsh 本体 plugin だけでは、どのプロファイルにも shim を入れない。
+    expr = (homeFor dshOnly).home.activation ? installOpendesignToolcallShim;
+    expected = false;
+  };
+  testShimTargetsSelectedProfiles = {
+    # dsh-tui が選ぶのは dsh-tui プロファイルだけ。
+    expr = lib.hasInfix "for profile in dsh-tui; do" (shimActivation dsh);
+    expected = true;
+  };
+  testShimSkipsProfilesHomeManagerDoesNotOwn = {
+    # desktop / web は手動管理なので、存在しなければスキップする。
+    expr = lib.hasInfix "package.json" (shimActivation dsh) && lib.hasInfix "スキップ" (shimActivation dsh);
     expected = true;
   };
   testDshLauncherAndProfile = {
