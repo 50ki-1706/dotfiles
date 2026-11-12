@@ -1,5 +1,5 @@
 {
   imports = [
-    ./homebrew
+    ./nixpkgs
   ];
 }
