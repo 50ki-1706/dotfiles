@@ -1,0 +1,25 @@
+/**
+ * Mounting the guard role.
+ *
+ * The guard is a separate row so it can be mounted on a profile whose adapter
+ * is still the stock one — useful while the wire rewrite is being validated
+ * against a real gateway.
+ *
+ * @module dsh-opendesign-toolcall-shim/plugin/guard-role
+ */
+
+import type { Context } from '@deepseek-ai/cordis'
+import { describeRecovery, guardEffect } from '../guard/index.ts'
+import type { Config } from './config.ts'
+
+/**
+ * Mount the guard role.
+ * @param ctx - the plugin context of this row.
+ * @param config - the row's configuration.
+ */
+export function mountGuardRole(ctx: Context, config: Config): void {
+  const logRecoveries = config.logRecoveries ?? true
+  ctx.effect(guardEffect(ctx, logRecoveries
+    ? recovery => ctx.logger.warn(describeRecovery(recovery))
+    : undefined))
+}

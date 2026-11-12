@@ -1,0 +1,25 @@
+{
+  "name": "dsh-opendesign-toolcall-shim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Temporary workaround for opendesign gateway tool-call index collisions (nexu-io/open-design#9369) and the fatal malformed-arguments path (deepseek-ai/deepseek-harness#7581, #8976). Remove once the provider or the harness handles these cases.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "engines": {
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml"
+      ],
+      "listedByDefault": false
+    }
+  },
+  "scripts": {
+    "build": "tsrs -p tsconfig.json",
+    "typecheck": "tsrs -p tsconfig.json --noEmit",
+    "test": "./run-tests.sh"
+  }
+}

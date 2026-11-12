@@ -31,7 +31,7 @@
 
 ## architecture
 
-Homebrew・nixpkgs・npm/pnpm などの導入元に関係なく、app・cli・tool・自作 package をすべて、独立して選択・合成できる plugin として管理します。自作 package も既存の分類内で plugin として公開します。
+Homebrew・nixpkgs・npm/pnpm などの導入元に関係なく、app・cli・harness・tool・自作 package をすべて、独立して選択・合成できる plugin として管理します。自作 package も既存の分類内で plugin として公開します。
 
 管理対象の例（矢印は分類）：
 
@@ -40,6 +40,7 @@ flowchart TB
     plugin["plugin<br/>独立して選択・合成する管理単位"]
     plugin --> app["app<br/>Ghostty など"]
     plugin --> cli["cli<br/>Herdr・Helix・LazyGit など"]
+    plugin --> harness["harness<br/>dsh 本体とその拡張"]
     plugin --> tool["tool<br/>shell・fonts など"]
     plugin --> custom["自作 package<br/>ssh-bootstrap（cli 配下）"]
 ```
@@ -65,6 +66,7 @@ flowchart TB
 
 - [Ghostty](plugins/app/ghostty) 単体は [terminal-theme](plugins/tool/terminal-theme) を参照せず、Herdr を自動起動しません。Ghostty から Herdr を起動する設定は複合 plugin が持ちます。
 - 組み替えるときは、単体 plugin を変えず、複合 plugin を置き換えます。Zellij を使う複合 plugin は未実装です。
+- `harness` はクライアントではなくハーネス本体（dsh）とその拡張です。desktop・web・dsh-tui などのクライアントが共有する土台なので、特定クライアントの `cli` 配下には置かず、`harness` から対象クライアントを選びます。
 - フォントのように一緒に使う組も一つのプラグインにできます。
 - 新しい Python ツールはプラグインごとに devenv と uv で管理します。
 

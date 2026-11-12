@@ -1,0 +1,47 @@
+# opendesign tool-call shim — a temporary, removable workaround.
+#
+# Why this file exists
+# --------------------
+# The opendesign gateway (amr-link.open-design.ai, OpenAI-compatible
+# /v1/chat/completions with stream: true) intermittently assigns the SAME
+# tool_calls[].index to the first two parallel calls while giving each call its
+# own id (nexu-io/open-design#9369). pi-ai assembles tool calls by index first,
+# so the two argument strings are concatenated into '{"a":1}{"b":2}', and dsh
+# then throws MALFORMED_RESPONSE and aborts the whole turn
+# (deepseek-ai/deepseek-harness#7581, #8976). Sending parallel_tool_calls: false
+# does not help: the gateway ignores it (#9369).
+#
+# What this bundle does — only for the `opendesign` route
+# -------------------------------------------------------
+# 1. Takes over the adapter row with an adapter that
+#    (a) rewrites the SSE response before pi-ai's index-keyed assembly runs,
+#        giving a call whose id is new a free index, so the collision never
+#        reaches pi-ai (`src/sse-rewrite.js`), and
+#    (b) folds the resulting events into harness chunks keyed by call id
+#        (`src/assembler.js`), and
+#    (c) keeps invalid completed arguments as raw text instead of throwing, so
+#        the tool layer reports INVALID_ARGS and the model can self-correct.
+# 2. Adds a `tools/pre-execute` advisory guard (`src/guard.js`) that splits
+#    concatenated JSON objects and repairs truncated ones before dispatch. When
+#    neither works it leaves the call alone, so the tool reports INVALID_ARGS
+#    and the turn continues; it never denies or cancels.
+#
+# Every other route is untouched: the id-keyed adapter registers only for the
+# route named below, the other declared routes keep the stock `PiAiAdapter`, and
+# the guard only ever rewrites arguments the tool batch had already failed to
+# parse.
+#
+# Removing it
+# -----------
+# Remove `./opendesign-toolcall-shim` from `plugins/harness/deepseek-harness/default.nix`
+# and apply Home Manager. The bundle drops out of the profile's bundle list, both
+# rows disappear, and the stock adapter owns every route again.
+
+- insert:
+    - id: llm-pi-ai
+      name: 'dsh-opendesign-toolcall-shim'
+    - id: opendesign-toolcall-guard
+      name: 'dsh-opendesign-toolcall-shim'
+      config:
+        role: guard
+        provider: opendesign
