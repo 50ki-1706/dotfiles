@@ -1,0 +1,20 @@
+{
+  "name": "@publish/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inspect, commit, and publish the current changes with git-surgeon. Harness-agnostic: a harness supplies a PublishHost.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ]
+}

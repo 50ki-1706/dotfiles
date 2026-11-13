@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Build and test the publish plugin.
+# Build and test the publish workspace.
 #
-# The core tests need only git and git-surgeon. The adapter tests mount the
-# running dsh installation's own packages, which the link step supplies from
-# DSH_INSTALL_MODULES (default: the nix store path of the installed dsh).
+# The core and Codex adapter tests need only git and git-surgeon. The DSH
+# adapter tests mount the running dsh installation's own packages, which the
+# link step supplies from DSH_INSTALL_MODULES (default: the nix store path of
+# the installed dsh).
 #
-# The sources are TypeScript compiled to dist/ by `tsrs` (a Rust port of tsc),
-# because dsh installs profile plugins under node_modules where Node refuses to
-# strip types. Set TSRS to the compiler binary when it is not on PATH.
+# The packages ship JavaScript: dsh installs its bundle under node_modules,
+# where Node refuses to strip types. `tsc -b` compiles each package's src/ to
+# dist/, and the committed dist/ is what ships.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-tsrs="${TSRS:-tsrs}"
 
 if [[ -z "${DSH_INSTALL_MODULES:-}" ]]; then
   dsh_bin="$(command -v dsh || true)"
@@ -23,17 +23,20 @@ if [[ -z "${DSH_INSTALL_MODULES:-}" ]]; then
   export DSH_INSTALL_MODULES
 fi
 
-if command -v "$tsrs" >/dev/null 2>&1; then
-  # The typecheck resolves the dsh packages and @types/node from node_modules,
-  # which the link step creates. Link once up front so the build sees them.
-  node --import "$here/tests/link-dsh-modules.ts" -e '0'
-  trap 'rm -rf "$here/node_modules"' EXIT
-  echo "run-tests: building with $tsrs"
-  "$tsrs" -p "$here/tsconfig.json"
-else
-  echo "run-tests: $tsrs not found; testing the TypeScript sources as-is" >&2
+# npm links the workspace packages into node_modules; the DSH link step adds
+# the @deepseek-ai/* packages beside them.
+if [[ ! -e "$here/node_modules/@publish/core" ]]; then
+  echo "run-tests: installing workspace links"
+  (cd "$here" && npm install --no-audit --no-fund --ignore-scripts)
 fi
+node --import "$here/dsh-adapter/tests/link-dsh-modules.ts" -e '0'
 
-# One file per layer; the glob keeps a new test file from being forgotten.
-# Not `exec`: the EXIT trap above has to run after the tests finish.
-node --import "$here/tests/link-dsh-modules.ts" --test "$here"/tests/*.test.ts
+echo "run-tests: building"
+(cd "$here" && npx tsc -b --force)
+
+echo "run-tests: core"
+node --test "$here"/core/tests/*.test.ts
+echo "run-tests: codex adapter"
+node --test "$here"/codex-adapter/tests/*.test.ts
+echo "run-tests: dsh adapter"
+node --import "$here/dsh-adapter/tests/link-dsh-modules.ts" --test "$here"/dsh-adapter/tests/*.test.ts

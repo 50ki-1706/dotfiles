@@ -51,14 +51,21 @@
         # git-surgeon の skill は overlay の有無に依らず同じ flake input から取る。
         # 合成テストは overlay なしで home を評価するため。
         gitSurgeon = inputs.git-surgeon.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        # ワークスペースの dsh-adapter を bundle として配る。dsh は
+        # node_modules 配下から読み込むため、依存の @publish/core も
+        # node_modules/@publish/core に実体として置く (symlink だと dsh の
+        # loader が解決できない)。
         plugin = pkgs.runCommand "dsh-publish-bundle" { } ''
-          mkdir -p "$out"
-          cp -R ${../../publish/dist} "$out/dist"
-          cp ${../../publish/package.json} "$out/package.json"
-          cp ${../../publish/cordis.patch.yml} "$out/cordis.patch.yml"
-          cp ${../../publish/instructions.md} "$out/instructions.md"
+          mkdir -p "$out/node_modules/@publish/core"
+          cp -R ${../../publish/dsh-adapter/dist} "$out/dist"
+          cp ${../../publish/dsh-adapter/package.json} "$out/package.json"
+          cp ${../../publish/dsh-adapter/cordis.patch.yml} "$out/cordis.patch.yml"
+          cp ${../../publish/dsh-adapter/instructions.md} "$out/instructions.md"
           cp ${gitSurgeon.src}/skills/git-surgeon/SKILL.md "$out/official-skill.md"
           cp ${prSource}/skills/engineering/pr/SKILL.md "$out/pr-skill.md"
+
+          cp -R ${../../publish/core/dist} "$out/node_modules/@publish/core/dist"
+          cp ${../../publish/core/package.json} "$out/node_modules/@publish/core/package.json"
         '';
         pluginName = "dsh-publish";
         target = config.dshPublish;

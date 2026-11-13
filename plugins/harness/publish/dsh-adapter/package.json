@@ -1,0 +1,30 @@
+{
+  "name": "dsh-publish",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DeepSeek Harness adapter for @publish/core: the publish tools and the /publish command.",
+  "type": "module",
+  "main": "./dist/adapter.js",
+  "engines": {
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml"
+      ],
+      "listedByDefault": false
+    }
+  },
+  "dependencies": {
+    "@publish/core": "*"
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "instructions.md",
+    "official-skill.md",
+    "pr-skill.md"
+  ]
+}

@@ -1,32 +1,9 @@
 {
-  // The plugin ships JavaScript: dsh installs profile plugins under
-  // <profile>/node_modules, where Node refuses to strip TypeScript types
-  // (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING). `tsrs` (a Rust port of tsc)
-  // compiles src/*.ts to dist/*.js, and package.json's `main` points there.
-  //
-  // Build:  tsrs -p tsconfig.json
-  // Check:  tsrs -p tsconfig.json --noEmit
-  "compilerOptions": {
-    "target": "es2024",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "lib": ["es2024", "dom"],
-    "outDir": "dist",
-    "rootDir": "src",
-    "declaration": false,
-    "sourceMap": false,
-    "skipLibCheck": true,
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitOverride": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
-    "verbatimModuleSyntax": false,
-    "types": ["node"]
-  },
-  "include": ["src/**/*.ts"]
+  // Solution file: `tsc -b` builds core first, then each adapter.
+  "files": [],
+  "references": [
+    { "path": "./core" },
+    { "path": "./dsh-adapter" },
+    { "path": "./codex-adapter" }
+  ]
 }

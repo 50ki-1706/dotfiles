@@ -1,0 +1,42 @@
+{
+  // Shared compiler settings for the three packages.
+  //
+  // The packages ship JavaScript: dsh installs its bundle under
+  // <profile>/node_modules, where Node refuses to strip TypeScript types
+  // (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING). `tsc` compiles each
+  // package's src/*.ts to dist/*.js, and each package.json points there.
+  //
+  // Cross-package imports use the `@publish/core` specifier, which the paths
+  // alias below resolves to the core package's sources during a build and to
+  // its dist/ at runtime (npm workspaces links the package into node_modules).
+  //
+  // Build:  npm run build      (tsc -b)
+  // Check:  npm run typecheck  (tsc -b --noEmit)
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["es2024", "dom"],
+    "composite": true,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "verbatimModuleSyntax": false,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@publish/core": ["./core/src/index.ts"],
+      "@publish/core/*": ["./core/src/*.ts"]
+    }
+  }
+}
