@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "description": "DeepSeek Harness adapter for @publish/core: the publish tools and the /publish command.",
-  "type": "module",
-  "main": "./dist/adapter.js",
   "engines": {
+    "node": ">=24",
     "dsh": ">=0.2.2-rc.1 <0.3.0"
   },
+  "type": "module",
+  "main": "./dist/adapter.js",
   "dsh": {
     "manifestVersion": 1,
     "bundle": {
