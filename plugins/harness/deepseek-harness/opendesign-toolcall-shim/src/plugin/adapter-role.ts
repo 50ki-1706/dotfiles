@@ -13,9 +13,15 @@ import type { Context } from '@deepseek-ai/cordis'
 import { resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import type { AdapterRegistrationHandle } from '@deepseek-ai/dsh-llm'
 import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai'
-import { authContextFrom, credentialStoreFrom } from '@deepseek-ai/dsh-llm-pi-ai/src/auth.ts'
-import { resolveProfiles } from '@deepseek-ai/dsh-llm-pi-ai/src/config.ts'
-import { IdKeyedPiAiAdapter, RouteSplittingAdapter, declaredProviders, resolveApiKey } from '../adapter/index.ts'
+import {
+  IdKeyedPiAiAdapter,
+  RouteSplittingAdapter,
+  declaredProviders,
+  resolveApiKey,
+  resolveProfiles,
+} from '../adapter/index.ts'
+import type { DeclaredProviders } from '../adapter/index.ts'
+import { authContextFrom, credentialStoreFrom } from '../adapter/auth.ts'
 import { DEFAULT_PROVIDER, DEFAULT_SETTINGS_NAMESPACE } from './config.ts'
 import type { Config } from './config.ts'
 
@@ -25,9 +31,9 @@ import type { Config } from './config.ts'
  * It is constructed over the same profiles, so a non-shim route behaves exactly
  * as it did before the row was replaced.
  */
-function createStockAdapter(ctx: Context, declared: ReturnType<typeof declaredProviders>): PiAiAdapter {
+function createStockAdapter(ctx: Context, declared: DeclaredProviders): PiAiAdapter {
   return new PiAiAdapter({
-    profiles: () => resolveProfiles(declared, 'deferred'),
+    profiles: () => resolveProfiles(declared, 'deferred') as never,
     resolveApiKey: (provider, profile) => resolveApiKey(ctx, provider, profile.apiKeyEnv),
     auth: { credentials: credentialStoreFrom(ctx), authContext: authContextFrom(ctx) },
     prepareHeaders: (request, headers) => ctx.waterfall(

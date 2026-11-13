@@ -40,7 +40,7 @@ export class RouteSplittingAdapter implements RoutableAdapter {
   private readonly shimProvider: string
 
   constructor(shim: RoutableAdapter | IdKeyedPiAiAdapter, stock: RoutableAdapter, shimProvider: string) {
-    this.shim = shim
+    this.shim = shim as RoutableAdapter
     this.stock = stock
     this.shimProvider = shimProvider
   }

@@ -10,7 +10,6 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import type { PreToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
 import { inspectArguments } from './inspect.ts'
 import type { GuardOutcome } from './inspect.ts'
 
@@ -59,6 +58,15 @@ export function guardEffect(
     return await next()
   })
 }
+
+/** One tool execution as the `tools/pre-execute` waterfall hands it over. */
+interface ToolExecution {
+  readonly name: string
+  readonly arguments: unknown
+}
+
+/** What a `tools/pre-execute` listener decides. */
+type PreToolDecision = unknown
 
 /**
  * Describe a recovery for the log.

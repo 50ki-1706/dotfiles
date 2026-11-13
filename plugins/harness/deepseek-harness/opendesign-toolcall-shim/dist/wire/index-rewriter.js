@@ -18,7 +18,7 @@
  *
  * @module dsh-opendesign-toolcall-shim/wire/index-rewriter
  */
-import { idOf, indexOf, toolCallDeltasOf } from './chunk.js';
+import { idOf, indexOf, toolCallDeltasOf } from "./chunk.js";
 /** The index assignment for one response. */
 export class ToolCallIndexRewriter {
     /** Provider index → the call id currently occupying it. */

@@ -30,7 +30,7 @@ export const name = 'opendesign-toolcall-shim'
  * service the composition lacks simply stays dormant, which is what keeps the
  * bundle removable from a profile that mounts neither seam.
  */
-export const inject = ['llm', 'credentials', 'tools']
+export const inject = ['llm', 'credentials']
 
 export type { Config, Role }
 

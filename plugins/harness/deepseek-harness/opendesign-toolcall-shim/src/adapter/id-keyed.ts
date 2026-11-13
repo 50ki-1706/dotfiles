@@ -26,7 +26,9 @@
  * @module dsh-opendesign-toolcall-shim/adapter/id-keyed
  */
 
-import type { Api, Model, Models, MutableModels } from '@earendil-works/pi-ai'
+import { builtinModels } from '@earendil-works/pi-ai/providers/all'
+import { requestImageDimensions } from '@deepseek-ai/dsh-attachment'
+import type { Api, Model, Models, MutableModels, Provider } from '@earendil-works/pi-ai'
 import type { Context } from '@deepseek-ai/cordis'
 import { LlmAdapter, LlmError } from '@deepseek-ai/dsh-llm'
 import type {
@@ -39,18 +41,18 @@ import type {
   StreamChunk,
 } from '@deepseek-ai/dsh-llm'
 import type { ImageAttachmentRef, ImageRequestTarget } from '@deepseek-ai/dsh-attachment'
-import { createModels } from '@deepseek-ai/dsh-llm-pi-ai/src/models.ts'
-import { authContextFrom, credentialStoreFrom } from '@deepseek-ai/dsh-llm-pi-ai/src/auth.ts'
-import type { ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai/src/config.ts'
-import { requestImageTarget } from '@deepseek-ai/dsh-llm-pi-ai/src/context.ts'
+import { authContextFrom, credentialStoreFrom } from './auth.ts'
 import { resolveApiKey } from './credentials.ts'
+import type { ResolvedModel, ResolvedRouteProfile } from './profile.ts'
+import type { Protocol } from './protocols.ts'
+import { PROTOCOLS, SUPPORTED_PROTOCOLS } from './protocols.ts'
 import { resolveRoute } from './route.ts'
 import type { ShimRoute } from './route.ts'
 import { streamCall } from './stream.ts'
 
 /** One resolution's frozen view: the profile and the pi-ai collection built from it. */
 interface ShimSnapshot {
-  readonly profile: ResolvedPiAiProviderProfile
+  readonly profile: ResolvedRouteProfile
   readonly models: Models
 }
 
@@ -72,16 +74,22 @@ export class IdKeyedPiAiAdapter extends LlmAdapter {
    * The snapshot for the current configuration, memoized by profile identity.
    *
    * The adapter runs on behalf of the row that registered it, so the route
-   * facts come from that row's own configuration every time.
+   * facts come from that row's own configuration every time. Each snapshot
+   * gets a fresh pi-ai collection holding this route's provider, which is what
+   * an operation that already captured a snapshot keeps using.
    */
   private current(): ShimSnapshot {
     const profile = resolveRoute(this.ctx, this.route)
     if (this.snapshot?.profile === profile) return this.snapshot
-    const models: MutableModels = createModels({
+    // pi-ai resolves a route's credential through the store and ambient
+    // context it was built with, so the collection carries the harness seams
+    // exactly as the stock adapter's does.
+    const models: MutableModels = builtinModels({
       credentials: credentialStoreFrom(this.ctx),
       authContext: authContextFrom(this.ctx),
     })
-    if (profile.piProvider !== undefined) models.setProvider(profile.piProvider)
+    models.clearProviders()
+    models.setProvider(createRouteProvider(profile))
     this.snapshot = { profile, models }
     return this.snapshot
   }
@@ -89,7 +97,6 @@ export class IdKeyedPiAiAdapter extends LlmAdapter {
   /** The exact pi-ai model descriptor for this route, or the configuration failure. */
   private modelOf(snapshot: ShimSnapshot, model: string): Model<Api> {
     const failure = snapshot.profile.modelErrors.get(model)
-      ?? (snapshot.profile.piProvider === undefined ? snapshot.profile.catalogError : undefined)
     if (failure !== undefined) throw new LlmError(failure, 'INVALID_CONFIG')
     const resolved = snapshot.models.getModel(this.route.provider, model)
     if (resolved === undefined) {
@@ -112,10 +119,10 @@ export class IdKeyedPiAiAdapter extends LlmAdapter {
   override imageRequestTarget(_provider: string, model: string, image: ImageAttachmentRef): ImageRequestTarget {
     const snapshot = this.current()
     this.modelOf(snapshot, model)
-    return requestImageTarget(image, {
-      maxPixels: snapshot.profile.requestImagePixelBudget,
+    return {
+      ...requestImageDimensions(image.width, image.height, snapshot.profile.requestImagePixelBudget),
       maxBytes: snapshot.profile.requestImageMaxBytes,
-    })
+    }
   }
 
   override listModels(_provider: string): Promise<readonly LlmModelInfo[]> {
@@ -183,4 +190,81 @@ export class IdKeyedPiAiAdapter extends LlmAdapter {
       apiKey,
     }, options)
   }
+}
+
+/**
+ * Build the pi-ai provider for one route.
+ *
+ * The stock adapter reuses the installed catalog provider so its protocol
+ * implementations and quirks stay pi-ai's own. This route is hand-declared, so
+ * the provider is built the same way the stock resolver builds one: the
+ * protocol factory pi-ai ships for the route's `api`, the route's endpoint and
+ * models, and the harness credential seam as its authentication.
+ * @param profile - the resolved route profile.
+ * @returns the provider to register in the pi-ai collection.
+ */
+function createRouteProvider(profile: ResolvedRouteProfile): Provider {
+  const factory = protocolFor(profile.api)
+  const models = profile.models.map(toPiModel)
+  return {
+    id: profile.provider,
+    name: profile.displayName,
+    ...profile.baseURL === undefined ? {} : { baseUrl: profile.baseURL },
+    // pi-ai resolves a route's credential through this method: the harness
+    // credential is handed in when one is stored, and the method reports it
+    // back as the request's API key.
+    auth: {
+      apiKey: {
+        name: profile.displayName,
+        resolve: ({ credential }: { credential?: { key?: string } }) => Promise.resolve({
+          auth: credential?.key === undefined ? {} : { apiKey: credential.key },
+          source: profile.displayName,
+        }),
+      },
+    },
+    getModels: () => models,
+    stream: (model: never, context: never, options: never) => factory.stream(model, context, options),
+    // pi-ai's simple path calls the provider's own `streamSimple`, so the
+    // route's protocol is reached through it as well.
+    streamSimple: (model: never, context: never, options: never) => factory.stream(model, context, options),
+  } as unknown as Provider
+}
+
+/**
+ * The pi-ai protocol implementation for one route's `api`.
+ * @param api - the route's wire protocol.
+ * @returns the protocol factory.
+ * @throws {LlmError} `INVALID_CONFIG` for a protocol this build cannot serve.
+ */
+function protocolFor(api: string | undefined): Protocol {
+  const factory = api === undefined ? undefined : PROTOCOLS[api]
+  if (factory === undefined) {
+    throw new LlmError(
+      `opendesign tool-call shim cannot serve api "${String(api)}"; supported protocols are ${SUPPORTED_PROTOCOLS.join(', ')}`,
+      'INVALID_CONFIG',
+    )
+  }
+  return factory()
+}
+
+/**
+ * Project one resolved model into the descriptor pi-ai's collection holds.
+ * @param model - the resolved model.
+ * @returns the pi-ai model descriptor.
+ */
+function toPiModel(model: ResolvedModel): Model<Api> {
+  return {
+    id: model.id,
+    name: model.name,
+    api: model.api,
+    provider: model.provider,
+    baseUrl: model.baseUrl,
+    input: [...model.input],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: model.contextWindow,
+    maxTokens: model.maxTokens,
+    reasoning: model.reasoning,
+    ...model.thinkingLevelMap === undefined ? {} : { thinkingLevelMap: model.thinkingLevelMap },
+    ...model.compat === undefined ? {} : { compat: model.compat },
+  } as unknown as Model<Api>
 }

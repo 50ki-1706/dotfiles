@@ -7,7 +7,7 @@
  *
  * @module dsh-opendesign-toolcall-shim/plugin/guard-role
  */
-import { describeRecovery, guardEffect } from '../guard/index.js';
+import { describeRecovery, guardEffect } from "../guard/index.js";
 /**
  * Mount the guard role.
  * @param ctx - the plugin context of this row.

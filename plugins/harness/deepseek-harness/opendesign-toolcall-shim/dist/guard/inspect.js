@@ -19,7 +19,7 @@
  *
  * @module dsh-opendesign-toolcall-shim/guard/inspect
  */
-import { parseJsonObject, repairPartialJson, splitConcatenatedJson } from '../json/index.js';
+import { parseJsonObject, repairPartialJson, splitConcatenatedJson } from "../json/index.js";
 /**
  * Decide what to do with one call's arguments.
  *

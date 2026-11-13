@@ -8,7 +8,7 @@
  *
  * @module dsh-opendesign-toolcall-shim/json/diagnose
  */
-import { jsonValueBoundaries } from './split.js';
+import { jsonValueBoundaries } from "./split.js";
 /**
  * Describe why a raw argument string could not be used.
  * @param raw - the raw argument string.

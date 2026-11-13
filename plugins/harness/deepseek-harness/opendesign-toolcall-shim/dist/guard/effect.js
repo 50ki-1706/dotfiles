@@ -8,7 +8,7 @@
  *
  * @module dsh-opendesign-toolcall-shim/guard/effect
  */
-import { inspectArguments } from './inspect.js';
+import { inspectArguments } from "./inspect.js";
 /**
  * Build the effect body that registers the guard.
  *

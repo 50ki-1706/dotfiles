@@ -21,11 +21,13 @@
 
 import type { Api, Model, Models } from '@earendil-works/pi-ai'
 import type { Context } from '@deepseek-ai/cordis'
-import { LlmError, resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
+import { requestImageDimensions } from '@deepseek-ai/dsh-attachment'
+import { LlmError, requiredImageOffload } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout'
-import { toPiContext } from '@deepseek-ai/dsh-llm-pi-ai/src/context.ts'
-import type { ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai/src/config.ts'
+import { projectContext } from './context.ts'
+import type { PiContext } from './context.ts'
+import type { ResolvedRouteProfile } from './profile.ts'
 import { IdKeyedToolCallAssembler } from '../stream/index.ts'
 import { createRewritingFetch } from '../wire/index.ts'
 import { requestHeaders } from './headers.ts'
@@ -37,7 +39,7 @@ export interface StreamContext {
   /** The route key, for diagnostics. */
   readonly provider: string
   /** The frozen route profile. */
-  readonly profile: ResolvedPiAiProviderProfile
+  readonly profile: ResolvedRouteProfile
   /** The frozen pi-ai model descriptor. */
   readonly model: Model<Api>
   /** The collection the descriptor came from. */
@@ -107,7 +109,7 @@ export async function* streamCall(
  * Every field is optional and pi-ai distinguishes "absent" from "explicitly
  * undefined", so each one is spread conditionally.
  */
-function profileOptions(profile: ResolvedPiAiProviderProfile): Record<string, unknown> {
+function profileOptions(profile: ResolvedRouteProfile): Record<string, unknown> {
   return {
     ...profile.thinkingBudgets === undefined ? {} : { thinkingBudgets: profile.thinkingBudgets },
     ...profile.cacheRetention === undefined ? {} : { cacheRetention: profile.cacheRetention },
@@ -118,36 +120,70 @@ function profileOptions(profile: ResolvedPiAiProviderProfile): Record<string, un
 }
 
 /**
- * Build the pi-ai context, offloading images only when the call carries any.
+ * Build the pi-ai context for one call.
  *
- * The attachment seam is resolved lazily because most calls carry no image and
- * a composition without the attachment service must still work.
+ * The stock adapter's converter lives at `@deepseek-ai/dsh-llm-pi-ai/src/context.ts`,
+ * a TypeScript source the desktop app's Node refuses to load from
+ * `node_modules`, so the request is projected by `context.ts` in this bundle.
+ *
+ * Images resolve through the attachment seam only when the call carries any,
+ * because most calls carry none and a composition without the attachment
+ * service must still work.
  */
 async function buildContext(
   ctx: Context,
-  profile: ResolvedPiAiProviderProfile,
+  profile: ResolvedRouteProfile,
   options: GenerateOptions,
   signal: AbortSignal,
-): Promise<Awaited<ReturnType<typeof toPiContext>>> {
-  const hasImage = options.messages.some(message => message.content.some(block => block.type === 'image'))
-  const attachments = hasImage ? ctx.get('attachments') : undefined
-  const request = { ...options, signal }
-  if (attachments === undefined) return toPiContext(request, undefined, undefined, false)
-  return toPiContext(request, {
-    attachments,
-    resolveImageAccess: ref => resolveImageAttachmentAccess(
-      attachments,
-      hostPath => ctx.get('fs')?.processPathFromHostPath(hostPath),
-      ref,
-    ),
+): Promise<PiContext> {
+  const carriesImage = options.messages.some(message => message.content.some(block => block.type === 'image'))
+  const attachments = carriesImage ? ctx.get('attachments') : undefined
+  if (!carriesImage || attachments === undefined) return projectContext(options, profile, undefined)
+  const budget = { maxPixels: profile.requestImagePixelBudget, maxBytes: profile.requestImageMaxBytes }
+  const versions = new Map<string, { bytes: Uint8Array; mediaType: string }>()
+  const readRequestImage = async (ref: Parameters<typeof attachments.readImageRequest>[0]) => {
+    const known = versions.get(String(ref.attachmentId))
+    if (known !== undefined) return known
+    const version = await attachments.readImageRequest(ref, {
+      ...requestImageDimensions(ref.width, ref.height, budget.maxPixels),
+      maxBytes: budget.maxBytes,
+    }, signal)
+    if (version === undefined) return undefined
+    const resolved = { bytes: version.data, mediaType: version.mediaType }
+    versions.set(String(ref.attachmentId), resolved)
+    return resolved
+  }
+  // The budgets are enforced over the bytes that will actually be sent, so the
+  // request images are prepared before the count check runs.
+  for (const message of options.messages) {
+    for (const block of message.content) {
+      if (block.type !== 'image' || block.offloaded === true) continue
+      await readRequestImage(block.attachment)
+    }
+  }
+  // The route's count and byte budgets are enforced before the request is
+  // built, so an over-budget history asks the caller to offload the oldest
+  // occurrences instead of silently dropping them.
+  const offload = requiredImageOffload(options.messages, {
+    representation: 'base64',
+    maxBytes: profile.maxRequestImageBytes,
+    maxImages: profile.maxRequestImages,
+    countQuantum: profile.imageOffloadCountQuantum,
+  }, block => versions.get(String(block.attachment.attachmentId))?.bytes.length ?? 0)
+  if (offload > 0) {
+    throw new LlmError(
+      `pi-ai request images exceed the route image budget; ${offload} more oldest occurrence(s) must be offloaded.`,
+      'IMAGE_OFFLOAD_REQUIRED',
+      { offloadImages: offload },
+    )
+  }
+  return projectContext(options, profile, {
+    readRequestImage,
     maxRequestImageBytes: profile.maxRequestImageBytes,
     maxRequestImages: profile.maxRequestImages,
     imageOffloadCountQuantum: profile.imageOffloadCountQuantum,
-    requestImagePolicy: {
-      maxPixels: profile.requestImagePixelBudget,
-      maxBytes: profile.requestImageMaxBytes,
-    },
-  }, undefined, false)
+    requestImagePolicy: budget,
+  })
 }
 
 /**

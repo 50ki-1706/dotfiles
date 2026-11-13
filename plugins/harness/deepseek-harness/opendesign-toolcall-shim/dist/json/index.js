@@ -21,8 +21,8 @@
  *
  * @module dsh-opendesign-toolcall-shim/json
  */
-export { describeInvalidArguments } from './diagnose.js';
-export { repairPartialJson } from './repair.js';
-export { isWhitespace, walkJson } from './scan.js';
-export { jsonValueBoundaries, splitConcatenatedJson } from './split.js';
-export { isJsonObject, parseJsonObject } from './values.js';
+export { describeInvalidArguments } from "./diagnose.js";
+export { repairPartialJson } from "./repair.js";
+export { isWhitespace, walkJson } from "./scan.js";
+export { jsonValueBoundaries, splitConcatenatedJson } from "./split.js";
+export { isJsonObject, parseJsonObject } from "./values.js";

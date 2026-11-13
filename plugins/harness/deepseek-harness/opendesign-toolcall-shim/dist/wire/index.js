@@ -17,6 +17,6 @@
  *
  * @module dsh-opendesign-toolcall-shim/wire
  */
-export { createRewritingFetch } from './fetch.js';
-export { ToolCallIndexRewriter } from './index-rewriter.js';
-export { rewriteSseBlock, rewriteSsePayload, rewriteSseStream } from './sse.js';
+export { createRewritingFetch } from "./fetch.js";
+export { ToolCallIndexRewriter } from "./index-rewriter.js";
+export { rewriteSseBlock, rewriteSsePayload, rewriteSseStream } from "./sse.js";

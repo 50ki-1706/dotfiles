@@ -15,8 +15,8 @@
  * @module dsh-opendesign-toolcall-shim/stream/assembler
  */
 import { LlmError, ToolCallId } from '@deepseek-ai/dsh-llm';
-import { ToolCallTracker, idOfCall } from './calls.js';
-import { mapStopReason, mapUsage } from './terminal.js';
+import { ToolCallTracker, idOfCall } from "./calls.js";
+import { mapStopReason, mapUsage } from "./terminal.js";
 /**
  * Whether a completed argument string is a single JSON object.
  * @param text - the raw argument text.

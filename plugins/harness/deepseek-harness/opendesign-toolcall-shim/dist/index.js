@@ -16,8 +16,8 @@
  *
  * @module dsh-opendesign-toolcall-shim
  */
-import { mountAdapterRole } from './plugin/adapter-role.js';
-import { mountGuardRole } from './plugin/guard-role.js';
+import { mountAdapterRole } from "./plugin/adapter-role.js";
+import { mountGuardRole } from "./plugin/guard-role.js";
 export const name = 'opendesign-toolcall-shim';
 /**
  * Services this plugin reads. Declared statically because cordis gates every
@@ -25,7 +25,7 @@ export const name = 'opendesign-toolcall-shim';
  * service the composition lacks simply stays dormant, which is what keeps the
  * bundle removable from a profile that mounts neither seam.
  */
-export const inject = ['llm', 'credentials', 'tools'];
+export const inject = ['llm', 'credentials'];
 /**
  * Mount one row.
  * @param ctx - the plugin context of this row.

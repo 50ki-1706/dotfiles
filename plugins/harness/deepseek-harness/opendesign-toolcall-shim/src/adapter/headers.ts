@@ -11,7 +11,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { attributionHeaders } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions } from '@deepseek-ai/dsh-llm'
-import type { ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai/src/config.ts'
+import type { ResolvedRouteProfile } from './profile.ts'
 
 /**
  * Build the headers for one request.
@@ -25,7 +25,7 @@ import type { ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai/src
 export function requestHeaders(
   ctx: Context,
   provider: string,
-  profile: ResolvedPiAiProviderProfile,
+  profile: ResolvedRouteProfile,
   options: GenerateOptions,
   baseURL: string,
 ): Record<string, string> {

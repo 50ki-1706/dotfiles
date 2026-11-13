@@ -10,5 +10,5 @@
  *
  * @module dsh-opendesign-toolcall-shim/guard
  */
-export { describeRecovery, guardEffect } from './effect.js';
-export { inspectArguments, recoveryNote } from './inspect.js';
+export { describeRecovery, guardEffect } from "./effect.js";
+export { inspectArguments, recoveryNote } from "./inspect.js";

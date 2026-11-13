@@ -25,13 +25,14 @@
  *
  * @module dsh-opendesign-toolcall-shim/adapter/id-keyed
  */
+import { builtinModels } from '@earendil-works/pi-ai/providers/all';
+import { requestImageDimensions } from '@deepseek-ai/dsh-attachment';
 import { LlmAdapter, LlmError } from '@deepseek-ai/dsh-llm';
-import { createModels } from '@deepseek-ai/dsh-llm-pi-ai/src/models.ts';
-import { authContextFrom, credentialStoreFrom } from '@deepseek-ai/dsh-llm-pi-ai/src/auth.ts';
-import { requestImageTarget } from '@deepseek-ai/dsh-llm-pi-ai/src/context.ts';
-import { resolveApiKey } from './credentials.js';
-import { resolveRoute } from './route.js';
-import { streamCall } from './stream.js';
+import { authContextFrom, credentialStoreFrom } from "./auth.js";
+import { resolveApiKey } from "./credentials.js";
+import { PROTOCOLS, SUPPORTED_PROTOCOLS } from "./protocols.js";
+import { resolveRoute } from "./route.js";
+import { streamCall } from "./stream.js";
 /**
  * Adapter that owns exactly one route and assembles its tool calls by id.
  */
@@ -48,25 +49,29 @@ export class IdKeyedPiAiAdapter extends LlmAdapter {
      * The snapshot for the current configuration, memoized by profile identity.
      *
      * The adapter runs on behalf of the row that registered it, so the route
-     * facts come from that row's own configuration every time.
+     * facts come from that row's own configuration every time. Each snapshot
+     * gets a fresh pi-ai collection holding this route's provider, which is what
+     * an operation that already captured a snapshot keeps using.
      */
     current() {
         const profile = resolveRoute(this.ctx, this.route);
         if (this.snapshot?.profile === profile)
             return this.snapshot;
-        const models = createModels({
+        // pi-ai resolves a route's credential through the store and ambient
+        // context it was built with, so the collection carries the harness seams
+        // exactly as the stock adapter's does.
+        const models = builtinModels({
             credentials: credentialStoreFrom(this.ctx),
             authContext: authContextFrom(this.ctx),
         });
-        if (profile.piProvider !== undefined)
-            models.setProvider(profile.piProvider);
+        models.clearProviders();
+        models.setProvider(createRouteProvider(profile));
         this.snapshot = { profile, models };
         return this.snapshot;
     }
     /** The exact pi-ai model descriptor for this route, or the configuration failure. */
     modelOf(snapshot, model) {
-        const failure = snapshot.profile.modelErrors.get(model)
-            ?? (snapshot.profile.piProvider === undefined ? snapshot.profile.catalogError : undefined);
+        const failure = snapshot.profile.modelErrors.get(model);
         if (failure !== undefined)
             throw new LlmError(failure, 'INVALID_CONFIG');
         const resolved = snapshot.models.getModel(this.route.provider, model);
@@ -84,10 +89,10 @@ export class IdKeyedPiAiAdapter extends LlmAdapter {
     imageRequestTarget(_provider, model, image) {
         const snapshot = this.current();
         this.modelOf(snapshot, model);
-        return requestImageTarget(image, {
-            maxPixels: snapshot.profile.requestImagePixelBudget,
+        return {
+            ...requestImageDimensions(image.width, image.height, snapshot.profile.requestImagePixelBudget),
             maxBytes: snapshot.profile.requestImageMaxBytes,
-        });
+        };
     }
     listModels(_provider) {
         return Promise.resolve().then(() => {
@@ -146,4 +151,75 @@ export class IdKeyedPiAiAdapter extends LlmAdapter {
             apiKey,
         }, options);
     }
+}
+/**
+ * Build the pi-ai provider for one route.
+ *
+ * The stock adapter reuses the installed catalog provider so its protocol
+ * implementations and quirks stay pi-ai's own. This route is hand-declared, so
+ * the provider is built the same way the stock resolver builds one: the
+ * protocol factory pi-ai ships for the route's `api`, the route's endpoint and
+ * models, and the harness credential seam as its authentication.
+ * @param profile - the resolved route profile.
+ * @returns the provider to register in the pi-ai collection.
+ */
+function createRouteProvider(profile) {
+    const factory = protocolFor(profile.api);
+    const models = profile.models.map(toPiModel);
+    return {
+        id: profile.provider,
+        name: profile.displayName,
+        ...profile.baseURL === undefined ? {} : { baseUrl: profile.baseURL },
+        // pi-ai resolves a route's credential through this method: the harness
+        // credential is handed in when one is stored, and the method reports it
+        // back as the request's API key.
+        auth: {
+            apiKey: {
+                name: profile.displayName,
+                resolve: ({ credential }) => Promise.resolve({
+                    auth: credential?.key === undefined ? {} : { apiKey: credential.key },
+                    source: profile.displayName,
+                }),
+            },
+        },
+        getModels: () => models,
+        stream: (model, context, options) => factory.stream(model, context, options),
+        // pi-ai's simple path calls the provider's own `streamSimple`, so the
+        // route's protocol is reached through it as well.
+        streamSimple: (model, context, options) => factory.stream(model, context, options),
+    };
+}
+/**
+ * The pi-ai protocol implementation for one route's `api`.
+ * @param api - the route's wire protocol.
+ * @returns the protocol factory.
+ * @throws {LlmError} `INVALID_CONFIG` for a protocol this build cannot serve.
+ */
+function protocolFor(api) {
+    const factory = api === undefined ? undefined : PROTOCOLS[api];
+    if (factory === undefined) {
+        throw new LlmError(`opendesign tool-call shim cannot serve api "${String(api)}"; supported protocols are ${SUPPORTED_PROTOCOLS.join(', ')}`, 'INVALID_CONFIG');
+    }
+    return factory();
+}
+/**
+ * Project one resolved model into the descriptor pi-ai's collection holds.
+ * @param model - the resolved model.
+ * @returns the pi-ai model descriptor.
+ */
+function toPiModel(model) {
+    return {
+        id: model.id,
+        name: model.name,
+        api: model.api,
+        provider: model.provider,
+        baseUrl: model.baseUrl,
+        input: [...model.input],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: model.contextWindow,
+        maxTokens: model.maxTokens,
+        reasoning: model.reasoning,
+        ...model.thinkingLevelMap === undefined ? {} : { thinkingLevelMap: model.thinkingLevelMap },
+        ...model.compat === undefined ? {} : { compat: model.compat },
+    };
 }

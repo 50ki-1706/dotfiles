@@ -70,12 +70,13 @@ var __disposeResources = (this && this.__disposeResources) || (function (Suppres
     var e = new Error(message);
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 });
-import { LlmError, resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm';
+import { requestImageDimensions } from '@deepseek-ai/dsh-attachment';
+import { LlmError, requiredImageOffload } from '@deepseek-ai/dsh-llm';
 import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout';
-import { toPiContext } from '@deepseek-ai/dsh-llm-pi-ai/src/context.ts';
-import { IdKeyedToolCallAssembler } from '../stream/index.js';
-import { createRewritingFetch } from '../wire/index.js';
-import { requestHeaders } from './headers.js';
+import { projectContext } from "./context.js";
+import { IdKeyedToolCallAssembler } from "../stream/index.js";
+import { createRewritingFetch } from "../wire/index.js";
+import { requestHeaders } from "./headers.js";
 /**
  * Stream one call, folding pi-ai's events through the id-keyed assembler.
  * @param call - the frozen facts for this call.
@@ -153,28 +154,65 @@ function profileOptions(profile) {
     };
 }
 /**
- * Build the pi-ai context, offloading images only when the call carries any.
+ * Build the pi-ai context for one call.
  *
- * The attachment seam is resolved lazily because most calls carry no image and
- * a composition without the attachment service must still work.
+ * The stock adapter's converter lives at `@deepseek-ai/dsh-llm-pi-ai/src/context.ts`,
+ * a TypeScript source the desktop app's Node refuses to load from
+ * `node_modules`, so the request is projected by `context.ts` in this bundle.
+ *
+ * Images resolve through the attachment seam only when the call carries any,
+ * because most calls carry none and a composition without the attachment
+ * service must still work.
  */
 async function buildContext(ctx, profile, options, signal) {
-    const hasImage = options.messages.some(message => message.content.some(block => block.type === 'image'));
-    const attachments = hasImage ? ctx.get('attachments') : undefined;
-    const request = { ...options, signal };
-    if (attachments === undefined)
-        return toPiContext(request, undefined, undefined, false);
-    return toPiContext(request, {
-        attachments,
-        resolveImageAccess: ref => resolveImageAttachmentAccess(attachments, hostPath => ctx.get('fs')?.processPathFromHostPath(hostPath), ref),
+    const carriesImage = options.messages.some(message => message.content.some(block => block.type === 'image'));
+    const attachments = carriesImage ? ctx.get('attachments') : undefined;
+    if (!carriesImage || attachments === undefined)
+        return projectContext(options, profile, undefined);
+    const budget = { maxPixels: profile.requestImagePixelBudget, maxBytes: profile.requestImageMaxBytes };
+    const versions = new Map();
+    const readRequestImage = async (ref) => {
+        const known = versions.get(String(ref.attachmentId));
+        if (known !== undefined)
+            return known;
+        const version = await attachments.readImageRequest(ref, {
+            ...requestImageDimensions(ref.width, ref.height, budget.maxPixels),
+            maxBytes: budget.maxBytes,
+        }, signal);
+        if (version === undefined)
+            return undefined;
+        const resolved = { bytes: version.data, mediaType: version.mediaType };
+        versions.set(String(ref.attachmentId), resolved);
+        return resolved;
+    };
+    // The budgets are enforced over the bytes that will actually be sent, so the
+    // request images are prepared before the count check runs.
+    for (const message of options.messages) {
+        for (const block of message.content) {
+            if (block.type !== 'image' || block.offloaded === true)
+                continue;
+            await readRequestImage(block.attachment);
+        }
+    }
+    // The route's count and byte budgets are enforced before the request is
+    // built, so an over-budget history asks the caller to offload the oldest
+    // occurrences instead of silently dropping them.
+    const offload = requiredImageOffload(options.messages, {
+        representation: 'base64',
+        maxBytes: profile.maxRequestImageBytes,
+        maxImages: profile.maxRequestImages,
+        countQuantum: profile.imageOffloadCountQuantum,
+    }, block => versions.get(String(block.attachment.attachmentId))?.bytes.length ?? 0);
+    if (offload > 0) {
+        throw new LlmError(`pi-ai request images exceed the route image budget; ${offload} more oldest occurrence(s) must be offloaded.`, 'IMAGE_OFFLOAD_REQUIRED', { offloadImages: offload });
+    }
+    return projectContext(options, profile, {
+        readRequestImage,
         maxRequestImageBytes: profile.maxRequestImageBytes,
         maxRequestImages: profile.maxRequestImages,
         imageOffloadCountQuantum: profile.imageOffloadCountQuantum,
-        requestImagePolicy: {
-            maxPixels: profile.requestImagePixelBudget,
-            maxBytes: profile.requestImageMaxBytes,
-        },
-    }, undefined, false);
+        requestImagePolicy: budget,
+    });
 }
 /**
  * Drive the pi-ai event iterator through the assembler.

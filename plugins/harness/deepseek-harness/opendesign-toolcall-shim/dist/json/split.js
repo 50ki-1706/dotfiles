@@ -14,8 +14,8 @@
  *
  * @module dsh-opendesign-toolcall-shim/json/split
  */
-import { isWhitespace, walkJson } from './scan.js';
-import { parseJsonObject } from './values.js';
+import { isWhitespace, walkJson } from "./scan.js";
+import { parseJsonObject } from "./values.js";
 /**
  * Scan for the end offsets of consecutive complete JSON values.
  *

@@ -10,10 +10,9 @@
  */
 import { resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm';
 import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai';
-import { authContextFrom, credentialStoreFrom } from '@deepseek-ai/dsh-llm-pi-ai/src/auth.ts';
-import { resolveProfiles } from '@deepseek-ai/dsh-llm-pi-ai/src/config.ts';
-import { IdKeyedPiAiAdapter, RouteSplittingAdapter, declaredProviders, resolveApiKey } from '../adapter/index.js';
-import { DEFAULT_PROVIDER, DEFAULT_SETTINGS_NAMESPACE } from './config.js';
+import { IdKeyedPiAiAdapter, RouteSplittingAdapter, declaredProviders, resolveApiKey, resolveProfiles, } from "../adapter/index.js";
+import { authContextFrom, credentialStoreFrom } from "../adapter/auth.js";
+import { DEFAULT_PROVIDER, DEFAULT_SETTINGS_NAMESPACE } from "./config.js";
 /**
  * Build the stock adapter for the routes this shim does not own.
  *

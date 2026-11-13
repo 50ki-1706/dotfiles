@@ -10,8 +10,8 @@
  *
  * @module dsh-opendesign-toolcall-shim/wire/fetch
  */
-import { ToolCallIndexRewriter } from './index-rewriter.js';
-import { rewriteSseStream } from './sse.js';
+import { ToolCallIndexRewriter } from "./index-rewriter.js";
+import { rewriteSseStream } from "./sse.js";
 /**
  * Build the `fetch` pi-ai should use for one request.
  * @param base - the fetch implementation to delegate to; defaults to the platform's.

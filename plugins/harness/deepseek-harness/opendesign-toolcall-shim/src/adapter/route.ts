@@ -8,33 +8,31 @@
  * whether a settings form exists for the row: a plugin without a schemastery
  * `Config` export has no form, and its config is still live.
  *
+ * The resolution itself lives in `profile.ts`, because the stock resolver is a
+ * TypeScript source inside `node_modules` that the desktop app's Node refuses
+ * to load.
+ *
  * @module dsh-opendesign-toolcall-shim/adapter/route
  */
 
 import type { Context } from '@deepseek-ai/cordis'
 import { LlmError } from '@deepseek-ai/dsh-llm'
-import { resolveProfiles } from '@deepseek-ai/dsh-llm-pi-ai/src/config.ts'
-import type { PiAiProviderProfile, ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai/src/config.ts'
+import { declaredProviders, resolveProfiles } from './profile.ts'
+import type { PiAiProviderProfile, ResolvedRouteProfile, ShimRoute } from './profile.ts'
 
 /** The `providers` document a shim row was configured with. */
 export type DeclaredProviders = Record<string, PiAiProviderProfile>
 
-/** The route this shim owns. */
-export interface ShimRoute {
-  /** The `llm-pi-ai` settings namespace the route profile lives in. */
-  readonly settingsNamespace: string
-  /** The provider route key this shim replaces. */
-  readonly provider: string
-}
+export { declaredProviders }
+export type { ShimRoute }
 
 /**
- * The `providers` document this shim's own row was configured with.
+ * The routes this shim's own row declares.
  * @param ctx - the plugin context of the shim's row.
  * @returns the declared providers, or an empty document.
  */
-export function declaredProviders(ctx: Context): DeclaredProviders {
-  const config = ctx.fiber?.config as { providers?: DeclaredProviders } | undefined
-  return config?.providers ?? {}
+export function declaredProvidersOf(ctx: Context): DeclaredProviders {
+  return declaredProviders(ctx.fiber?.config)
 }
 
 /**
@@ -47,8 +45,8 @@ export function declaredProviders(ctx: Context): DeclaredProviders {
  * @returns the resolved profile.
  * @throws {LlmError} `INVALID_CONFIG` when the row does not declare the route.
  */
-export function resolveRoute(ctx: Context, route: ShimRoute): ResolvedPiAiProviderProfile {
-  const profile = resolveProfiles(declaredProviders(ctx), 'deferred').get(route.provider)
+export function resolveRoute(ctx: Context, route: ShimRoute): ResolvedRouteProfile {
+  const profile = resolveProfiles(declaredProvidersOf(ctx), 'deferred').get(route.provider)
   if (profile === undefined) {
     throw new LlmError(
       `opendesign tool-call shim owns route "${route.provider}", which its own "${route.settingsNamespace}" configuration does not declare`,

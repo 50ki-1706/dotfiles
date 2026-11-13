@@ -14,8 +14,8 @@
  *
  * @module dsh-opendesign-toolcall-shim/json/repair
  */
-import { walkJson } from './scan.js';
-import { parseJsonObject } from './values.js';
+import { walkJson } from "./scan.js";
+import { parseJsonObject } from "./values.js";
 /** Escape a raw control character the way JSON requires inside a string. */
 function escapeControl(char) {
     switch (char) {
