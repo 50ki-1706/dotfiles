@@ -1,0 +1,22 @@
+{
+  "name": "@publish/workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Harness-agnostic publish core plus one adapter package per harness.",
+  "type": "module",
+  "workspaces": [
+    "core",
+    "dsh-adapter",
+    "codex-adapter",
+    "opencode-adapter"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit",
+    "test": "./run-tests.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.0"
+  }
+}

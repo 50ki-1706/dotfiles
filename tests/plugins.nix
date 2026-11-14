@@ -36,6 +36,8 @@ let
   # 独立し、対象プロファイルは dshOpendesignToolcallShim.profiles で選ぶ。
   dshOnly = compose [ ../plugins/harness/deepseek-harness ];
   shimActivation = plugins: (homeFor plugins).home.activation.installOpendesignToolcallShim.data;
+  # `/publish` も dsh 本体側の plugin。対象プロファイルは dshPublish.profiles で選ぶ。
+  publishActivation = plugins: (homeFor plugins).home.activation.installDshPublish.data;
   standalone = homeFor (compose [
     ../plugins/app/ghostty
     ../plugins/cli/helix
@@ -81,6 +83,34 @@ lib.runTests {
   testShimSkipsProfilesHomeManagerDoesNotOwn = {
     # desktop / web は手動管理なので、存在しなければスキップする。
     expr = lib.hasInfix "package.json" (shimActivation dsh) && lib.hasInfix "スキップ" (shimActivation dsh);
+    expected = true;
+  };
+  testPublishIsOptIn = {
+    # dsh 本体 plugin だけでは、どのプロファイルにも publish を入れない。
+    expr = (homeFor dshOnly).home.activation ? installDshPublish;
+    expected = false;
+  };
+  testPublishTargetsSelectedProfiles = {
+    # dsh-tui が選ぶのは dsh-tui プロファイルだけ。
+    expr =
+      lib.hasInfix "for profile in dsh-tui; do" (publishActivation dsh)
+      && lib.hasInfix "dsh-publish" (publishActivation dsh);
+    expected = true;
+  };
+  testPublishReachesDesktop = {
+    # デスクトップ版も同じ dsh 本体 plugin を使う。
+    expr = lib.hasInfix "for profile in dsh-tui desktop; do" (
+      (homeFor (compose [
+        ../plugins/app/deepseek-harness
+        ../plugins/cli/dsh-tui
+      ])).home.activation.installDshPublish.data
+    );
+    expected = true;
+  };
+  testPublishSkipsProfilesHomeManagerDoesNotOwn = {
+    # desktop / web は手動管理なので、存在しなければスキップする。
+    expr =
+      lib.hasInfix "package.json" (publishActivation dsh) && lib.hasInfix "スキップ" (publishActivation dsh);
     expected = true;
   };
   testDshLauncherAndProfile = {

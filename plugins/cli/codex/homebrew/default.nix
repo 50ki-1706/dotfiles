@@ -1,7 +1,0 @@
-{
-  darwin =
-    { ... }:
-    {
-      homebrew.casks = [ "codex" ];
-    };
-}

@@ -18,13 +18,19 @@ let
     rev = "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d";
     hash = "sha256-3vhd77xfZjKUYJsIwPFevIZPUAzUgZXr0RYj5NQrBwk=";
   };
+  # publish plugin は harness 非依存のコア (@publish/core) と OpenCode
+  # アダプタの 2 パッケージから成る。dist/ はコミット済みのコンパイル結果で、
+  # アダプタは @publish/core を node_modules から解決する。
   publishPlugin = pkgs.runCommand "opencode-publish-plugin" { } ''
-    mkdir -p "$out"
-    cp ${./plugins/publish}/*.ts "$out/"
-    rm -f "$out/"*.test.ts
-    cp ${./commands/publish.md} "$out/instructions.md"
+    mkdir -p "$out/node_modules/@publish/core"
+    cp -R ${../../harness/publish/opencode-adapter/dist} "$out/dist"
+    cp ${../../harness/publish/opencode-adapter/package.json} "$out/package.json"
+    cp ${../../harness/publish/opencode-adapter/instructions.md} "$out/instructions.md"
     cp ${gitSurgeonSkill} "$out/official-skill.md"
     cp ${prSource}/skills/engineering/pr/SKILL.md "$out/pr-skill.md"
+
+    cp -R ${../../harness/publish/core/dist} "$out/node_modules/@publish/core/dist"
+    cp ${../../harness/publish/core/package.json} "$out/node_modules/@publish/core/package.json"
   '';
   writingRulesRouter = pkgs.writeTextFile {
     name = "writing-rules-router";
@@ -45,7 +51,7 @@ let
     "action-drift-monitor.js" = "${actionDriftMonitor}/action-drift-monitor.js";
     "nix-verify-gate.js" = ./plugins/nix-verify-gate.js;
     "worktree-removal-guard.js" = ./plugins/worktree-removal-guard.js;
-    "publish.ts" = "${publishPlugin}/index.ts";
+    "publish.js" = "${publishPlugin}/dist/adapter.js";
   };
 in
 {

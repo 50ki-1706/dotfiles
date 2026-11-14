@@ -1,0 +1,5 @@
+# Build output of `tsc -b`; committed so dsh can load the plugin without a
+# compiler on the target machine.
+!dist/
+node_modules/
+*.tsbuildinfo

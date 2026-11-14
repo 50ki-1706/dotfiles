@@ -1,0 +1,10 @@
+{
+  // Solution file: `tsc -b` builds core first, then each adapter.
+  "files": [],
+  "references": [
+    { "path": "./core" },
+    { "path": "./dsh-adapter" },
+    { "path": "./codex-adapter" },
+    { "path": "./opencode-adapter" }
+  ]
+}

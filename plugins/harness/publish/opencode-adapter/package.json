@@ -1,0 +1,20 @@
+{
+  "name": "@publish/opencode-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenCode adapter for @publish/core: the publish tools and the /publish command.",
+  "engines": {
+    "node": ">=24"
+  },
+  "type": "module",
+  "main": "./dist/adapter.js",
+  "dependencies": {
+    "@publish/core": "*"
+  },
+  "files": [
+    "dist",
+    "instructions.md",
+    "official-skill.md",
+    "pr-skill.md"
+  ]
+}

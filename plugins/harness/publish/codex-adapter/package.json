@@ -1,0 +1,19 @@
+{
+  "name": "@publish/codex-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Codex CLI adapter for @publish/core: the publish tools as an MCP server over stdio.",
+  "engines": {
+    "node": ">=24"
+  },
+  "type": "module",
+  "bin": {
+    "publish-mcp": "./dist/main.js"
+  },
+  "dependencies": {
+    "@publish/core": "*"
+  },
+  "files": [
+    "dist"
+  ]
+}
