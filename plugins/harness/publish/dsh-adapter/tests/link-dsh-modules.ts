@@ -37,6 +37,7 @@ const PACKAGES = [
   '@deepseek-ai/dsh-system-prompt',
   '@deepseek-ai/dsh-tools',
   '@deepseek-ai/dsh-tool-executor-native',
+  '@deepseek-ai/dsh-tool-testkit',
   '@deepseek-ai/dsh-user-approval',
   '@deepseek-ai/dsh-util-values',
   '@deepseek-ai/dsh-working-directory',

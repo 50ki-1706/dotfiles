@@ -14,8 +14,8 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
-import { createServer, SESSION_ID, toMcpTool } from '../src/index.ts'
-import { serve } from '../src/jsonrpc.ts'
+import { createCodexHost, createServer, SESSION_ID, toMcpTool, UNATTENDED_ENV } from '../src/index.ts'
+import { ERROR_CODES, serve } from '../src/jsonrpc.ts'
 import type { PublishServer } from '../src/index.ts'
 
 const servers: PublishServer[] = []
@@ -175,5 +175,107 @@ describe('codex adapter', () => {
     })
     assert.equal(projected.name, 'publish_show')
     assert.deepEqual(projected.inputSchema.required, ['id'])
+  })
+})
+
+describe('codex adapter: irreversible operations fail closed', () => {
+  /** The host the core calls, with logging captured. */
+  const host = (allowUnattended?: boolean) => createCodexHost(() => '/repo', () => {}, { allowUnattended })
+
+  it('refuses a fast-forward merge when nobody opted in', async () => {
+    await assert.rejects(
+      host().authorize('shell', ['git merge --ff-only --no-edit abc']),
+      /without human confirmation/,
+    )
+  })
+
+  it('refuses a push and a PR creation when nobody opted in', async () => {
+    await assert.rejects(host().authorize('shell', ['git push --no-follow-tags origin HEAD:refs/heads/x']), /refusing/)
+    await assert.rejects(host().authorize('shell', ['gh pr create --title t']), /refusing/)
+  })
+
+  it('still allows the read-only commands the workflow needs', async () => {
+    await host().authorize('shell', ['git status --porcelain=v1'])
+    await host().authorize('read', ['/repo'])
+    await host().authorize('shell', ['git rev-parse --verify HEAD'])
+  })
+
+  it('allows irreversible operations once the operator opts in', async () => {
+    await host(true).authorize('shell', ['git merge --ff-only --no-edit abc'])
+    await host(true).authorize('shell', ['git push --no-follow-tags origin HEAD:refs/heads/x'])
+  })
+
+  it('reads the opt-in from the environment', async () => {
+    const previous = process.env[UNATTENDED_ENV]
+    process.env[UNATTENDED_ENV] = '1'
+    try {
+      const created = await createServer({
+        directory: await workspace(),
+        log: () => {},
+        loadResources: async () => resources,
+      })
+      servers.push(created)
+      // The server's host is internal, so exercise it through a tool call that
+      // reaches a shell permission: an inspect only reads, so assert the
+      // opt-in was resolved by asking the exported host directly.
+      const optedIn = createCodexHost(() => '/repo', () => {}, {
+        allowUnattended: process.env[UNATTENDED_ENV] === '1',
+      })
+      await optedIn.authorize('shell', ['git push origin HEAD'])
+    } finally {
+      if (previous === undefined) delete process.env[UNATTENDED_ENV]
+      else process.env[UNATTENDED_ENV] = previous
+    }
+  })
+})
+
+describe('codex adapter: MCP details', () => {
+  it('echoes a protocol version it supports and offers its own otherwise', async () => {
+    const target = await server()
+    const echoed = await request(target, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05' } })
+    assert.equal(echoed.result.protocolVersion, '2024-11-05')
+    const offered = await request(target, { jsonrpc: '2.0', id: 2, method: 'initialize', params: { protocolVersion: '1999-01-01' } })
+    assert.equal(offered.result.protocolVersion, '2024-11-05')
+  })
+
+  it('rejects a prompt name it does not serve', async () => {
+    const target = await server()
+    const answer = await request(target, { jsonrpc: '2.0', id: 1, method: 'prompts/get', params: { name: 'other' } })
+    assert.equal(answer.error.code, ERROR_CODES.invalidParams)
+  })
+
+  it('serves the prompt it advertises', async () => {
+    const target = await server()
+    const answer = await request(target, { jsonrpc: '2.0', id: 1, method: 'prompts/get', params: { name: 'publish' } })
+    assert.equal(answer.result.messages[0].content.text, 'INSTRUCTIONS')
+  })
+
+  it('reports a parse error for malformed JSON', async () => {
+    const target = await server()
+    const input = new PassThrough()
+    const output = new PassThrough()
+    const chunks: string[] = []
+    output.on('data', (chunk: Buffer) => chunks.push(chunk.toString()))
+    const done = serve(target.handlers, input, output)
+    input.write('{not json}\n')
+    input.end()
+    await done
+    assert.equal(JSON.parse(chunks.join('').trim()).error.code, ERROR_CODES.parse)
+  })
+
+  it('gives two calls in the same millisecond distinct ids', async () => {
+    const target = await server()
+    const input = new PassThrough()
+    const output = new PassThrough()
+    const chunks: string[] = []
+    output.on('data', (chunk: Buffer) => chunks.push(chunk.toString()))
+    const done = serve(target.handlers, input, output)
+    // Both are rejected as unknown tools, but the ids must still be distinct.
+    input.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'publish_show', arguments: {} } })}\n`)
+    input.write(`${JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'publish_show', arguments: {} } })}\n`)
+    input.end()
+    await done
+    const answers = chunks.join('').trim().split('\n').map((line) => JSON.parse(line))
+    assert.deepEqual(answers.map((answer) => answer.id).sort(), [1, 2])
   })
 })

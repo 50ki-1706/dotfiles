@@ -38,6 +38,12 @@ export interface ServerOptions {
     resources?: string;
     /** Overrides the resource loader, for tests. */
     loadResources?: ResourceLoader;
+    /**
+     * Allow irreversible operations (merge, push, PR creation) without a human
+     * confirmation. Defaults to the `PUBLISH_MCP_ALLOW_UNATTENDED` environment
+     * variable, so an operator has to opt in explicitly.
+     */
+    allowUnattended?: boolean;
 }
 /** One running MCP server: its tools, its MCP handlers, and teardown. */
 export interface PublishServer {
@@ -47,13 +53,18 @@ export interface PublishServer {
     setRoots(roots: readonly string[]): void;
     dispose(): Promise<void>;
 }
+/** Environment variable that lets the Codex host run irreversible operations unattended. */
+export declare const UNATTENDED_ENV = "PUBLISH_MCP_ALLOW_UNATTENDED";
 /**
  * Build the Codex host for the publish core.
  * @param workspace - resolves the workspace directory for each call.
  * @param log - receives advisory notes, such as a recorded approval request.
+ * @param options - `allowUnattended` opts in to irreversible operations.
  * @returns the host the core calls.
  */
-export declare function createCodexHost(workspace: () => string, log: (message: string) => void): PublishHost;
+export declare function createCodexHost(workspace: () => string, log: (message: string) => void, options?: {
+    allowUnattended?: boolean;
+}): PublishHost;
 /**
  * Project one core tool onto an MCP tool descriptor.
  * @param tool - the core tool.

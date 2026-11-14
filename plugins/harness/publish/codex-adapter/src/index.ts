@@ -31,8 +31,8 @@ import type {
   PublishTool,
   ToolCall,
 } from '@publish/core/types'
-import { ERROR_CODES, serve } from './jsonrpc.ts'
-import type { HandlerResult, Handlers } from './jsonrpc.ts'
+import { ERROR_CODES, PROTOCOL_VERSIONS, serve } from './jsonrpc.ts'
+import type { HandlerContext, HandlerResult, Handlers } from './jsonrpc.ts'
 
 /** The session id the adapter reports for every call; Codex supplies none. */
 export const SESSION_ID = 'codex'
@@ -54,6 +54,12 @@ export interface ServerOptions {
   resources?: string
   /** Overrides the resource loader, for tests. */
   loadResources?: ResourceLoader
+  /**
+   * Allow irreversible operations (merge, push, PR creation) without a human
+   * confirmation. Defaults to the `PUBLISH_MCP_ALLOW_UNATTENDED` environment
+   * variable, so an operator has to opt in explicitly.
+   */
+  allowUnattended?: boolean
 }
 
 /** One running MCP server: its tools, its MCP handlers, and teardown. */
@@ -72,27 +78,58 @@ type ToolCallResult = {
 }
 
 /**
+ * Commands that change state a user cannot undo from this process.
+ *
+ * Codex decides whether a tool call may run *before* the server sees it, so the
+ * core's approval gate cannot ask anyone here. Rather than let these through on
+ * a log line, the host refuses them unless the operator opted in: a merge,
+ * push, or PR creation that nobody confirmed is exactly the case the gate
+ * exists for.
+ */
+const IRREVERSIBLE = [/^git merge --ff-only/, /^git push\b/, /^gh pr create\b/];
+
+/** Whether one permission request is for an irreversible operation. */
+function isIrreversible(action: PermissionAction, resources: string[]): boolean {
+  return action === 'shell' && resources.some((resource) => IRREVERSIBLE.some((pattern) => pattern.test(resource)));
+}
+
+/** Environment variable that lets the Codex host run irreversible operations unattended. */
+export const UNATTENDED_ENV = 'PUBLISH_MCP_ALLOW_UNATTENDED';
+
+/**
  * Build the Codex host for the publish core.
  * @param workspace - resolves the workspace directory for each call.
  * @param log - receives advisory notes, such as a recorded approval request.
+ * @param options - `allowUnattended` opts in to irreversible operations.
  * @returns the host the core calls.
  */
 export function createCodexHost(
   workspace: () => string,
   log: (message: string) => void,
+  options: { allowUnattended?: boolean } = {},
 ): PublishHost {
   const approvals: ApprovalRequest[] = []
+  const allowUnattended = options.allowUnattended ?? false
 
   return {
-    async authorize(action: PermissionAction, resources: string[], options) {
+    async authorize(action: PermissionAction, resources: string[], callOptions) {
       const request: ApprovalRequest = {
-        sessionID: options?.call?.sessionID ?? SESSION_ID,
+        sessionID: callOptions?.call?.sessionID ?? SESSION_ID,
         action,
         resources,
-        ...options?.call === undefined ? {} : { callID: options.call.callID },
+        ...callOptions?.call === undefined ? {} : { callID: callOptions.call.callID },
         decision: 'allow',
       }
       approvals.push(request)
+      if (isIrreversible(action, resources) && !allowUnattended) {
+        // Fail closed: Codex cannot ask, so an irreversible operation it did not
+        // explicitly opt in to must not run on the strength of a log line.
+        throw new Error(
+          `publish: refusing ${resources.join(' ')} without human confirmation. Codex approves tool calls before this `
+          + `server sees them, so set ${UNATTENDED_ENV}=1 and configure Codex's own approval policy to require approval `
+          + `for MCP tool calls if you intend to run this unattended.`,
+        )
+      }
       log(`publish: ${action} ${resources.join(' ')} (Codex decides tool approval)`)
     },
 
@@ -149,27 +186,40 @@ export async function createServer(options: ServerOptions = {}): Promise<Publish
   // The bundle's resources sit beside this package's package.json, one level
   // above dist/.
   const resources = options.resources ?? fileURLToPath(new URL('..', import.meta.url))
-  const mounted: PublishPlugin = await mountPublish(createCodexHost(() => directory, log), {
+  const allowUnattended = options.allowUnattended ?? process.env[UNATTENDED_ENV] === '1'
+  const mounted: PublishPlugin = await mountPublish(createCodexHost(() => directory, log, { allowUnattended }), {
     loadResources: options.loadResources ?? loadResourcesFrom(resources),
   })
 
   const tools = mounted.tools.map(toMcpTool)
   const byName = new Map(mounted.tools.map(tool => [tool.name, tool]))
 
-  /** Admit the binding once per server lifetime; later calls reuse it. */
-  let admitted: Promise<void> | undefined
-  const admit = async (call: ToolCall): Promise<void> => {
-    admitted ??= mounted.command.execute(call.sessionID)
+  /**
+   * The admission the current workspace holds, and the directory it was made
+   * for.
+   *
+   * The binding is tied to one repository, so a workspace change (a new
+   * `roots/list`, or a different cwd) invalidates it: reusing the old
+   * admission would fail every later call with "binding changed" and leave no
+   * way to recover, because the MCP server has no `/publish` to rerun.
+   */
+  let admitted: { directory: string; promise: Promise<void> } | undefined
+  const admit = async (call: ToolCall, current: string): Promise<void> => {
+    if (admitted?.directory !== current) admitted = { directory: current, promise: mounted.command.execute(call.sessionID) }
+    const { promise } = admitted
     try {
-      await admitted
+      await promise
     } catch (error) {
       // A failed admission must be retried by the next call, not cached.
-      admitted = undefined
+      if (admitted?.promise === promise) admitted = undefined
       throw error
     }
   }
 
-  const callTool = async (params: unknown): Promise<HandlerResult> => {
+  /** Monotonic suffix so two calls in the same millisecond stay distinct. */
+  let callSequence = 0
+
+  const callTool = async (params: unknown, context: HandlerContext): Promise<HandlerResult> => {
     const { name, arguments: args } = (params ?? {}) as { name?: unknown; arguments?: unknown }
     if (typeof name !== 'string') {
       return { error: { code: ERROR_CODES.invalidParams, message: 'tools/call requires a tool name' } }
@@ -178,11 +228,14 @@ export async function createServer(options: ServerOptions = {}): Promise<Publish
     if (tool === undefined) {
       return { error: { code: ERROR_CODES.invalidParams, message: `Unknown tool: ${name}` } }
     }
-    const call: ToolCall = { sessionID: SESSION_ID, callID: `${name}-${Date.now()}`, signal: new AbortController().signal }
+    // A counter, not `Date.now()` alone: two calls in one millisecond would
+    // otherwise share an id and confuse the core's per-call bookkeeping.
+    callSequence += 1
+    const call: ToolCall = { sessionID: SESSION_ID, callID: `${name}-${callSequence}`, signal: context.signal }
     try {
       // Codex has no slash command, so the first tool call admits the binding
       // the way `/publish` does in a harness that has one.
-      await admit(call)
+      await admit(call, directory)
       const value = await tool.execute(args ?? {}, call)
       const result: ToolCallResult = { content: [{ type: 'text', text: JSON.stringify(value) }] }
       return { result }
@@ -198,13 +251,20 @@ export async function createServer(options: ServerOptions = {}): Promise<Publish
   }
 
   const handlers: Handlers = {
-    initialize: () => ({
-      result: {
-        protocolVersion: '2024-11-05',
-        capabilities: { tools: {}, prompts: {} },
-        serverInfo: { name: 'publish', version: '0.1.0' },
-      },
-    }),
+    initialize: (params) => {
+      // Echo the client's version when this server speaks it; otherwise offer
+      // the newest one this server implements and let the client decide.
+      const requested = (params as { protocolVersion?: unknown } | undefined)?.protocolVersion
+      const supported = typeof requested === 'string'
+        && (PROTOCOL_VERSIONS as readonly string[]).includes(requested)
+      return {
+        result: {
+          protocolVersion: supported ? requested : PROTOCOL_VERSIONS[0],
+          capabilities: { tools: {}, prompts: {} },
+          serverInfo: { name: 'publish', version: '0.1.0' },
+        },
+      }
+    },
     'tools/list': () => ({ result: { tools } }),
     'tools/call': callTool,
     'prompts/list': () => ({
@@ -218,14 +278,21 @@ export async function createServer(options: ServerOptions = {}): Promise<Publish
         ],
       },
     }),
-    'prompts/get': async () => ({
-      result: {
-        description: 'Publish the current changes',
-        messages: [
-          { role: 'user', content: { type: 'text', text: await mounted.instructions(true) } },
-        ],
-      },
-    }),
+    'prompts/get': async (params) => {
+      const name = (params as { name?: unknown } | undefined)?.name
+      // Only the one prompt this server advertises exists.
+      if (name !== 'publish') {
+        return { error: { code: ERROR_CODES.invalidParams, message: `Unknown prompt: ${String(name)}` } }
+      }
+      return {
+        result: {
+          description: 'Publish the current changes',
+          messages: [
+            { role: 'user', content: { type: 'text', text: await mounted.instructions(true) } },
+          ],
+        },
+      }
+    },
   }
 
   return {

@@ -42,6 +42,16 @@ test('selection rejects duplicates, invalid ranges and non-conventional messages
 test('sensitive paths are rejected in every path segment', () => {
   for (const path of ['.env', 'foo/.env.local/x', 'foo/id_rsa.pub', 'foo/a.pem']) assert.throws(() => assertSafePath(path));
   assert.doesNotThrow(() => assertSafePath('foo/.env.example'));
+  // Every SSH key algorithm, not just RSA.
+  for (const path of ['id_ed25519', 'foo/id_ecdsa', 'foo/id_dsa.pub']) assert.throws(() => assertSafePath(path));
+  // Certificates and keystores.
+  for (const path of ['foo/a.p12', 'foo/a.pfx', 'foo/a.jks', 'foo/a.keystore']) assert.throws(() => assertSafePath(path));
+  // Credential files.
+  for (const path of ['.npmrc', 'foo/.netrc', 'foo/.pypirc', 'foo/.pgpass', 'foo/credentials', 'foo/credentials.json', 'foo/service-account-prod.json']) {
+    assert.throws(() => assertSafePath(path));
+  }
+  // Ordinary files stay publishable.
+  for (const path of ['foo/credentials.md', 'foo/a.json', 'foo/id_rsa.md']) assert.doesNotThrow(() => assertSafePath(path));
 });
 
 test('runner distinguishes permission denial from a launched command failure', async () => {

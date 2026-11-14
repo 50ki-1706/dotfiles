@@ -86,6 +86,11 @@ export type PublishHost = {
    *
    * `call` is present for a tool invocation so the approval is attributable,
    * and absent for the command itself.
+   *
+   * The adapter must forward `action` and `resources` to the harness as the
+   * request's own action and resource list, not fold them into a free-form
+   * reason. {@link observeApproval} listeners match on those fields, so a
+   * lossy mapping silently disables every promotion they implement.
    */
   authorize(action: PermissionAction, resources: string[], options?: { call?: ToolCall }): Promise<void>;
   /** Resolve the working directory of one session. */
@@ -100,7 +105,13 @@ export type PublishHost = {
    * Observe approvals before they are decided.
    *
    * The listener returns a replacement decision, or `undefined` to leave the
-   * harness's own decision unchanged.
+   * harness's own decision unchanged. `'ask'` means the request must reach a
+   * human: an adapter that cannot express that distinction must fail closed
+   * rather than treat the request as an ordinary ask it would auto-approve.
+   *
+   * The request the listener receives must carry the asker's own `action` and
+   * `resources`, not a lossy rendering of them, because the core's promotion
+   * hook matches on both.
    */
   observeApproval(listener: (request: ApprovalRequest) => ApprovalDecision | undefined): () => void;
 };
@@ -111,7 +122,9 @@ export type PermissionAction = 'shell' | 'read' | 'edit' | 'external_directory';
 /** One approval the harness is about to decide. */
 export type ApprovalRequest = {
   sessionID: string;
+  /** The permission action the asker requested, in the core's vocabulary. */
   action: string;
+  /** The exact resources the asker requested, unmodified by the harness. */
   resources: string[];
   /** The tool call that raised the request, when the harness knows it. */
   callID?: string;

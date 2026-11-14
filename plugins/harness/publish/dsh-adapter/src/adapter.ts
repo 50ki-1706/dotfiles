@@ -78,20 +78,42 @@ export function createDshHost(ctx: Context, _config: PublishConfig): PublishHost
   /** The agent whose `/publish` run is currently admitting. */
   let active: Agent | undefined
 
+  /**
+   * The permission each in-flight ask is about, keyed by the tool call that
+   * raised it.
+   *
+   * DSH's `approval/request` event carries only a tool name and a free-form
+   * reason, so the core's action and resources would be lost on the way out.
+   * The core's promotion hook matches on them, so the asker records them here
+   * and the listener reads them back for the same call.
+   */
+  const asked = new Map<string, { action: PermissionAction; resources: string[] }>()
+  const askKey = (sessionID: string, callID: string) => `${sessionID}\u0000${callID}`
+
   const agentFor = (sessionID: string): Agent => {
     const agent = bound.get(sessionID)
     if (agent === undefined) throw new Error('Run /publish first')
     return agent
   }
 
-  const approve = async (agent: Agent, reason: string): Promise<void> => {
-    const outcome: ApprovalOutcome = await ctx.approval.request({
-      agent,
-      toolName: 'publish',
-      reason,
-      signal: new AbortController().signal,
-    })
-    if (outcome !== 'allowed-once') throw new Error(`Publish approval ${outcome}: ${reason}`)
+  const approve = async (agent: Agent, call: ToolCall | undefined, action: PermissionAction, resources: string[]): Promise<void> => {
+    const reason = `${action}: ${resources.join(' ')}`
+    const key = call === undefined ? undefined : askKey(call.sessionID, call.callID)
+    if (key !== undefined) asked.set(key, { action, resources })
+    try {
+      const outcome: ApprovalOutcome = await ctx.approval.request({
+        agent,
+        toolName: 'publish',
+        reason,
+        // Forwarding the call id is what lets the core's promotion hook match
+        // the request it queued to the approval DSH is deciding.
+        ...call === undefined ? {} : { callId: call.callID as never },
+        signal: call?.signal ?? new AbortController().signal,
+      })
+      if (outcome !== 'allowed-once') throw new Error(`Publish approval ${outcome}: ${reason}`)
+    } finally {
+      if (key !== undefined) asked.delete(key)
+    }
   }
 
   const skillsFor = async (agent: Agent, directory: string): Promise<SkillEntry[]> => {
@@ -116,7 +138,7 @@ export function createDshHost(ctx: Context, _config: PublishConfig): PublishHost
       const sessionID = options?.call?.sessionID
       const agent = sessionID === undefined ? active : bound.get(sessionID)
       if (agent === undefined) return
-      await approve(agent, `${action}: ${resources.join(' ')}`)
+      await approve(agent, options?.call, action, resources)
     },
 
     async directory(sessionID) {
@@ -159,22 +181,44 @@ export function createDshHost(ctx: Context, _config: PublishConfig): PublishHost
         request: ApprovalRequestEvent,
         next: () => Promise<ApprovalOutcome>,
       ): Promise<ApprovalOutcome> => {
-        const decision = listener(toApprovalRequest(request))
+        const decision = listener(toApprovalRequest(request, asked))
+        // `undefined` leaves the harness's decision alone.
         if (decision === undefined) return next()
-        if (decision.decision === 'ask') return next()
-        return decision.decision === 'deny' ? 'rejected' : 'allowed-once'
+        if (decision.decision === 'deny') return 'rejected'
+        if (decision.decision === 'allow') return 'allowed-once'
+        // DSH has no "promote to ask" outcome: every request already goes to
+        // the answerers, and the only grant is `allowed-once`. Delegating here
+        // would make a promoted request indistinguishable from an ordinary one,
+        // so the promotion would silently do nothing. Refuse instead: a
+        // fast-forward merge the core wants a human to confirm must not run on
+        // an answerer this adapter cannot distinguish from a routine prompt.
+        return 'rejected'
       })
     },
   }
 }
 
-/** Adapt one DSH approval request to the host's vocabulary. */
-function toApprovalRequest(request: ApprovalRequestEvent): ApprovalRequest {
+/**
+ * Adapt one DSH approval request to the host's vocabulary.
+ *
+ * Exported for tests: the mapping is the seam the fast-forward promotion
+ * depends on, and a lossy mapping silently disables it.
+ */
+export function toApprovalRequest(
+  request: ApprovalRequestEvent,
+  asked: ReadonlyMap<string, { action: PermissionAction; resources: string[] }>,
+): ApprovalRequest {
+  const sessionID = request.agent.session.id
+  const callID = request.callId
+  const recorded = callID === undefined ? undefined : asked.get(`${sessionID}\u0000${callID}`)
   return {
-    sessionID: request.agent.session.id,
-    action: request.toolName,
-    resources: request.reason === undefined ? [] : [request.reason],
-    ...request.callId === undefined ? {} : { callID: request.callId },
+    sessionID,
+    // DSH names the tool that asked, not the permission it wanted. The asker
+    // recorded the real action and resources for this call; without them the
+    // request cannot be matched and nothing is promoted.
+    action: recorded?.action ?? request.toolName,
+    resources: recorded?.resources ?? (request.reason === undefined ? [] : [request.reason]),
+    ...callID === undefined ? {} : { callID },
     decision: 'allow',
   }
 }

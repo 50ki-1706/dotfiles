@@ -1,5 +1,5 @@
 /** Executable command a fast-forward request must match exactly. */
-const fastForwardCommand = (targetHead) => `git merge --ff-only --no-edit ${targetHead}`;
+export const fastForwardCommand = (targetHead) => `git merge --ff-only --no-edit ${targetHead}`;
 /** Permission bound to the `/publish` command invocation itself. */
 export const commandPermission = (host) => async (action, resources) => {
     await host.authorize(action, resources);
@@ -12,7 +12,10 @@ export const toolPermission = (host, call) => async (action, resources) => {
  * Promote the exact pending fast-forward request to `ask`.
  *
  * The harness reports the tool call that raised the approval, so only the call
- * that queued the approval can be promoted.
+ * that queued the approval can be promoted. The request must also carry the
+ * fast-forward command as its own resource: an adapter that folds the action
+ * and resources into a free-form reason cannot match here, which fails closed
+ * to the harness's own decision rather than promoting anything.
  */
 export function installFastForwardApproval(host, sessions, approvals) {
     return host.observeApproval((request) => {

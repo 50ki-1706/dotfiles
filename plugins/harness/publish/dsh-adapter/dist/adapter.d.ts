@@ -11,7 +11,8 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import type { Agent } from '@deepseek-ai/dsh-agent';
-import type { PublishHost } from '@publish/core/types';
+import type { ApprovalRequestEvent } from './dsh-types.ts';
+import type { ApprovalRequest, PermissionAction, PublishHost } from '@publish/core/types';
 import type { PublishConfig } from './config.ts';
 export declare const name = "publish";
 /**
@@ -35,6 +36,16 @@ export declare function createDshHost(ctx: Context, _config: PublishConfig): Pub
     /** Forget the agent after its `/publish` run settles. */
     end(): void;
 };
+/**
+ * Adapt one DSH approval request to the host's vocabulary.
+ *
+ * Exported for tests: the mapping is the seam the fast-forward promotion
+ * depends on, and a lossy mapping silently disables it.
+ */
+export declare function toApprovalRequest(request: ApprovalRequestEvent, asked: ReadonlyMap<string, {
+    action: PermissionAction;
+    resources: string[];
+}>): ApprovalRequest;
 /**
  * Register the publish plugin on the Harness.
  * @param ctx - the plugin context.

@@ -4,6 +4,8 @@ Inspect the staged and unstaged changes and explicitly selected untracked files.
 
 When an approved main synchronization is needed, use `publish_sync_main` with the bound `expectedHead` and exact `targetHead` from origin/main. It requires a clean tree, a fast-forward relationship and human approval of the root, branch and both SHAs. Do not stash or reapply changes automatically, switch branches, or adopt an external HEAD change. After synchronization, run `publish_inspect` and show every selected hunk again.
 
+This server refuses irreversible operations (the fast-forward merge, `git push`, and `gh pr create`) unless the operator started it with `PUBLISH_MCP_ALLOW_UNATTENDED=1`. Codex decides tool approval before the server sees a call, so the server cannot ask on its own: without that opt-in the operation fails rather than running unconfirmed. When the opt-in is set, the guarantee comes from Codex's own approval policy, so configure it to require approval for MCP tool calls before running unattended.
+
 Run the repository's required validation separately. Report actual evidence for every test claim, or give a reason why it does not apply. Do not claim a check passed without its result.
 
 Use `publish_main` only for a clean `main` branch. Use `publish_pr` for a clean non-main branch, supplying the current template fingerprint and every required field. If the template changes, rerun `/publish`. Do not force-push or create a pull request for main.

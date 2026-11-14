@@ -1,8 +1,43 @@
 import { spawn } from 'node:child_process';
-/** Files that must never be published, matched against every path segment. */
-const SENSITIVE_SEGMENT = /^(?:\.env(?!\.example$).*|.*\.(?:key|pem)|id_rsa.*)$/i;
+/**
+ * Files that must never be published, matched against every path segment.
+ *
+ * Covers environment files, private keys and certificates (including the
+ * Java/Windows keystore formats), SSH keys of every algorithm, credential
+ * files for the common clouds and package registries, and service-account
+ * JSON. The list is deliberately broad: an untracked file that matches is
+ * refused rather than published, and the user can still commit it by hand.
+ */
+const SENSITIVE_SEGMENT = new RegExp('^(?:'
+    + String.raw `\.env(?!\.example$).*`
+    + String.raw `|.*\.(?:key|pem|p12|pfx|jks|keystore)`
+    + String.raw `|id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?`
+    + String.raw `|\.npmrc|\.netrc|\.pypirc|\.pgpass`
+    + String.raw `|credentials(?:\.json)?`
+    + String.raw `|service-account.*\.json`
+    + ')$', 'i');
 const MAX_OUTPUT_BYTES = 1_048_576;
 const DEFAULT_TIMEOUT_MS = 30_000;
+/**
+ * Timeout for commands that wait on the network.
+ *
+ * A push, fetch, or `gh` call can legitimately take far longer than a local
+ * git command, and killing one halfway leaves the push state `unknown`. The
+ * longer budget keeps a slow link from being mistaken for a failure.
+ */
+const NETWORK_TIMEOUT_MS = 120_000;
+/** Executables whose every invocation talks to a remote. */
+const NETWORK_EXECUTABLES = new Set(['gh']);
+/** git subcommands that talk to a remote. */
+const NETWORK_GIT_SUBCOMMANDS = new Set(['push', 'fetch', 'ls-remote', 'clone', 'pull']);
+/** Whether one invocation may wait on the network. */
+function isNetworkCommand(executable, args) {
+    if (NETWORK_EXECUTABLES.has(executable))
+        return true;
+    if (executable !== 'git')
+        return false;
+    return args.some((argument) => NETWORK_GIT_SUBCOMMANDS.has(argument));
+}
 /**
  * Environment inherited by git and gh.
  *
@@ -68,7 +103,9 @@ function execute(cwd, executable, args, options = {}) {
             }
         };
         const abort = () => killProcessGroup(new Error('Command aborted'));
-        const timer = setTimeout(() => killProcessGroup(new Error(`${executable} timed out`)), options.timeout ?? DEFAULT_TIMEOUT_MS);
+        const timeout = options.timeout
+            ?? (isNetworkCommand(executable, args) ? NETWORK_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
+        const timer = setTimeout(() => killProcessGroup(new Error(`${executable} timed out`)), timeout);
         options.signal?.addEventListener('abort', abort, { once: true });
         const collect = (which, chunk) => {
             if (failure)
