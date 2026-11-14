@@ -57,6 +57,14 @@ export function createDshHost(ctx, _config) {
      */
     const asked = new Map();
     const askKey = (sessionID, callID) => `${sessionID}\u0000${callID}`;
+    /**
+     * Calls whose ask the core promoted to `ask`.
+     *
+     * DSH cannot express that promotion as an outcome, so the adapter refuses
+     * the request. Recording which calls were promoted lets the failure explain
+     * why, instead of reporting an outcome the model would retry.
+     */
+    const promoted = new Set();
     const agentFor = (sessionID) => {
         const agent = bound.get(sessionID);
         if (agent === undefined)
@@ -78,12 +86,19 @@ export function createDshHost(ctx, _config) {
                 ...call === undefined ? {} : { callId: call.callID },
                 signal: call?.signal ?? new AbortController().signal,
             });
-            if (outcome !== 'allowed-once')
-                throw new Error(`Publish approval ${outcome}: ${reason}`);
+            if (outcome !== 'allowed-once') {
+                const wasPromoted = key !== undefined && promoted.has(key);
+                throw new Error(wasPromoted
+                    ? `${reason} requires human confirmation, which this harness cannot request; `
+                        + 'do not retry it. Report that the operation needs approval and continue without it.'
+                    : `Publish approval ${outcome}: ${reason}`);
+            }
         }
         finally {
-            if (key !== undefined)
+            if (key !== undefined) {
                 asked.delete(key);
+                promoted.delete(key);
+            }
         }
     };
     const skillsFor = async (agent, directory) => {
@@ -157,6 +172,11 @@ export function createDshHost(ctx, _config) {
                 // so the promotion would silently do nothing. Refuse instead: a
                 // fast-forward merge the core wants a human to confirm must not run on
                 // an answerer this adapter cannot distinguish from a routine prompt.
+                //
+                // Record the call so `approve` can explain the refusal: a bare
+                // `rejected` reads as a transient denial the model would retry.
+                if (request.callId !== undefined)
+                    promoted.add(askKey(request.agent.session.id, request.callId));
                 return 'rejected';
             });
         },

@@ -10,7 +10,9 @@
  *
  * - **No session id.** An MCP tool call carries no session identity, so the
  *   server treats its whole lifetime as one session and resolves the
- *   workspace from `roots/list` (falling back to the process cwd).
+ *   workspace from the process cwd, which Codex sets to the session's working
+ *   directory. `roots/list` is not queried: it is a server-to-client request
+ *   that would need a bidirectional JSON-RPC peer.
  * - **No approval API.** Codex decides whether a tool call may run before the
  *   server sees it, so `authorize` records the request and returns. The
  *   `publish_sync_main` fast-forward approval is therefore advisory here.
@@ -66,7 +68,13 @@ export interface ServerOptions {
 export interface PublishServer {
   tools: McpTool[]
   handlers: Handlers
-  /** Resolve the workspace from MCP `roots/list`, when Codex reports one. */
+  /**
+   * Override the workspace directory.
+   *
+   * The server never calls this itself: `roots/list` is a server-to-client
+   * request this peer does not implement, so the process cwd is the workspace.
+   * It is exposed so tests can drive a workspace change.
+   */
   setRoots(roots: readonly string[]): void
   dispose(): Promise<void>
 }
@@ -199,7 +207,7 @@ export async function createServer(options: ServerOptions = {}): Promise<Publish
    * for.
    *
    * The binding is tied to one repository, so a workspace change (a new
-   * `roots/list`, or a different cwd) invalidates it: reusing the old
+   * `setRoots`, or a different cwd) invalidates it: reusing the old
    * admission would fail every later call with "binding changed" and leave no
    * way to recover, because the MCP server has no `/publish` to rerun.
    */

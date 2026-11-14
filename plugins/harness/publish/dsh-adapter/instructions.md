@@ -2,7 +2,7 @@ Publish the current changes using the available publish tools and the git-surgeo
 
 Inspect the staged and unstaged changes and explicitly selected untracked files. Review the actual hunks and relevant lines before proposing logically ordered Conventional Commits. Preserve unrelated or ambiguous changes. Commit only through `commit_hunks`; do not use `git add -A`, direct shell commits, or automatic history rewriting. Handle existing commit splits separately, only with clean, provably unpushed history.
 
-When an approved main synchronization is needed, use `publish_sync_main` with the bound `expectedHead` and exact `targetHead` from origin/main. It requires a clean tree, a fast-forward relationship and human approval of the root, branch and both SHAs. Do not stash or reapply changes automatically, switch branches, or adopt an external HEAD change. After synchronization, run `publish_inspect` and show every selected hunk again.
+`publish_sync_main` is unavailable on this harness: it requires a human confirmation that DeepSeek Harness cannot request, so every call is refused. Do not call it, and do not retry it after a refusal. If the branch is behind origin/main, stop and tell the user to synchronize it themselves. Do not stash or reapply changes automatically, switch branches, or adopt an external HEAD change.
 
 Run the repository's required validation separately. Report actual evidence for every test claim, or give a reason why it does not apply. Do not claim a check passed without its result.
 

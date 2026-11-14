@@ -38,7 +38,7 @@ publish/
 | fast-forward 昇格 | `ask` を表現できないため**拒否**する | 不可逆操作を**サーバー側で拒否**する | `effect = 'ask'` に**昇格**する |
 | merge（`publish_sync_main`） | 実行されない | `PUBLISH_MCP_ALLOW_UNATTENDED=1` のときだけ実行 | 人間の確認を挟んで実行 |
 | スキル | 同梱の本文と照合する | 照合しない（Codex のカタログに任せる） | ランタイムのカタログを、同梱の本文と照合する |
-| 作業ディレクトリ | セッションの `workingDirectory` | `roots/list` の先頭、無ければ cwd | セッションの `location.directory` |
+| 作業ディレクトリ | セッションの `workingDirectory` | プロセス cwd（Codex が設定する） | セッションの `location.directory` |
 | admission | `/publish` で行う | 最初のツール呼び出しで行う（workspace が変われば再実行） | `/publish` で行う |
 
 ### 承認の扱いが分かれる理由
@@ -79,6 +79,8 @@ command = "/Users/koki/.nix-profile/bin/publish-mcp"
 ```
 
 ## 既知の制限
+
+- **Codex 版は `roots/list` を問い合わせない**。MCP の `roots/list` はサーバーからクライアントへの要求で、応答を受けるには JSON-RPC の双方向化が要ります。現状は Codex が設定するプロセス cwd を作業ディレクトリに使うので、`~/.codex/config.toml` の `cwd` で制御してください。
 
 - Codex 版は `/publish` のスラッシュコマンドを持たず、指示文は MCP の prompt として出します。
 - Codex CLI は nixpkgs の 0.166.0 を使います（Homebrew cask は 0.167.0）。

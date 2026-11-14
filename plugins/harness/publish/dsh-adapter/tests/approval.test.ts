@@ -147,6 +147,11 @@ describe('fast-forward approval promotion through the real ApprovalService', () 
       assert.ok(merge, `the merge must raise an approval carrying the tool call id; saw ${JSON.stringify(seen.filter(e => e.callId === 'sync-1'))}`)
       assert.equal(merge.outcome, 'rejected')
       assert.equal(result.isError, true)
+      // The refusal tells the model not to retry, rather than reporting a bare
+      // rejection it would treat as transient.
+      const message = result.isError ? result.content[0]?.text ?? '' : ''
+      assert.match(message, /requires human confirmation/)
+      assert.match(message, /do not retry/)
       // The merge never ran.
       assert.equal(git(cwd, 'rev-parse', 'HEAD').trim(), head)
     } finally {

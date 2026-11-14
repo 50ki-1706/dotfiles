@@ -39,10 +39,20 @@ echo "run-tests: building"
 
 # The packages ship their compiled dist/, so a stale build would ship code that
 # does not match src/. Rebuild from scratch and fail if the result differs.
+#
+# `git status --porcelain` rather than `git diff`: a new dist file that was
+# never committed is untracked, and `git diff` does not report untracked files,
+# so a forgotten `git add` would slip through.
+#
+# The paths are listed explicitly: a `*/dist` pathspec is matched relative to
+# the repository root, not to `-C`, and `:(glob)*/dist` does not cross `/`, so
+# neither reaches these nested directories.
+dist_paths=(core/dist dsh-adapter/dist codex-adapter/dist opencode-adapter/dist)
 if [[ "${PUBLISH_SKIP_DIST_CHECK:-}" != 1 ]] && git -C "$here" rev-parse --git-dir >/dev/null 2>&1; then
-  if ! git -C "$here" diff --quiet -- '*/dist'; then
+  dist_changes="$(git -C "$here" status --porcelain -- "${dist_paths[@]}")"
+  if [[ -n "$dist_changes" ]]; then
     echo "run-tests: dist/ is stale; commit the output of 'npx tsc -b --force'" >&2
-    git -C "$here" --no-pager diff --stat -- '*/dist' >&2
+    printf '%s\n' "$dist_changes" >&2
     exit 1
   fi
 fi
