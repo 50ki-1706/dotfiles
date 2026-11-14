@@ -7,7 +7,8 @@
   "workspaces": [
     "core",
     "dsh-adapter",
-    "codex-adapter"
+    "codex-adapter",
+    "opencode-adapter"
   ],
   "scripts": {
     "build": "tsc -b",

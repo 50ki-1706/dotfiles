@@ -51,5 +51,7 @@ echo "run-tests: core"
 node --test "$here"/core/tests/*.test.ts
 echo "run-tests: codex adapter"
 node --test "$here"/codex-adapter/tests/*.test.ts
+echo "run-tests: opencode adapter"
+node --test "$here"/opencode-adapter/tests/*.test.ts
 echo "run-tests: dsh adapter"
 node --import "$here/dsh-adapter/tests/link-dsh-modules.ts" --test "$here"/dsh-adapter/tests/*.test.ts

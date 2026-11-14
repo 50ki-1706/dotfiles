@@ -4,6 +4,7 @@
   "references": [
     { "path": "./core" },
     { "path": "./dsh-adapter" },
-    { "path": "./codex-adapter" }
+    { "path": "./codex-adapter" },
+    { "path": "./opencode-adapter" }
   ]
 }
